@@ -1,0 +1,52 @@
+:host {
+  display: block;
+}
+
+/* Bloques de la ficha en el orden de la decisión: reponer, comprar, vender. */
+.ficha {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.encabezado-texto {
+  flex: 1 1 20rem;
+  min-width: 0;
+}
+
+/* La descripción del catálogo puede ser larga: una medida de lectura cómoda. */
+.descripcion {
+  max-width: 46rem;
+}
+
+.min-w-0 {
+  min-width: 0;
+}
+
+/* Texto fuera de la tabla alineado con las celdas, que usan el padding de la tarjeta. */
+.px-card {
+  padding-inline: var(--bs-card-spacer-x);
+}
+
+.subtitulo {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.calificacion {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
+.estrella {
+  font-size: 0.75rem;
+  color: var(--ink);
+}

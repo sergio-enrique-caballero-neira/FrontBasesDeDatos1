@@ -1,0 +1,110 @@
+<form [formGroup]="form" (ngSubmit)="guardar()" novalidate class="d-flex flex-column flex-grow-1 overflow-hidden">
+  <div class="modal-header">
+    <h2 class="modal-title" id="cliente-titulo">{{ existente() ? 'Editar cliente' : 'Nuevo cliente' }}</h2>
+    <button type="button" class="btn-close" aria-label="Cerrar" (click)="modal.dismiss()"></button>
+  </div>
+
+  <div class="modal-body pt-0 d-grid gap-3">
+    @if (error(); as error) {
+      <div class="alert alert-danger d-flex gap-2 mb-0" role="alert">
+        <fa-icon [icon]="iconoError" class="mt-1" />
+        <span>{{ error }}</span>
+      </div>
+    }
+
+    <fieldset>
+      <legend class="form-label fs-6">Tipo de cliente</legend>
+      <div class="btn-group w-100" role="group">
+        <input type="radio" class="btn-check" id="tipo-natural" value="NATURAL" formControlName="tipo" />
+        <label class="btn btn-outline-secondary" for="tipo-natural">Persona natural</label>
+        <input type="radio" class="btn-check" id="tipo-juridico" value="JURIDICO" formControlName="tipo" />
+        <label class="btn btn-outline-secondary" for="tipo-juridico">Persona jurídica</label>
+      </div>
+    </fieldset>
+
+    @if (form.controls.tipo.value === 'NATURAL') {
+      <div class="row g-3">
+        <div class="col-sm-6">
+          <label for="cliente-nombre" class="form-label">Nombre</label>
+          <input id="cliente-nombre" class="form-control" formControlName="nombre" autocomplete="off"
+            [attr.ngbAutofocus]="campoInicial() === 'nombre' ? '' : null"
+            [class.is-invalid]="invalido('nombre')" aria-describedby="cliente-nombre-error" />
+          <app-campo-error [control]="form.controls.nombre" [enviado]="enviado()" id="cliente-nombre-error" />
+        </div>
+        <div class="col-sm-6">
+          <label for="cliente-apellido" class="form-label">Apellido</label>
+          <input id="cliente-apellido" class="form-control" formControlName="apellido" autocomplete="off"
+            [attr.ngbAutofocus]="campoInicial() === 'apellido' ? '' : null"
+            [class.is-invalid]="invalido('apellido')" aria-describedby="cliente-apellido-error" />
+          <app-campo-error [control]="form.controls.apellido" [enviado]="enviado()" id="cliente-apellido-error" />
+        </div>
+      </div>
+    } @else {
+      <div>
+        <label for="cliente-razon" class="form-label">Razón social</label>
+        <input id="cliente-razon" class="form-control" formControlName="razonSocial" autocomplete="off"
+          [attr.ngbAutofocus]="campoInicial() === 'razonSocial' ? '' : null"
+          [class.is-invalid]="invalido('razonSocial')" aria-describedby="cliente-razon-error" />
+        <app-campo-error [control]="form.controls.razonSocial" [enviado]="enviado()" id="cliente-razon-error" />
+      </div>
+    }
+
+    <div class="row g-3">
+      <div class="col-sm-5">
+        <label for="cliente-documento" class="form-label">
+          {{ form.controls.tipo.value === 'NATURAL' ? 'Número de cédula' : 'NIT' }}
+        </label>
+        <input #documento id="cliente-documento" class="form-control num" formControlName="numeroDocumento" inputmode="numeric"
+          [attr.ngbAutofocus]="campoInicial() === 'numeroDocumento' ? '' : null"
+          autocomplete="off" [class.is-invalid]="invalido('numeroDocumento')" aria-describedby="cliente-documento-error" />
+        <app-campo-error [control]="form.controls.numeroDocumento" [enviado]="enviado()" [mensajes]="mensajesDocumento()"
+          id="cliente-documento-error" />
+      </div>
+      <div class="col-sm-7">
+        <label for="cliente-direccion" class="form-label">Dirección</label>
+        <input id="cliente-direccion" class="form-control" formControlName="direccion" autocomplete="off"
+          [attr.ngbAutofocus]="campoInicial() === 'direccion' ? '' : null"
+          [class.is-invalid]="invalido('direccion')" aria-describedby="cliente-direccion-error" />
+        <app-campo-error [control]="form.controls.direccion" [enviado]="enviado()" id="cliente-direccion-error" />
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-sm-6">
+        <app-lista-campos
+          [arreglo]="form.controls.telefonos"
+          etiqueta="Teléfonos"
+          idBase="cliente-telefono"
+          tipo="tel"
+          [minimo]="1"
+          textoAgregar="Agregar teléfono"
+          [enviado]="enviado()"
+        />
+      </div>
+      <div class="col-sm-6">
+        <app-lista-campos
+          [arreglo]="form.controls.correos"
+          etiqueta="Correos"
+          idBase="cliente-correo"
+          tipo="email"
+          placeholder="nombre@correo.com"
+          ayuda="Opcional."
+          textoAgregar="Agregar correo"
+          [enviado]="enviado()"
+        />
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-soft" (click)="modal.dismiss()">Cancelar</button>
+    <button type="submit" class="btn btn-primary" [disabled]="guardando()">
+      @if (guardando()) {
+        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        Guardando…
+      } @else {
+        {{ existente() ? 'Guardar cambios' : 'Crear cliente' }}
+      }
+    </button>
+  </div>
+</form>

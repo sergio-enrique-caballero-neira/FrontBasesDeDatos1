@@ -1,0 +1,302 @@
+<div class="page">
+  <app-page-header
+    titulo="Ventas"
+    [descripcion]="porTodas() ? 'Facturas de todas las sucursales.' : 'Facturas registradas en la sucursal de trabajo.'"
+  >
+    @if (esVendedor()) {
+      <a routerLink="/ventas/nueva" class="btn btn-accent">
+        <fa-icon [icon]="iconos.faCartShopping" />
+        Nueva venta
+      </a>
+    }
+  </app-page-header>
+
+  <p class="visually-hidden" aria-live="polite">{{ anuncio() }}</p>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="barra-filtros">
+        <app-campo-busqueda
+          etiqueta="Buscar"
+          placeholder="Factura, cliente o documento"
+          [atajo]="true"
+          [valor]="busqueda()"
+          (valorChange)="cambiarBusqueda($event)"
+        />
+        <app-selector-periodo [periodo]="periodoSelector()" (periodoChange)="elegirPeriodo($event)" />
+        <div class="segmento" role="group" aria-label="Alcance del periodo">
+          <button type="button" [attr.aria-pressed]="enTodoElHistorial()" (click)="alternarTodoElHistorial()">
+            Todo el historial
+          </button>
+        </div>
+      </div>
+
+      <div class="barra-filtros mt-3">
+        <div class="filtro-lista">
+          <label for="ventas-metodo" class="form-label">Medio de pago</label>
+          <select id="ventas-metodo" class="form-select" (change)="elegirMetodoDesdeLista($event)">
+            <option value="" [selected]="idMetodo() === null">Todos</option>
+            @for (metodo of metodos(); track metodo.idMetodoPago) {
+              <option [value]="metodo.idMetodoPago" [selected]="idMetodo() === metodo.idMetodoPago">{{ metodo.tipo }}</option>
+            }
+          </select>
+        </div>
+
+        @if (esAdmin()) {
+          <div class="filtro-lista">
+            <label for="ventas-vendedor" class="form-label">Vendedor</label>
+            <select id="ventas-vendedor" class="form-select" (change)="elegirVendedor($event)">
+              <option value="" [selected]="idVendedor() === null">Todos</option>
+              @for (empleado of vendedores(); track empleado.idEmpleado) {
+                <option [value]="empleado.idEmpleado" [selected]="idVendedor() === empleado.idEmpleado">
+                  {{ empleado.nombre }} {{ empleado.apellido }}
+                </option>
+              }
+            </select>
+          </div>
+          @if (porTodas()) {
+            <div class="filtro-lista">
+              <label for="ventas-sucursal" class="form-label">Sucursal</label>
+              <select id="ventas-sucursal" class="form-select" (change)="elegirSucursal($event)">
+                <option value="" [selected]="idSucursal() === null">Todas</option>
+                @for (sucursal of sucursales(); track sucursal.idSucursal) {
+                  <option [value]="sucursal.idSucursal" [selected]="idSucursal() === sucursal.idSucursal">{{ sucursal.nombre }}</option>
+                }
+              </select>
+            </div>
+          }
+        }
+
+        @if (esVendedor()) {
+          <div>
+            <span class="form-label d-block" id="ventas-alcance">Mostrar</span>
+            <div class="segmento" role="group" aria-labelledby="ventas-alcance">
+              <button type="button" [attr.aria-pressed]="soloMias()" (click)="elegirSoloMias(true)">Mis ventas</button>
+              <button type="button" [attr.aria-pressed]="!soloMias()" (click)="elegirSoloMias(false)">Toda la sucursal</button>
+            </div>
+          </div>
+        }
+
+        @if (filtrosActivos() > 0) {
+          <button type="button" class="btn btn-link" (click)="quitarFiltros()">Quitar filtros ({{ filtrosActivos() }})</button>
+        }
+      </div>
+
+      @if (chips().length > 0) {
+        <div class="filtros-activos mt-3" role="group" aria-label="Filtros activos">
+          @for (chip of chips(); track chip.clave) {
+            <button
+              type="button"
+              class="btn btn-soft btn-sm"
+              [attr.aria-label]="'Quitar el filtro ' + chip.texto"
+              (click)="quitarChip(chip.clave)"
+            >
+              {{ chip.texto }}
+              <fa-icon [icon]="iconos.faXmark" />
+            </button>
+          }
+        </div>
+      }
+
+      @if (buscaFactura()) {
+        <p class="small text-body-secondary mt-3 mb-0">
+          Buscas un número de factura: se busca en todas las fechas y el periodo elegido no se aplica.
+        </p>
+      }
+    </div>
+
+    @if (listo()) {
+      <div class="datos" [attr.aria-busy]="actualizando()" [class.actualizando]="actualizando()">
+        @if (!hayVentasEnPeriodo()) {
+          <div class="bloque">
+            <app-vacio [icono]="iconos.faReceipt" [titulo]="tituloSinVentas()" [detalle]="detalleSinVentas()">
+              <div class="d-flex flex-wrap justify-content-center gap-2">
+                @if (esVendedor() && filtraMias() && clavePeriodo() === 'hoy' && filtrosDeServidor() === 0) {
+                  <a routerLink="/ventas/nueva" class="btn btn-accent">
+                    <fa-icon [icon]="iconos.faCartShopping" />
+                    Nueva venta
+                  </a>
+                }
+                @if (filtraMias()) {
+                  <button type="button" class="btn btn-soft" (click)="incluirCompaneros()">Incluir ventas de mis compañeros</button>
+                }
+                @if (puedeAmpliarA30() && !buscaFactura()) {
+                  <button type="button" class="btn btn-soft" (click)="verUltimos30Dias()">Ver los últimos 30 días</button>
+                }
+                @if (!enTodoElHistorial() && !buscaFactura()) {
+                  <button type="button" class="btn btn-outline-secondary" (click)="verTodoElHistorial()">Ver todo el historial</button>
+                }
+                @if (filtrosDeServidor() > 0) {
+                  <button type="button" class="btn btn-outline-secondary" (click)="quitarFiltros()">Quitar filtros</button>
+                }
+              </div>
+            </app-vacio>
+          </div>
+        } @else {
+          @if (hayCoincidencias()) {
+            <div class="bloque card-body">
+              <div class="row g-4">
+                @if (mostrarColumnas()) {
+                  <div class="col-12 col-lg-8">
+                    <app-grafico-columnas
+                      titulo="¿Qué días se vendió más en el periodo?"
+                      descripcion="Total vendido por día. Elige un día para ver solo sus facturas."
+                      [puntos]="puntosPorDia()"
+                      [formato]="pesos"
+                      [formatoEje]="pesosCompactos"
+                      nombreValor="Vendido"
+                      textoVacio="Ninguna venta coincide con la búsqueda o el medio de pago en este periodo."
+                      [seleccionable]="true"
+                      [seleccion]="diaAplicado()"
+                      (seleccionChange)="elegirDia($event)"
+                    />
+                  </div>
+                }
+                <div class="col-12" [class.col-lg-4]="mostrarColumnas()" [class.col-lg-6]="!mostrarColumnas()">
+                  <app-grafico-barras
+                    titulo="¿Cómo pagaron?"
+                    [descripcion]="diaAplicado() ? 'Solo el ' + diaLargo(diaAplicado()!) + '. Elige un medio para filtrar.' : 'Total por medio de pago. Elige uno para filtrar.'"
+                    [datos]="barrasPorMetodo()"
+                    [formato]="pesos"
+                    nombreEtiqueta="Medio de pago"
+                    nombreValor="Total"
+                    [seleccionable]="true"
+                    [seleccion]="metodoElegidoTexto()"
+                    (seleccionChange)="elegirMetodoPorNombre($event)"
+                  />
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (diaAplicado(); as dia) {
+            <div class="card-body pt-0">
+              <div class="franja-estado align-items-center flex-wrap">
+                <fa-icon [icon]="iconos.faCalendarDay" />
+                <p class="mb-0 me-auto">
+                  Solo el <strong>{{ diaLargo(dia) }}</strong>.
+                  <span class="text-body-secondary d-none d-md-inline">También puedes pulsar <kbd>Esc</kbd>.</span>
+                </p>
+                <button type="button" class="btn btn-soft btn-sm" (click)="elegirDia(null)">Ver todo el periodo</button>
+              </div>
+            </div>
+          }
+
+          @if (filtradas().length === 0) {
+            <div class="bloque">
+              <app-vacio [titulo]="tituloSinCoincidencias()" [detalle]="detalleSinCoincidencias()">
+                <div class="d-flex flex-wrap justify-content-center gap-2">
+                  @if (puedeBuscarEnTodo()) {
+                    <button type="button" class="btn btn-soft" (click)="verTodoElHistorial()">Buscar en todas las fechas</button>
+                  }
+                  @if (filtraMias() && busqueda().trim()) {
+                    <button type="button" class="btn btn-soft" (click)="incluirCompaneros()">Incluir ventas de mis compañeros</button>
+                  }
+                  <button type="button" class="btn btn-outline-secondary" (click)="quitarFiltros()">Quitar filtros</button>
+                </div>
+              </app-vacio>
+            </div>
+          } @else {
+            <div class="bloque conteo">
+              <p class="mb-0 text-body-secondary">
+                <span class="fw-medium text-body">{{ textoCantidad() }}</span>
+                · <span class="num fw-medium text-body">{{ totalFiltrado() | pesos }}</span>
+                · ticket promedio <span class="num fw-medium text-body">{{ ticketPromedio() | pesos }}</span>
+                · {{ etiquetaConteo() }}
+              </p>
+              <button type="button" class="btn btn-outline-secondary btn-sm" (click)="exportar()">
+                <fa-icon [icon]="iconos.faFileCsv" />
+                Exportar CSV
+              </button>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-hover table-clickable align-middle">
+                <caption class="visually-hidden">Ventas de {{ etiquetaConteo() }}. Abre una factura con su número.</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Factura</th>
+                    <th scope="col" class="col-sec" [attr.aria-sort]="orden.ariaSort('fecha')">
+                      <app-encabezado-orden [orden]="orden" columna="fecha" texto="Fecha" />
+                    </th>
+                    <th scope="col" class="col-sec" [attr.aria-sort]="orden.ariaSort('cliente')">
+                      <app-encabezado-orden [orden]="orden" columna="cliente" texto="Cliente" />
+                    </th>
+                    @if (porTodas()) {
+                      <th scope="col" class="col-sec">Sucursal</th>
+                    }
+                    @if (mostrarVendedor()) {
+                      <th scope="col" class="col-sec">Vendedor</th>
+                    }
+                    <th scope="col" class="col-sec">Pago</th>
+                    <th scope="col" class="text-end" [attr.aria-sort]="orden.ariaSort('total')">
+                      <app-encabezado-orden [orden]="orden" columna="total" texto="Total" />
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (fila of paginaActual(); track fila.venta.idVenta) {
+                    <tr (click)="abrir(fila.venta.idVenta)">
+                      <td>
+                        <a
+                          [routerLink]="['/ventas', fila.venta.idVenta]"
+                          class="code-tag text-decoration-none"
+                          (click)="$event.stopPropagation()"
+                        >
+                          {{ fila.venta.numeroFactura }}
+                        </a>
+                        <div class="solo-movil small text-body-secondary mt-1">
+                          <span class="d-block text-body">{{ fila.cliente }}</span>
+                          <span class="num">{{ fila.venta.fecha | fecha }} {{ fila.venta.hora }}</span>
+                          · {{ fila.metodo }}
+                          @if (porTodas()) {
+                            · {{ fila.sucursal }}
+                          }
+                          @if (mostrarVendedor()) {
+                            <span class="d-block">{{ fila.vendedor }}</span>
+                          }
+                        </div>
+                      </td>
+                      <td class="col-sec num text-nowrap">
+                        {{ fila.venta.fecha | fecha }}
+                        <span class="text-body-secondary">{{ fila.venta.hora }}</span>
+                      </td>
+                      <td class="col-sec">{{ fila.cliente }}</td>
+                      @if (porTodas()) {
+                        <td class="col-sec">{{ fila.sucursal }}</td>
+                      }
+                      @if (mostrarVendedor()) {
+                        <td class="col-sec">{{ fila.vendedor }}</td>
+                      }
+                      <td class="col-sec">{{ fila.metodo }}</td>
+                      <td class="text-end num fw-medium">{{ fila.venta.montoTotal | pesos }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <app-pie-tabla
+              nombre="ventas"
+              [total]="filtradas().length"
+              [pagina]="paginaVisible()"
+              (paginaChange)="irAPagina($event)"
+              [(porPagina)]="porPagina"
+            />
+          }
+        }
+      </div>
+    } @else if (errorCarga()) {
+      <div class="bloque">
+        <app-error-carga que="La lista de ventas" [error]="errorCarga()" (reintentar)="reintentar()" />
+      </div>
+    } @else {
+      <div class="bloque card-body">
+        <app-esqueleto-bloque [lineas]="2" alto="180px" texto="Cargando el resumen del periodo" />
+      </div>
+      <div class="bloque">
+        <app-esqueleto-tabla [columnas]="['texto', 'texto', 'texto', 'texto', 'numero']" texto="Cargando ventas" />
+      </div>
+    }
+  </div>
+</div>

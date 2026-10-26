@@ -1,0 +1,418 @@
+<div class="page">
+  <app-migas [items]="migas()" />
+
+  @if (datos.hasValue()) {
+    @let d = datos.value();
+    <div class="d-grid gap-4" [attr.aria-busy]="datos.isLoading()" [class.actualizando]="datos.isLoading()">
+      <header>
+        <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+          <div class="me-auto" style="min-width: 0">
+            <h1 class="mb-1">{{ d.proveedor.nombre }}</h1>
+            <p class="text-body-secondary mb-0">
+              <span class="num">NIT {{ d.proveedor.nit }}</span> ·
+              {{ plural(d.filas.length, 'suministro', 'suministros') }}
+            </p>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-soft" (click)="editarProveedor()">
+              <fa-icon [icon]="iconos.faPen" />
+              Editar
+            </button>
+            <button type="button" class="btn btn-soft" (click)="editarSuministro(null)">
+              <fa-icon [icon]="iconos.faPlus" />
+              Nuevo suministro
+            </button>
+            @if (d.elegibles.length) {
+              <button type="button" class="btn btn-primary" (click)="evaluar(null)">
+                <fa-icon [icon]="iconos.faClipboardCheck" />
+                Nueva evaluación
+              </button>
+            } @else {
+              <span class="d-inline-block" tabindex="0" ngbTooltip="Primero registra un suministro: solo se evalúa lo que el proveedor entrega a una sucursal." container="body">
+                <button type="button" class="btn btn-primary" disabled>
+                  <fa-icon [icon]="iconos.faClipboardCheck" />
+                  Nueva evaluación
+                </button>
+              </span>
+            }
+            @if (d.filas.length) {
+              <span
+                class="d-inline-block"
+                tabindex="0"
+                [ngbTooltip]="'No se puede eliminar: tiene ' + plural(d.filas.length, 'suministro', 'suministros')"
+                container="body"
+              >
+                <button type="button" class="btn btn-soft btn-icon text-danger" disabled aria-label="Eliminar proveedor (no disponible: tiene suministros)">
+                  <fa-icon [icon]="iconos.faTrashCan" />
+                </button>
+              </span>
+            } @else {
+              <button
+                type="button"
+                class="btn btn-soft btn-icon text-danger"
+                aria-label="Eliminar proveedor"
+                ngbTooltip="Eliminar proveedor"
+                container="body"
+                (click)="eliminarProveedor()"
+              >
+                <fa-icon [icon]="iconos.faTrashCan" />
+              </button>
+            }
+          </div>
+        </div>
+
+        <dl class="contacto">
+          <div>
+            <dt>Teléfono</dt>
+            <dd>
+              <a class="num link-body-emphasis" [href]="'tel:' + soloDigitos(d.proveedor.telefono)">{{ d.proveedor.telefono }}</a>
+            </dd>
+          </div>
+          <div>
+            <dt>{{ d.proveedor.correos.length === 1 ? 'Correo' : 'Correos' }}</dt>
+            <dd>
+              @for (correo of d.proveedor.correos; track correo) {
+                <a class="d-block link-body-emphasis" [href]="'mailto:' + correo">{{ correo }}</a>
+              } @empty {
+                <span class="text-body-secondary">Sin correo registrado</span>
+              }
+            </dd>
+          </div>
+          <div>
+            <dt>Dirección</dt>
+            <dd>{{ d.proveedor.direccion }}</dd>
+          </div>
+        </dl>
+      </header>
+
+      <section class="card" aria-labelledby="ficha-calidad">
+        @if (d.calidad; as c) {
+          <div class="card-body">
+            <h2 class="card-title" id="ficha-calidad">Calidad</h2>
+            <p class="resumen-calidad mb-0">
+              @if (c.cantidad === 1) {
+                Calificación <strong class="num">{{ calificacion(c.promedio) }} de 5</strong> en su única evaluación, el
+                <span class="num">{{ c.ultima | fecha }}</span>.
+                {{ c.aTiempo ? 'Entregó a tiempo.' : 'No entregó a tiempo.' }}
+              } @else {
+                Promedio <strong class="num">{{ calificacion(c.promedio) }} de 5</strong> en
+                <span class="num">{{ c.cantidad }}</span> evaluaciones
+                @if (c.primera === c.ultima) {
+                  del <span class="num">{{ c.ultima | fecha }}</span>.
+                } @else {
+                  entre el <span class="num">{{ c.primera | fecha }}</span> y el <span class="num">{{ c.ultima | fecha }}</span>.
+                }
+                Entregó a tiempo en <span class="num">{{ c.aTiempo }} de {{ c.cantidad }}</span>.
+              }
+            </p>
+            @if (c.masBaja; as baja) {
+              <p class="text-body-secondary mb-0 mt-1">
+                La calificación más baja es la de {{ baja.producto }} en {{ baja.sucursal }}:
+                <span class="num">{{ calificacion(baja.promedio) }} de 5</span> en
+                {{ plural(baja.evaluaciones, 'evaluación', 'evaluaciones') }}.
+                @if (baja.alternativa; as otra) {
+                  <a class="link-body-emphasis" [routerLink]="['/proveedores', otra.nit]">{{ otra.proveedor }}</a>
+                  ya surte ese producto en {{ otra.sucursal }}:
+                  <span class="num">{{ dias(otra.dias) }}, {{ otra.precio | pesos }}</span> c/u.
+                }
+              </p>
+            }
+
+            @if (d.porSucursal.length > 1) {
+              <h3 class="eyebrow mt-4 mb-2">Por sucursal</h3>
+              <dl class="datos-clave">
+                @for (sede of d.porSucursal; track sede.idSucursal) {
+                  <div>
+                    <dt>{{ sede.nombre }}</dt>
+                    <dd>
+                      <span class="num">{{ calificacion(sede.promedio) }}</span> de 5
+                      <small>
+                        {{ plural(sede.cantidad, 'evaluación', 'evaluaciones') }}, a tiempo en
+                        <span class="num">{{ sede.aTiempo }}</span>
+                      </small>
+                    </dd>
+                  </div>
+                }
+              </dl>
+            }
+          </div>
+        } @else {
+          <div class="card-body pb-0">
+            <h2 class="card-title mb-0" id="ficha-calidad">Calidad</h2>
+          </div>
+          <app-vacio
+            [icono]="iconos.faClipboardCheck"
+            titulo="Aún no tiene evaluaciones"
+            [detalle]="d.elegibles.length ? 'Evalúa una entrega para saber cómo cumple este proveedor en cada producto y sucursal: calificación de 1 a 5, si llegó a tiempo y observaciones.' : 'Primero registra qué suministra: solo se evalúa lo que el proveedor entrega a una sucursal.'"
+          >
+            @if (d.elegibles.length) {
+              <button type="button" class="btn btn-primary" (click)="evaluar(null)">Evaluar una entrega</button>
+            }
+          </app-vacio>
+        }
+      </section>
+
+      <section class="card" aria-labelledby="ficha-suministra">
+        <div class="card-body d-flex flex-wrap align-items-end justify-content-between gap-3" [class.pb-2]="d.filas.length">
+          <div style="min-width: 0">
+            <h2 class="card-title mb-1" id="ficha-suministra">Qué suministra</h2>
+            <p class="text-body-secondary mb-0">
+              Precio, entrega y calidad de cada producto en cada sucursal.
+              @if (d.hayAlternativas) {
+                "Otra opción" es el proveedor más rápido que ya surte ese producto en cualquier sucursal.
+              }
+            </p>
+          </div>
+          @if (d.filas.length) {
+            <div class="form-check form-switch mb-1">
+              <input
+                id="ficha-sin-evaluar"
+                class="form-check-input"
+                type="checkbox"
+                role="switch"
+                [checked]="soloSinEvaluar()"
+                (change)="soloSinEvaluar.set(!soloSinEvaluar())"
+              />
+              <label class="form-check-label" for="ficha-sin-evaluar">
+                Solo sin evaluar (<span class="num">{{ sinEvaluar() }}</span>)
+              </label>
+            </div>
+          }
+        </div>
+
+        @if (d.filas.length === 0) {
+          <app-vacio
+            [icono]="iconos.faTruckRampBox"
+            titulo="Aún no suministra ningún producto"
+            detalle="Registra qué producto entrega a qué sucursal, con su precio y días de entrega. Después podrás evaluar cada entrega."
+          >
+            <button type="button" class="btn btn-primary" (click)="editarSuministro(null)">Registrar un suministro</button>
+          </app-vacio>
+        } @else if (suministrosVisibles().length === 0) {
+          <app-vacio titulo="Todos sus suministros ya tienen evaluación" detalle="Apaga &quot;Solo sin evaluar&quot; para ver la calidad de cada uno.">
+            <button type="button" class="btn btn-soft" (click)="soloSinEvaluar.set(false)">Ver todos</button>
+          </app-vacio>
+        } @else {
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <caption class="visually-hidden">Productos que suministra {{ d.proveedor.nombre }}, por sucursal</caption>
+              <thead>
+                <tr>
+                  <th scope="col" [attr.aria-sort]="orden.ariaSort('producto')">
+                    <app-encabezado-orden [orden]="orden" columna="producto" texto="Producto" />
+                  </th>
+                  <th scope="col" class="col-sec" [attr.aria-sort]="orden.ariaSort('sucursal')">
+                    <app-encabezado-orden [orden]="orden" columna="sucursal" texto="Sucursal" />
+                  </th>
+                  <th scope="col" class="text-end" [attr.aria-sort]="orden.ariaSort('precio')">
+                    <app-encabezado-orden [orden]="orden" columna="precio" texto="Precio c/u" />
+                  </th>
+                  <th scope="col" class="text-end col-sec" [attr.aria-sort]="orden.ariaSort('entrega')">
+                    <app-encabezado-orden [orden]="orden" columna="entrega" texto="Entrega" />
+                  </th>
+                  <th scope="col" [attr.aria-sort]="orden.ariaSort('calidad')">
+                    <app-encabezado-orden [orden]="orden" columna="calidad" texto="Calidad" />
+                  </th>
+                  <th scope="col" class="col-sec" [attr.aria-sort]="orden.ariaSort('ultima')">
+                    <app-encabezado-orden [orden]="orden" columna="ultima" texto="Última evaluación" />
+                  </th>
+                  @if (d.hayAlternativas) {
+                    <th scope="col" class="col-sec">Otra opción</th>
+                  }
+                  <th scope="col"><span class="visually-hidden">Acciones</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (fila of suministrosEnPagina(); track fila.clave) {
+                  <tr>
+                    <td>
+                      @if (fila.existeProducto) {
+                        <a class="d-block fw-medium link-body-emphasis" [routerLink]="['/productos', fila.suministro.idProducto]">{{ fila.producto }}</a>
+                      } @else {
+                        <span class="d-block fw-medium">{{ fila.producto }}</span>
+                      }
+                      @if (fila.codigo) {
+                        <span class="code-tag mt-1">{{ fila.codigo }}</span>
+                      }
+                      <span class="d-block solo-movil small text-body-secondary mt-1">
+                        {{ fila.sucursal }} · <span class="num">{{ dias(fila.suministro.tiempoEntregaDias) }}</span>
+                        @if (fila.alternativa; as otra) {
+                          <span class="d-block">
+                            Otra opción: {{ otra.proveedor }}, <span class="num">{{ dias(otra.dias) }} · {{ otra.precio | pesos }}</span>
+                          </span>
+                        }
+                      </span>
+                    </td>
+                    <td class="col-sec">{{ fila.sucursal }}</td>
+                    <td class="text-end num">{{ fila.suministro.precioSuministro | pesos }}</td>
+                    <td class="text-end num col-sec">{{ dias(fila.suministro.tiempoEntregaDias) }}</td>
+                    <td>
+                      @if (fila.evaluaciones) {
+                        <span class="text-nowrap">
+                          <fa-icon [icon]="iconos.faStar" class="me-1" aria-hidden="true" />
+                          <span class="num fw-medium">{{ calificacion(fila.promedio) }}</span>
+                          <span class="text-body-secondary"> de 5</span>
+                        </span>
+                        <span class="d-block small text-body-secondary">{{ plural(fila.evaluaciones, 'evaluación', 'evaluaciones') }}</span>
+                      } @else {
+                        <span class="text-body-secondary">Sin evaluar</span>
+                      }
+                    </td>
+                    <td class="num col-sec">
+                      @if (fila.ultima) {
+                        {{ fila.ultima | fecha }}
+                      } @else {
+                        <span class="text-body-secondary">Nunca</span>
+                      }
+                    </td>
+                    @if (d.hayAlternativas) {
+                      <td class="col-sec alternativa">
+                        @if (fila.alternativa; as otra) {
+                          <a class="d-block link-body-emphasis" [routerLink]="['/proveedores', otra.nit]">{{ otra.proveedor }}</a>
+                          <span class="small text-body-secondary">
+                            <span class="num">{{ dias(otra.dias) }} · {{ otra.precio | pesos }}</span> · {{ otra.sucursal }}
+                          </span>
+                        } @else {
+                          <span class="text-body-secondary">Ningún otro proveedor</span>
+                        }
+                      </td>
+                    }
+                    <td class="text-end text-nowrap">
+                      <button
+                        type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        [attr.aria-label]="'Evaluar ' + fila.producto + ' en ' + fila.sucursal"
+                        [ngbTooltip]="'Evaluar ' + fila.producto + ' en ' + fila.sucursal"
+                        container="body"
+                        (click)="evaluar(fila.clave)"
+                      >
+                        <fa-icon [icon]="iconos.faClipboardCheck" aria-hidden="true" />
+                        <span class="d-none d-xl-inline ms-1">Evaluar</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-soft btn-icon btn-sm ms-1"
+                        [attr.aria-label]="'Editar suministro de ' + fila.producto + ' en ' + fila.sucursal"
+                        [ngbTooltip]="'Editar suministro de ' + fila.producto + ' en ' + fila.sucursal"
+                        container="body"
+                        (click)="editarSuministro(fila.suministro)"
+                      >
+                        <fa-icon [icon]="iconos.faPen" />
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <app-pie-tabla
+            [total]="suministrosVisibles().length"
+            nombre="suministros"
+            [(pagina)]="paginaSuministros"
+            [(porPagina)]="porPaginaSuministros"
+          />
+        }
+      </section>
+
+      @if (d.historial.length) {
+        <section class="card" aria-labelledby="ficha-historial">
+          <div class="card-body pb-2">
+            <h2 class="card-title mb-1" id="ficha-historial">Historial de evaluaciones</h2>
+            <p class="text-body-secondary mb-0">De la más reciente a la más antigua, en todas las sucursales.</p>
+          </div>
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <caption class="visually-hidden">Evaluaciones de calidad de {{ d.proveedor.nombre }}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Fecha</th>
+                  <th scope="col">Suministro</th>
+                  <th scope="col">Calificación</th>
+                  <th scope="col">A tiempo</th>
+                  <th scope="col" class="col-sec">Observaciones</th>
+                  <th scope="col" class="col-sec">Evaluador</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (fila of historialEnPagina(); track fila.evaluacion.idEvaluacion) {
+                  <tr>
+                    <td class="num text-nowrap">
+                      {{ fila.evaluacion.fechaEvaluacion | fecha }}
+                      <span class="d-block solo-movil small text-body-secondary">{{ fila.evaluador }}</span>
+                    </td>
+                    <td>
+                      @if (fila.existeProducto) {
+                        <a class="d-block fw-medium link-body-emphasis" [routerLink]="['/productos', fila.evaluacion.idProducto]">{{ fila.producto }}</a>
+                      } @else {
+                        <span class="d-block fw-medium">{{ fila.producto }}</span>
+                      }
+                      <span class="small text-body-secondary">{{ fila.sucursal }}</span>
+                      <span class="d-block solo-movil small mt-1">{{ fila.evaluacion.observaciones }}</span>
+                    </td>
+                    <td class="text-nowrap">
+                      <span class="visually-hidden">{{ fila.evaluacion.calificacion }} de 5</span>
+                      <!-- En celular, una estrella y la cifra: las cinco no caben junto a las demás columnas. -->
+                      <span class="d-none d-md-inline" aria-hidden="true">
+                        @for (n of estrellas; track n) {
+                          <fa-icon [icon]="n <= fila.evaluacion.calificacion ? iconos.faStar : iconos.faEstrellaVacia" />
+                        }
+                      </span>
+                      <span class="solo-movil" aria-hidden="true">
+                        <fa-icon [icon]="iconos.faStar" class="me-1" /><span class="num">{{ fila.evaluacion.calificacion }}</span> de 5
+                      </span>
+                    </td>
+                    <td class="text-nowrap">
+                      @if (fila.evaluacion.cumplimientoTiempo) {
+                        <fa-icon [icon]="iconos.faCheck" class="me-1" aria-hidden="true" />Sí
+                      } @else {
+                        <fa-icon [icon]="iconos.faXmark" class="me-1 text-danger" aria-hidden="true" />No
+                      }
+                    </td>
+                    <td class="small col-sec observaciones">{{ fila.evaluacion.observaciones }}</td>
+                    <td class="col-sec">{{ fila.evaluador }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <app-pie-tabla
+            [total]="d.historial.length"
+            nombre="evaluaciones"
+            [(pagina)]="paginaHistorial"
+            [(porPagina)]="porPaginaHistorial"
+          />
+        </section>
+      }
+    </div>
+  } @else if (noExiste()) {
+    <div class="card">
+      <app-vacio
+        [icono]="iconos.faTruck"
+        titulo="Este proveedor no existe"
+        detalle="Puede que lo hayan eliminado o que el enlace tenga un NIT equivocado. Búscalo en la lista de proveedores."
+      >
+        <a class="btn btn-soft" routerLink="/proveedores">Ir a proveedores</a>
+      </app-vacio>
+    </div>
+  } @else if (datos.error()) {
+    <div class="card">
+      <app-error-carga que="La ficha del proveedor" [error]="datos.error()" (reintentar)="datos.reload()" />
+    </div>
+  } @else {
+    <div class="d-grid gap-4">
+      <app-esqueleto-bloque texto="Cargando el proveedor" [lineas]="3" />
+      <div class="card">
+        <div class="card-body">
+          <app-esqueleto-bloque texto="Cargando la calidad del proveedor" [lineas]="2" />
+        </div>
+      </div>
+      <div class="card">
+        <app-esqueleto-tabla
+          texto="Cargando lo que suministra"
+          [columnas]="['texto', 'texto', 'numero', 'numero', 'texto', 'texto', 'numero']"
+          [filas]="5"
+        />
+      </div>
+    </div>
+  }
+</div>

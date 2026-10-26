@@ -1,0 +1,267 @@
+<div class="page">
+  <app-page-header
+    titulo="Sucursales"
+    descripcion="Compara las sedes en un mismo periodo: qué vende cada una, qué utilidad deja y cuánto capital tiene en bodega."
+  >
+    <button type="button" class="btn btn-primary" (click)="editar(null)">
+      <fa-icon [icon]="iconos.faPlus" />
+      Nueva sucursal
+    </button>
+  </app-page-header>
+
+  <div class="barra-filtros mb-3">
+    <app-selector-periodo etiqueta="Periodo de ventas" [(periodo)]="periodo" />
+    @if (filtrosActivos()) {
+      <button type="button" class="btn btn-link px-0" (click)="quitarFiltros()">Quitar filtros ({{ filtrosActivos() }})</button>
+    }
+  </div>
+
+  <p class="visually-hidden" aria-live="polite">{{ anuncio() }}</p>
+
+  <section class="card" aria-labelledby="sucursales-titulo">
+    <div class="card-body pb-2">
+      <h2 class="h6 mb-1" id="sucursales-titulo">
+        Ventas del <span class="num">{{ rango() }}</span>
+        <span class="fw-normal text-body-secondary">({{ dias() === 1 ? '1 día' : dias() + ' días' }})</span>
+      </h2>
+      <p class="small text-body-secondary mb-0">Stock bajo y capital en inventario son de las existencias de hoy.</p>
+    </div>
+
+    @if (datos.hasValue()) {
+      @let c = cadena();
+      <div [attr.aria-busy]="datos.isLoading()" [class.actualizando]="datos.isLoading()">
+        @if (!filas().length) {
+          <app-vacio [icono]="iconos.faStore" titulo="Aún no hay sucursales" detalle="Crea la primera sede para poder registrar inventario y ventas.">
+            <button type="button" class="btn btn-primary" (click)="editar(null)">Crear la primera sucursal</button>
+          </app-vacio>
+        } @else {
+          @if (c.cantidad === 0) {
+            <div class="envoltura-franja">
+              <div class="franja-estado">
+                <fa-icon [icon]="iconos.faCircleInfo" class="mt-1" />
+                <p>
+                  Ninguna sucursal vendió en este periodo. Elige un periodo más largo para comparar ventas; el stock bajo y el capital en
+                  inventario sí están al día.
+                </p>
+              </div>
+            </div>
+          }
+
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <caption class="visually-hidden">
+                Sucursales con sus ventas del {{ rango() }} y su inventario de hoy
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col" [attr.aria-sort]="orden.ariaSort('nombre')">
+                    <app-encabezado-orden [orden]="orden" columna="nombre" texto="Sucursal" />
+                  </th>
+                  <th scope="col" class="text-end col-sec" [attr.aria-sort]="orden.ariaSort('ventas')">
+                    <app-encabezado-orden [orden]="orden" columna="ventas" texto="Ventas" />
+                  </th>
+                  <th scope="col" class="text-end" [attr.aria-sort]="orden.ariaSort('total')">
+                    <app-encabezado-orden [orden]="orden" columna="total" texto="Total vendido" />
+                  </th>
+                  <th scope="col" class="text-end col-sec" [attr.aria-sort]="orden.ariaSort('ticket')">
+                    <app-encabezado-orden [orden]="orden" columna="ticket" texto="Ticket promedio" />
+                  </th>
+                  <th scope="col" class="text-end col-sec" [attr.aria-sort]="orden.ariaSort('utilidad')">
+                    <app-encabezado-orden [orden]="orden" columna="utilidad" texto="Utilidad estimada" />
+                  </th>
+                  <th scope="col" class="text-end col-sec" [attr.aria-sort]="orden.ariaSort('stock')">
+                    <app-encabezado-orden [orden]="orden" columna="stock" texto="Stock bajo" />
+                  </th>
+                  <th scope="col" class="text-end col-sec" [attr.aria-sort]="orden.ariaSort('capital')">
+                    <app-encabezado-orden [orden]="orden" columna="capital" texto="Capital en inventario" />
+                  </th>
+                  <th scope="col"><span class="visually-hidden">Acciones</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (fila of filas(); track fila.idSucursal) {
+                  <tr>
+                    <th scope="row" class="fw-normal">
+                      <span class="d-block fw-medium">{{ fila.sucursal.nombre }}</span>
+                      <span class="d-block small text-body-secondary detalle-sede">
+                        {{ fila.sucursal.ciudad }} · {{ fila.sucursal.direccion }} ·
+                        <span class="num">{{ fila.sucursal.telefono }}</span>
+                      </span>
+                      <span class="d-block solo-movil small text-body-secondary mt-1">
+                        @if (fila.cantidad) {
+                          <span class="num">{{ fila.cantidad }}</span> {{ fila.cantidad === 1 ? 'venta' : 'ventas' }} · ticket
+                          <span class="num">{{ fila.ticketPromedio | pesos }}</span> · utilidad estimada
+                          <span class="num">{{ fila.utilidadEstimada | pesos }}</span>
+                        } @else {
+                          Sin ventas en el periodo
+                        }
+                      </span>
+                      <span class="d-block solo-movil small text-body-secondary">
+                        @if (fila.productos) {
+                          <span [class.stock-low]="fila.productosStockBajo > 0">
+                            @if (fila.productosStockBajo > 0) {
+                              <fa-icon [icon]="iconos.faTriangleExclamation" />
+                            }
+                            Stock bajo <span class="num">{{ fila.productosStockBajo }} de {{ fila.productos }}</span>
+                          </span>
+                          · capital <span class="num">{{ fila.capitalInventario | pesos }}</span>
+                        } @else {
+                          Sin inventario registrado
+                        }
+                      </span>
+                    </th>
+                    <td class="text-end num col-sec">{{ fila.cantidad }}</td>
+                    <td class="text-end">
+                      @if (fila.cantidad) {
+                        <app-barra-celda [texto]="formatoPesos(fila.total)" [proporcion]="proporcion(fila.total)" />
+                      } @else {
+                        <span class="small text-body-secondary">Sin ventas</span>
+                      }
+                    </td>
+                    <td class="text-end col-sec">
+                      @if (fila.cantidad) {
+                        <span class="num">{{ fila.ticketPromedio | pesos }}</span>
+                      } @else {
+                        <span class="small text-body-secondary">Sin ventas</span>
+                      }
+                    </td>
+                    <td class="text-end col-sec">
+                      @if (fila.cantidad) {
+                        <span class="num" [class.text-danger]="fila.utilidadEstimada < 0">{{ fila.utilidadEstimada | pesos }}</span>
+                      } @else {
+                        <span class="small text-body-secondary">Sin ventas</span>
+                      }
+                    </td>
+                    <td class="text-end col-sec">
+                      @if (!fila.productos) {
+                        <span class="small text-body-secondary">Sin inventario</span>
+                      } @else if (fila.productosStockBajo > 0) {
+                        <span class="stock-low num">
+                          <fa-icon [icon]="iconos.faTriangleExclamation" />
+                          {{ fila.productosStockBajo }} de {{ fila.productos }}
+                        </span>
+                      } @else {
+                        <span class="num text-body-secondary">0 de {{ fila.productos }}</span>
+                      }
+                    </td>
+                    <td class="text-end num col-sec">{{ fila.capitalInventario | pesos }}</td>
+                    <td class="text-end">
+                      <div class="acciones">
+                        @if (esSedeActual(fila.idSucursal)) {
+                          <span class="small text-body-secondary px-2">
+                            <fa-icon [icon]="iconos.faCircleCheck" />
+                            Tu sede de trabajo
+                          </span>
+                        } @else {
+                          <button
+                            type="button"
+                            class="btn btn-soft btn-sm"
+                            ngbTooltip="Cambia la sucursal de trabajo en toda la aplicación y abre su inventario"
+                            (click)="trabajarEn(fila.sucursal)"
+                          >
+                            Trabajar en esta sede
+                          </button>
+                        }
+                        <button
+                          type="button"
+                          class="btn btn-soft btn-icon btn-sm"
+                          [attr.aria-label]="'Editar ' + fila.sucursal.nombre"
+                          [ngbTooltip]="'Editar ' + fila.sucursal.nombre"
+                          (click)="editar(fila.sucursal)"
+                        >
+                          <fa-icon [icon]="iconos.faPen" />
+                        </button>
+                        @if (esSedeActual(fila.idSucursal)) {
+                          <span
+                            class="d-inline-block"
+                            tabindex="0"
+                            ngbTooltip="No se puede eliminar la sede en la que trabajas. Cambia de sucursal en la barra superior primero."
+                          >
+                            <button
+                              type="button"
+                              class="btn btn-soft btn-icon btn-sm text-danger"
+                              disabled
+                              [attr.aria-label]="'Eliminar ' + fila.sucursal.nombre + ' (no disponible: es tu sede de trabajo)'"
+                            >
+                              <fa-icon [icon]="iconos.faTrashCan" />
+                            </button>
+                          </span>
+                        } @else {
+                          <button
+                            type="button"
+                            class="btn btn-soft btn-icon btn-sm text-danger"
+                            [attr.aria-label]="'Eliminar ' + fila.sucursal.nombre"
+                            [ngbTooltip]="'Eliminar ' + fila.sucursal.nombre"
+                            (click)="eliminar(fila.sucursal)"
+                          >
+                            <fa-icon [icon]="iconos.faTrashCan" />
+                          </button>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th scope="row">
+                    Toda la cadena
+                    <span class="d-block solo-movil small text-body-secondary fw-normal mt-1">
+                      <span class="num">{{ c.cantidad }}</span> {{ c.cantidad === 1 ? 'venta' : 'ventas' }}
+                      @if (c.cantidad) {
+                        · ticket <span class="num">{{ c.ticketPromedio | pesos }}</span> · utilidad estimada
+                        <span class="num">{{ c.utilidadEstimada | pesos }}</span>
+                      }
+                    </span>
+                    <span class="d-block solo-movil small text-body-secondary fw-normal">
+                      Stock bajo <span class="num">{{ c.productosStockBajo }} de {{ c.productos }}</span> · capital
+                      <span class="num">{{ c.capitalInventario | pesos }}</span>
+                    </span>
+                  </th>
+                  <td class="text-end num col-sec">{{ c.cantidad }}</td>
+                  <td class="text-end num">{{ c.total | pesos }}</td>
+                  <td class="text-end col-sec">
+                    @if (c.cantidad) {
+                      <span class="num">{{ c.ticketPromedio | pesos }}</span>
+                    } @else {
+                      <span class="small text-body-secondary fw-normal">Sin ventas</span>
+                    }
+                  </td>
+                  <td class="text-end col-sec">
+                    @if (c.cantidad) {
+                      <span class="num" [class.text-danger]="c.utilidadEstimada < 0">{{ c.utilidadEstimada | pesos }}</span>
+                    } @else {
+                      <span class="small text-body-secondary fw-normal">Sin ventas</span>
+                    }
+                  </td>
+                  <td class="text-end num col-sec">{{ c.productosStockBajo }} de {{ c.productos }}</td>
+                  <td class="text-end num col-sec">{{ c.capitalInventario | pesos }}</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <div class="card-body pt-3 border-top small text-body-secondary">
+            <p class="mb-1">
+              La utilidad es estimada: por cada unidad vendida resta el costo de compra actual del catálogo al precio de venta, porque el
+              costo de cada venta no se guarda. Si un costo cambió, la cifra cambia con él.
+            </p>
+            <p class="mb-0">
+              Stock bajo cuenta los productos de la sede con {{ umbral }} unidades o menos. El capital en inventario suma las unidades
+              disponibles por su costo de compra actual.
+            </p>
+          </div>
+        }
+      </div>
+    } @else if (datos.error()) {
+      <app-error-carga que="La comparación de sucursales" [error]="datos.error()" (reintentar)="datos.reload()" />
+    } @else {
+      <app-esqueleto-tabla
+        [columnas]="['texto', 'numero', 'numero', 'numero', 'numero', 'numero', 'numero', 'texto']"
+        [filas]="4"
+        texto="Cargando sucursales"
+      />
+    }
+  </section>
+</div>

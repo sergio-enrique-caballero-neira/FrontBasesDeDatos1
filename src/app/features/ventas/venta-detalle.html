@@ -1,0 +1,252 @@
+<div class="page">
+  <div class="no-print">
+    <app-migas [items]="migas()" />
+
+    <div class="barra-detalle">
+      @if (vieneDelListado) {
+        <button type="button" class="btn btn-soft" (click)="volver()">
+          <fa-icon [icon]="iconos.faArrowLeft" />
+          Volver a ventas
+        </button>
+      } @else {
+        <a routerLink="/ventas" class="btn btn-soft">
+          <fa-icon [icon]="iconos.faArrowLeft" />
+          Volver a ventas
+        </a>
+      }
+      <!-- Recién registrada, estas acciones están en el aviso de abajo: no se repiten. -->
+      @if (factura.hasValue() && !recienRegistrada()) {
+        <div class="d-flex flex-wrap gap-2">
+          @if (session.esVendedor()) {
+            <a routerLink="/ventas/nueva" class="btn btn-accent">
+              <fa-icon [icon]="iconos.faCartShopping" />
+              Nueva venta
+            </a>
+          }
+          <button type="button" class="btn btn-outline-secondary" (click)="imprimir()">
+            <fa-icon [icon]="iconos.faPrint" />
+            Imprimir factura
+          </button>
+        </div>
+      }
+    </div>
+
+    <!-- La región existe desde el principio para que el aviso se anuncie al aparecer. -->
+    <div role="status">
+      @if (factura.hasValue()) {
+        @if (recienRegistrada(); as registro) {
+          @let venta = factura.value().venta;
+          <div class="franja-estado franja-registro">
+            <fa-icon [icon]="iconos.faCircleCheck" class="franja-icono" />
+            <div class="franja-texto">
+              <p class="fw-medium mb-0">
+                Venta <span class="num">{{ venta.numeroFactura }}</span> registrada · Total
+                <span class="num">{{ venta.montoTotal | pesos }}</span>
+              </p>
+              @if (registro.cambio !== null) {
+                @if (registro.cambio > 0) {
+                  <p class="cambio">
+                    Cambio a entregar <strong class="num">{{ registro.cambio | pesos }}</strong>
+                  </p>
+                } @else {
+                  <p class="text-body-secondary">Pagó el valor exacto: no hay cambio que entregar.</p>
+                }
+              }
+            </div>
+            <div class="franja-acciones">
+              @if (session.esVendedor()) {
+                <a #botonNuevaVenta routerLink="/ventas/nueva" class="btn btn-accent">
+                  <fa-icon [icon]="iconos.faCartShopping" />
+                  Nueva venta
+                </a>
+              }
+              <button type="button" class="btn btn-outline-secondary" (click)="imprimir()">
+                <fa-icon [icon]="iconos.faPrint" />
+                Imprimir factura
+              </button>
+            </div>
+          </div>
+        }
+      }
+    </div>
+  </div>
+
+  @if (factura.hasValue()) {
+    @let f = factura.value();
+    <article
+      class="card factura"
+      aria-labelledby="factura-titulo"
+      [attr.aria-busy]="factura.isLoading()"
+      [class.actualizando]="factura.isLoading()"
+    >
+      <div class="card-body">
+        <header class="factura-encabezado">
+          <div>
+            <p class="factura-marca mb-1">{{ nombreApp }}</p>
+            @if (f.sucursal) {
+              <p class="mb-0 small text-body-secondary">
+                {{ f.sucursal.nombre }} · {{ f.sucursal.direccion }}, {{ f.sucursal.ciudad }} · Tel.
+                <span class="num">{{ f.sucursal.telefono }}</span>
+              </p>
+            }
+          </div>
+          <div class="text-md-end">
+            <h1 class="h2 mb-1" id="factura-titulo">Factura <span class="num">{{ f.venta.numeroFactura }}</span></h1>
+            <p class="mb-0 text-body-secondary num">{{ f.venta.fecha | fecha }} · {{ f.venta.hora }}</p>
+          </div>
+        </header>
+
+        <dl class="factura-datos">
+          <div>
+            <dt class="eyebrow">Cliente</dt>
+            <dd>
+              @if (f.cliente; as c) {
+                @if (esConsumidorFinal(c)) {
+                  <span class="fw-medium d-block">{{ nombreCliente(c) }}</span>
+                  <span class="small text-body-secondary d-block num">C.C. {{ c.numeroDocumento }}</span>
+                } @else {
+                  <span class="d-block">
+                    <a [routerLink]="['/clientes', c.idCliente]" class="enlace-dato fw-medium">{{ nombreCliente(c) }}</a>
+                  </span>
+                  <span class="small text-body-secondary d-block num">
+                    {{ c.tipo === 'NATURAL' ? 'C.C.' : 'NIT' }} {{ c.numeroDocumento }}
+                  </span>
+                  <span class="small text-body-secondary d-block">{{ c.direccion }}</span>
+                }
+              } @else {
+                <span class="text-body-secondary">Cliente eliminado</span>
+              }
+            </dd>
+          </div>
+          <div>
+            <dt class="eyebrow">Atendido por</dt>
+            <dd>
+              @if (f.vendedor; as vendedor) {
+                {{ nombreEmpleado(vendedor) }}
+              } @else {
+                <span class="text-body-secondary">Empleado eliminado</span>
+              }
+            </dd>
+          </div>
+          <div>
+            <dt class="eyebrow">Método de pago</dt>
+            <dd>
+              @if (f.metodo) {
+                {{ f.metodo }}
+              } @else {
+                <span class="text-body-secondary">Método eliminado</span>
+              }
+            </dd>
+          </div>
+        </dl>
+
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <caption class="visually-hidden">
+              Productos de la factura {{ f.venta.numeroFactura }}
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Producto</th>
+                <th scope="col" class="text-end col-sec">Cantidad</th>
+                <th scope="col" class="text-end col-sec">Precio unitario</th>
+                <th scope="col" class="text-end">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (linea of f.lineas; track linea.idProducto) {
+                <tr>
+                  <td>
+                    @if (linea.producto; as producto) {
+                      @if (session.esAdmin()) {
+                        <span class="d-block">
+                          <a [routerLink]="['/productos', producto.idProducto]" class="enlace-dato fw-medium">{{
+                            producto.nombre
+                          }}</a>
+                        </span>
+                      } @else {
+                        <span class="d-block fw-medium">{{ producto.nombre }}</span>
+                      }
+                      <span class="code-tag mt-1">{{ producto.codigo }}</span>
+                    } @else {
+                      <span class="d-block fw-medium text-body-secondary">Producto eliminado</span>
+                    }
+                    <div class="solo-movil small text-body-secondary num mt-1">
+                      {{ linea.cantidad }} × {{ linea.precioUnitario | pesos }}
+                    </div>
+                  </td>
+                  <td class="text-end num col-sec">{{ linea.cantidad }}</td>
+                  <td class="text-end num col-sec">{{ linea.precioUnitario | pesos }}</td>
+                  <td class="text-end num fw-medium">{{ linea.subtotal | pesos }}</td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row" colspan="3" class="text-end fw-medium col-sec">Total</th>
+                <th scope="row" class="text-end fw-medium solo-movil">Total</th>
+                <td class="text-end"><span class="stat-value">{{ f.venta.montoTotal | pesos }}</span></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <p class="solo-impresion pie-impresion">
+          Factura {{ f.venta.numeroFactura }}@if (f.sucursal) {
+            · {{ f.sucursal.nombre }}
+          } · impresa el {{ impresaEl() }}
+        </p>
+      </div>
+    </article>
+  } @else if (factura.error()) {
+    <div class="card factura">
+      @if (noExiste()) {
+        <app-vacio
+          titulo="La factura no existe o fue eliminada"
+          detalle="Revisa el número en el enlace o búscala en el listado de ventas."
+          [icono]="iconos.faReceipt"
+        >
+          <a routerLink="/ventas" class="btn btn-primary">Ver todas las ventas</a>
+        </app-vacio>
+      } @else {
+        <app-error-carga que="La factura" [error]="factura.error()" (reintentar)="factura.reload()" />
+      }
+    </div>
+  } @else {
+    <!-- Mismo contorno que la factura: encabezado, datos del cliente y líneas. -->
+    <div class="card factura" role="status">
+      <span class="visually-hidden">Cargando la factura…</span>
+      <div class="card-body" aria-hidden="true">
+        <div class="factura-encabezado">
+          <div class="esq-grupo">
+            <span class="esq" style="width: 8rem; height: 1.125rem"></span>
+            <span class="esq" style="width: 17rem"></span>
+          </div>
+          <div class="esq-grupo esq-derecha">
+            <span class="esq" style="width: 13rem; height: 1.75rem"></span>
+            <span class="esq" style="width: 8rem"></span>
+          </div>
+        </div>
+        <div class="factura-datos">
+          @for (ancho of [11, 9, 7]; track $index) {
+            <div class="esq-grupo">
+              <span class="esq" style="width: 4.5rem; height: 0.5rem"></span>
+              <span class="esq" [style.width.rem]="ancho"></span>
+            </div>
+          }
+        </div>
+        <div class="esq-lineas">
+          @for (fila of [16, 12, 14]; track $index) {
+            <div class="esq-fila">
+              <span class="esq" [style.width.rem]="fila"></span>
+              <span class="esq" style="width: 5rem"></span>
+            </div>
+          }
+          <div class="esq-fila esq-total">
+            <span class="esq" style="width: 8rem; height: 1.75rem"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

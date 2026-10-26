@@ -1,0 +1,381 @@
+<div class="page">
+  <app-page-header titulo="Inventario" [descripcion]="descripcion()">
+    @if (datos() && totalVisible() > 0) {
+      <button type="button" class="btn btn-soft" (click)="exportar()">
+        <fa-icon [icon]="iconos.faFileArrowDown" />
+        Exportar CSV
+      </button>
+    }
+    @if (esAdmin() && datos()?.sucursal; as sucursal) {
+      @if (datos()?.faltantes?.length) {
+        <button type="button" class="btn btn-primary" (click)="agregar()">
+          <fa-icon [icon]="iconos.faPlus" />
+          Agregar producto a la sucursal
+        </button>
+      } @else {
+        <!-- Deshabilitado con la razón a la vista del teclado: el contenedor recibe el foco. -->
+        <span
+          class="d-inline-block"
+          tabindex="0"
+          [ngbTooltip]="sucursal.nombre + ' ya maneja todos los productos del catálogo.'"
+          [attr.aria-label]="'Agregar producto a la sucursal: no disponible, ' + sucursal.nombre + ' ya maneja todos los productos del catálogo.'"
+        >
+          <button type="button" class="btn btn-primary" disabled aria-hidden="true" tabindex="-1">
+            <fa-icon [icon]="iconos.faPlus" />
+            Agregar producto a la sucursal
+          </button>
+        </span>
+      }
+    }
+  </app-page-header>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="barra-filtros">
+        <app-campo-busqueda etiqueta="Buscar" placeholder="Producto, código o ubicación" [atajo]="true" [(valor)]="busqueda" />
+        @if (puedeVerMatriz()) {
+          <div>
+            <span class="form-label d-block" id="inv-vista-etiqueta">Ver</span>
+            <div class="segmento" role="group" aria-labelledby="inv-vista-etiqueta">
+              <button type="button" [attr.aria-pressed]="vista() === 'registro'" (click)="cambiarVista('registro')">Por registro</button>
+              <button type="button" [attr.aria-pressed]="vista() === 'producto'" (click)="cambiarVista('producto')">Por producto</button>
+            </div>
+          </div>
+        }
+        <div class="form-check form-switch mb-2">
+          <input id="inv-bajo" class="form-check-input" type="checkbox" role="switch" [checked]="soloBajo()" (change)="soloBajo.set(!soloBajo())" />
+          <label class="form-check-label" for="inv-bajo">
+            Solo stock bajo ({{ umbral }} o menos)
+            @if (datos()) {
+              <span class="text-body-secondary num">· {{ cantidadBajo() }}</span>
+            }
+          </label>
+        </div>
+        @if (filtrosActivos() > 0) {
+          <button type="button" class="btn btn-link mb-1" (click)="quitarFiltros()">Quitar filtros ({{ filtrosActivos() }})</button>
+        }
+      </div>
+
+      @if (otrasSedes.error()) {
+        <div class="franja-estado mt-3" role="status">
+          <fa-icon [icon]="iconos.faCircleExclamation" class="text-danger mt-1" />
+          <p class="flex-grow-1 mb-0">No se pudieron consultar las existencias de las otras sedes. El resto del inventario está al día.</p>
+          <button type="button" class="btn btn-outline-secondary btn-sm text-nowrap" (click)="otrasSedes.reload()">
+            <fa-icon [icon]="iconos.faRotateRight" />
+            Reintentar
+          </button>
+        </div>
+      }
+    </div>
+
+    @if (datos(); as d) {
+      @if (!hayDatos()) {
+        @if (vistaActiva() === 'producto') {
+          <app-vacio
+            [icono]="iconos.faBoxesStacked"
+            titulo="El catálogo aún no tiene productos"
+            detalle="Crea los productos en el catálogo y luego registra cuántos hay en cada sucursal."
+          >
+            <a routerLink="/productos" class="btn btn-soft">Ir a productos</a>
+          </app-vacio>
+        } @else if (d.sucursal) {
+          <app-vacio
+            [icono]="iconos.faBoxesStacked"
+            titulo="Esta sucursal aún no tiene productos en inventario"
+            [detalle]="esAdmin() ? 'Agrega los productos que maneja la sucursal con su cantidad y ubicación en bodega.' : 'Pide a un administrador que registre los productos de la sucursal.'"
+          >
+            @if (esAdmin()) {
+              @if (d.faltantes.length) {
+                <button type="button" class="btn btn-primary" (click)="agregar()">Agregar el primer producto</button>
+              } @else {
+                <a routerLink="/productos" class="btn btn-soft">Crear productos en el catálogo</a>
+              }
+            }
+          </app-vacio>
+        } @else {
+          <app-vacio
+            [icono]="iconos.faBoxesStacked"
+            titulo="Ninguna sucursal tiene productos en inventario"
+            detalle="Elige una sucursal en el menú para agregarle productos, o usa la vista por producto."
+          >
+            <button type="button" class="btn btn-soft" (click)="cambiarVista('producto')">Ver por producto</button>
+          </app-vacio>
+        }
+      } @else if (totalVisible() === 0) {
+        <app-vacio
+          [titulo]="soloBajo() && !busqueda() ? 'Ningún producto tiene stock bajo' : 'Ningún producto coincide con la búsqueda'"
+          [detalle]="soloBajo() && !busqueda() ? 'Todas las existencias superan el umbral de ' + umbral + ' unidades.' : 'Prueba con el código, con parte del nombre o con la ubicación en bodega.'"
+        >
+          <button type="button" class="btn btn-soft" (click)="quitarFiltros()">Ver todo el inventario</button>
+        </app-vacio>
+      } @else if (vistaActiva() === 'producto') {
+        <!-- Por producto, desde 576 px: una columna por sede. -->
+        <div class="table-responsive d-none d-sm-block" [attr.aria-busy]="inventario.isLoading()" [class.actualizando]="inventario.isLoading()">
+          <table class="table align-middle">
+            <caption class="visually-hidden">Existencias de cada producto por sucursal. Cada cifra abre el inventario de esa sede.</caption>
+            <thead>
+              <tr>
+                <th scope="col" [attr.aria-sort]="ordenMatriz.ariaSort('producto')">
+                  <app-encabezado-orden [orden]="ordenMatriz" columna="producto" texto="Producto" />
+                </th>
+                @for (sucursal of d.sucursales; track sucursal.idSucursal) {
+                  <th scope="col" class="text-end">{{ sucursal.nombre }}</th>
+                }
+                <th scope="col" class="text-end" [attr.aria-sort]="ordenMatriz.ariaSort('total')">
+                  <app-encabezado-orden [orden]="ordenMatriz" columna="total" texto="Total" />
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (fila of paginaMatriz(); track fila.producto.idProducto) {
+                <tr>
+                  <th scope="row" class="fw-normal">
+                    <a [routerLink]="['/productos', fila.producto.idProducto]" class="d-block fw-medium">{{ fila.producto.nombre }}</a>
+                    <span class="code-tag mt-1">{{ fila.producto.codigo }}</span>
+                  </th>
+                  @for (celda of fila.celdas; track celda.sucursal.idSucursal) {
+                    <td class="text-end">
+                      <button type="button" class="celda-sede" [attr.aria-label]="etiquetaCelda(fila.producto, celda)" (click)="abrirCelda(fila.producto, celda)">
+                        @if (!celda.fila) {
+                          <span class="no-maneja">No lo maneja</span>
+                        } @else if (celda.fila.cantidadDisponible <= umbral) {
+                          <span class="stock-low num">
+                            <fa-icon [icon]="iconos.faTriangleExclamation" class="me-1" />{{ celda.fila.cantidadDisponible }}
+                          </span>
+                        } @else {
+                          <span class="num">{{ celda.fila.cantidadDisponible }}</span>
+                        }
+                      </button>
+                    </td>
+                  }
+                  <td class="text-end num fw-medium">{{ fila.total }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Por producto, bajo 576 px: un bloque por producto con una línea por sede. -->
+        <ul class="bloques d-sm-none" [attr.aria-busy]="inventario.isLoading()" [class.actualizando]="inventario.isLoading()" aria-label="Existencias por producto">
+          @for (fila of paginaMatriz(); track fila.producto.idProducto) {
+            <li>
+              <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+                <div style="min-width: 0">
+                  <a [routerLink]="['/productos', fila.producto.idProducto]" class="d-block fw-medium">{{ fila.producto.nombre }}</a>
+                  <span class="code-tag mt-1">{{ fila.producto.codigo }}</span>
+                </div>
+                <div class="text-end">
+                  <span class="d-block small text-body-secondary">Total</span>
+                  <span class="num fw-medium">{{ fila.total }}</span>
+                </div>
+              </div>
+              <ul class="list-unstyled mb-0">
+                @for (celda of fila.celdas; track celda.sucursal.idSucursal) {
+                  <li>
+                    <button type="button" class="linea-sede" [attr.aria-label]="etiquetaCelda(fila.producto, celda)" (click)="abrirCelda(fila.producto, celda)">
+                      <span>{{ celda.sucursal.nombre }}</span>
+                      @if (!celda.fila) {
+                        <span class="no-maneja">No lo maneja</span>
+                      } @else if (celda.fila.cantidadDisponible <= umbral) {
+                        <span class="stock-low num">
+                          <fa-icon [icon]="iconos.faTriangleExclamation" class="me-1" />{{ celda.fila.cantidadDisponible }}
+                        </span>
+                      } @else {
+                        <span class="num">{{ celda.fila.cantidadDisponible }}</span>
+                      }
+                    </button>
+                  </li>
+                }
+              </ul>
+            </li>
+          }
+        </ul>
+      } @else {
+        <div class="table-responsive" [attr.aria-busy]="inventario.isLoading()" [class.actualizando]="inventario.isLoading()">
+          <table class="table align-middle">
+            <caption class="visually-hidden">
+              {{ d.sucursal ? 'Inventario de ' + d.sucursal.nombre : 'Inventario de todas las sucursales, un registro por producto y sede' }}
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col" [attr.aria-sort]="orden.ariaSort('producto')">
+                  <app-encabezado-orden [orden]="orden" columna="producto" texto="Producto" />
+                </th>
+                <th scope="col" class="col-sec" [attr.aria-sort]="orden.ariaSort('categoria')">
+                  <app-encabezado-orden [orden]="orden" columna="categoria" texto="Categoría" />
+                </th>
+                @if (porTodas()) {
+                  <th scope="col" class="col-sec" [attr.aria-sort]="orden.ariaSort('sucursal')">
+                    <app-encabezado-orden [orden]="orden" columna="sucursal" texto="Sucursal" />
+                  </th>
+                }
+                <th scope="col" class="col-sec" [attr.aria-sort]="orden.ariaSort('ubicacion')">
+                  <app-encabezado-orden [orden]="orden" columna="ubicacion" texto="Ubicación en bodega" />
+                </th>
+                @if (!porTodas()) {
+                  <th scope="col" class="col-sec text-end" [attr.aria-sort]="orden.ariaSort('precio')">
+                    <app-encabezado-orden [orden]="orden" columna="precio" texto="Precio" />
+                  </th>
+                }
+                <th scope="col" class="text-end" [attr.aria-sort]="orden.ariaSort('disponible')">
+                  <app-encabezado-orden [orden]="orden" columna="disponible" texto="Disponible" />
+                </th>
+                @if (!porTodas()) {
+                  <th scope="col" class="text-end" [attr.aria-sort]="orden.ariaSort('otras')">
+                    <app-encabezado-orden [orden]="orden" columna="otras" texto="Otras sedes" />
+                  </th>
+                }
+                @if (esAdmin()) {
+                  <th scope="col"><span class="visually-hidden">Acciones</span></th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of paginaRegistros(); track item.fila.idProducto + '-' + item.fila.idSucursal) {
+                <tr>
+                  <td>
+                    @if (esAdmin()) {
+                      <a [routerLink]="['/productos', item.producto.idProducto]" class="d-block fw-medium">{{ item.producto.nombre }}</a>
+                    } @else {
+                      <span class="d-block fw-medium">{{ item.producto.nombre }}</span>
+                    }
+                    <span class="code-tag mt-1">{{ item.producto.codigo }}</span>
+                    <div class="solo-movil small text-body-secondary mt-1">
+                      @if (porTodas()) {
+                        {{ item.sucursal.nombre }} ·
+                      }
+                      {{ item.fila.ubicacionBodega }}
+                      @if (!porTodas()) {
+                        · <span class="num">{{ item.producto.precioBaseVenta | pesos }}</span>
+                      }
+                    </div>
+                  </td>
+                  <td class="col-sec">{{ item.categoria }}</td>
+                  @if (porTodas()) {
+                    <td class="col-sec">{{ item.sucursal.nombre }}</td>
+                  }
+                  <td class="col-sec">{{ item.fila.ubicacionBodega }}</td>
+                  @if (!porTodas()) {
+                    <td class="col-sec text-end num">{{ item.producto.precioBaseVenta | pesos }}</td>
+                  }
+                  <td class="text-end num">
+                    @if (item.fila.cantidadDisponible <= umbral) {
+                      <span class="stock-low">
+                        <fa-icon [icon]="iconos.faTriangleExclamation" class="me-1" />
+                        {{ item.fila.cantidadDisponible }}
+                        <span class="visually-hidden">, stock bajo</span>
+                      </span>
+                    } @else {
+                      {{ item.fila.cantidadDisponible }}
+                    }
+                  </td>
+                  @if (!porTodas()) {
+                    <td class="text-end num">
+                      @if (otrasSedes.hasValue()) {
+                        @let otras = otrasDe(item.producto.idProducto)!;
+                        <ng-template #detalleSedes>
+                          <ul class="list-unstyled mb-0 d-grid gap-1">
+                            @for (sede of otras.sedes; track sede.sucursal.idSucursal) {
+                              <li class="d-flex justify-content-between gap-3">
+                                <span>
+                                  {{ sede.sucursal.nombre }}
+                                  <span class="text-body-secondary">· {{ sede.sucursal.ciudad }}</span>
+                                </span>
+                                @if (sede.cantidad === null) {
+                                  <span class="text-body-secondary">No lo maneja</span>
+                                } @else if (sede.cantidad <= umbral) {
+                                  <span class="stock-low num">
+                                    <fa-icon [icon]="iconos.faTriangleExclamation" class="me-1" />{{ sede.cantidad }}
+                                    <span class="visually-hidden">, stock bajo</span>
+                                  </span>
+                                } @else {
+                                  <span class="num fw-medium">{{ sede.cantidad }}</span>
+                                }
+                              </li>
+                            }
+                          </ul>
+                        </ng-template>
+                        <button
+                          type="button"
+                          class="otras-sedes num"
+                          [class.ninguna]="otras.manejan === 0"
+                          [ngbPopover]="detalleSedes"
+                          popoverTitle="En otras sedes"
+                          placement="bottom-end top-end auto"
+                          container="body"
+                          [attr.aria-label]="etiquetaOtras(item.producto.nombre, otras)"
+                        >
+                          {{ otras.manejan === 0 ? 'Ninguna' : otras.total }}
+                        </button>
+                      } @else if (otrasSedes.error()) {
+                        <span class="text-body-secondary">No disponible</span>
+                      } @else {
+                        <span class="espera" aria-hidden="true"></span>
+                        <span class="visually-hidden">Consultando otras sedes</span>
+                      }
+                    </td>
+                  }
+                  @if (esAdmin()) {
+                    <td class="text-end text-nowrap">
+                      <button
+                        type="button"
+                        class="btn btn-soft btn-icon btn-sm"
+                        [attr.aria-label]="'Registrar entrada de ' + item.producto.nombre + ' en ' + item.sucursal.nombre"
+                        [ngbTooltip]="'Registrar entrada de ' + item.producto.nombre + ' en ' + item.sucursal.nombre"
+                        container="body"
+                        (click)="abrirRegistro(item, 'entrada')"
+                      >
+                        <fa-icon [icon]="iconos.faTruckRampBox" />
+                      </button>
+                      <div ngbDropdown class="d-inline-block ms-1" container="body" placement="bottom-end top-end">
+                        <button
+                          type="button"
+                          class="btn btn-soft btn-icon btn-sm sin-flecha"
+                          ngbDropdownToggle
+                          [attr.aria-label]="'Más acciones para ' + item.producto.nombre + ' en ' + item.sucursal.nombre"
+                          [ngbTooltip]="'Más acciones para ' + item.producto.nombre + ' en ' + item.sucursal.nombre"
+                          container="body"
+                          placement="top"
+                        >
+                          <fa-icon [icon]="iconos.faEllipsis" />
+                        </button>
+                        <div ngbDropdownMenu>
+                          <button type="button" ngbDropdownItem (click)="abrirRegistro(item, 'conteo')">
+                            <fa-icon [icon]="iconos.faPen" class="me-2" />
+                            Corregir conteo
+                          </button>
+                          <button type="button" ngbDropdownItem class="text-danger" (click)="retirar(item)">
+                            <fa-icon [icon]="iconos.faTrashCan" class="me-2" />
+                            Retirar de la sucursal
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      @if (hayDatos() && totalVisible() > 0) {
+        <app-pie-tabla
+          [total]="totalVisible()"
+          [nombre]="nombreConteo()"
+          [pagina]="paginaActual()"
+          (paginaChange)="pagina.set($event)"
+          [(porPagina)]="porPagina"
+        />
+      }
+    } @else if (inventario.error()) {
+      <app-error-carga que="El inventario" [error]="inventario.error()" (reintentar)="recargar()" />
+    } @else if (puedeVerMatriz() && vista() === 'producto') {
+      <app-esqueleto-tabla [columnas]="['texto', 'numero', 'numero', 'numero', 'numero']" texto="Cargando inventario" />
+    } @else if (porTodas()) {
+      <app-esqueleto-tabla [columnas]="['texto', 'texto', 'texto', 'texto', 'numero']" texto="Cargando inventario" />
+    } @else {
+      <app-esqueleto-tabla [columnas]="['texto', 'texto', 'texto', 'numero', 'numero', 'numero']" texto="Cargando inventario" />
+    }
+  </div>
+</div>

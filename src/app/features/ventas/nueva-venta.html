@@ -1,0 +1,592 @@
+<div class="page">
+  @let sede = d();
+  <app-page-header
+    titulo="Nueva venta"
+    [descripcion]="
+      sede
+        ? 'Venta en ' + sede.sucursal + '. Agrega los productos, elige el cliente y el método de pago, y confirma.'
+        : 'Agrega los productos, elige el cliente y el método de pago, y confirma.'
+    "
+  />
+
+  @if (idSucursal() === null) {
+    <div class="card">
+      <app-vacio
+        titulo="Elige una sucursal para vender"
+        detalle="Las ventas se registran en una sucursal específica. Cámbiala desde la barra superior."
+      />
+    </div>
+  } @else if (sede) {
+    <div class="venta">
+      <section class="catalogo" aria-labelledby="catalogo-titulo">
+        <h2 class="visually-hidden" id="catalogo-titulo">Productos de {{ sede.sucursal }}</h2>
+
+        <app-campo-busqueda
+          etiqueta="Agregar producto"
+          placeholder="Código, nombre o marca"
+          [atajo]="true"
+          describedby="ayuda-buscador"
+          [(valor)]="busqueda"
+          (enter)="alPulsarEnter()"
+        />
+        <p class="small text-body-secondary mt-2 mb-0" id="ayuda-buscador">
+          Escanea o escribe el código y pulsa <kbd>Enter</kbd>. Para varias unidades, antepón la cantidad y un
+          asterisco: <kbd>20*</kbd> y el código.
+          <span class="d-none d-md-inline">
+            Confirma la venta con <kbd>{{ teclaModificadora }}</kbd> + <kbd>Enter</kbd>.
+          </span>
+        </p>
+        <div aria-live="polite">
+          @if (anuncio(); as a) {
+            <p class="anuncio small mb-0" [class.text-danger]="a.problema">
+              <fa-icon [icon]="a.problema ? iconos.faCircleExclamation : iconos.faCheck" aria-hidden="true" />
+              <span>{{ a.texto }}</span>
+            </p>
+          }
+        </div>
+
+        <div class="barra-filtros mt-3">
+          <div class="chips" role="group" aria-label="Categoría">
+            <button type="button" [attr.aria-pressed]="categoria() === null" (click)="categoria.set(null)">Todas</button>
+            @for (principal of sede.principales; track principal.idCategoria) {
+              <button
+                type="button"
+                [attr.aria-pressed]="categoria() === principal.idCategoria"
+                (click)="categoria.set(principal.idCategoria)"
+              >
+                {{ principal.nombre }}
+              </button>
+            }
+          </div>
+          @if (filtrosActivos()) {
+            <button type="button" class="btn btn-link btn-sm px-0" (click)="quitarFiltros()">
+              Quitar filtros ({{ filtrosActivos() }})
+            </button>
+          }
+        </div>
+
+        @if (productosFiltrados().length) {
+          <ul
+            class="list-unstyled productos card mt-3 mb-0"
+            aria-label="Productos de la sucursal"
+            [attr.aria-busy]="datos.isLoading()"
+            [class.actualizando]="datos.isLoading()"
+          >
+            @for (v of productosFiltrados(); track v.producto.idProducto) {
+              @let quedan = restante(v);
+              @let llevas = enCarrito().get(v.producto.idProducto) ?? 0;
+              <li class="producto">
+                <div class="producto-info">
+                  <span class="fw-medium d-block">{{ v.producto.nombre }}</span>
+                  <span class="producto-meta small text-body-secondary">
+                    <span class="code-tag">{{ v.producto.codigo }}</span>
+                    @if (v.marca) {
+                      <span>{{ v.marca }}</span>
+                    }
+                    <span class="text-nowrap">
+                      <fa-icon [icon]="iconos.faLocationDot" aria-hidden="true" />
+                      <span class="visually-hidden">Ubicación:</span>
+                      {{ v.ubicacion }}
+                    </span>
+                  </span>
+                </div>
+                <div class="producto-precio">
+                  <span class="num fw-medium">{{ v.producto.precioBaseVenta | pesos }}</span>
+                  @if (v.disponible === 0) {
+                    @let otra = otraSede(v.producto.idProducto);
+                    <span class="small">
+                      @if (agotadoEnCadena(v.producto.idProducto)) {
+                        <span class="stock-low">
+                          <fa-icon [icon]="iconos.faTriangleExclamation" aria-hidden="true" />
+                          Agotado en la cadena
+                        </span>
+                      } @else {
+                        <span class="stock-low">
+                          <fa-icon [icon]="iconos.faTriangleExclamation" aria-hidden="true" />
+                          Agotado aquí
+                        </span>
+                        @if (otra) {
+                          <span class="text-body-secondary"> · <span class="num">{{ otra.cantidad }}</span> en {{ otra.nombre }}</span>
+                        }
+                      }
+                    </span>
+                  } @else if (quedan === 0) {
+                    <span class="small text-body-secondary">Todo en el carrito</span>
+                  } @else {
+                    <span class="small text-body-secondary">
+                      <span class="num">{{ quedan }}</span> {{ quedan === 1 ? 'disponible' : 'disponibles' }}
+                    </span>
+                  }
+                </div>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-secondary producto-agregar"
+                  data-agregar
+                  [disabled]="quedan === 0"
+                  [attr.aria-label]="(llevas ? 'Otra unidad de ' : 'Agregar ') + v.producto.nombre"
+                  (click)="agregar(v)"
+                >
+                  <fa-icon [icon]="iconos.faPlus" aria-hidden="true" />
+                  {{ llevas ? 'Otra' : 'Agregar' }}
+                </button>
+              </li>
+            }
+          </ul>
+        } @else if (sede.vendibles.length === 0) {
+          <div class="card mt-3">
+            <app-vacio
+              [icono]="iconos.faBoxOpen"
+              titulo="Esta sucursal no tiene productos en inventario"
+              detalle="Un administrador debe registrar productos en el inventario de la sucursal antes de vender."
+            />
+          </div>
+        } @else {
+          <div class="card mt-3">
+            <app-vacio
+              titulo="Ningún producto de esta sucursal coincide"
+              detalle="Revisa el código o busca por nombre o marca. Si filtraste por categoría, quítala para buscar en todo el inventario."
+            >
+              <button type="button" class="btn btn-soft" (click)="quitarFiltros()">Ver todos los productos</button>
+            </app-vacio>
+          </div>
+        }
+      </section>
+
+      <aside class="resumen" aria-labelledby="resumen-titulo">
+        <div class="card">
+          <div class="card-body d-grid gap-4">
+            <div>
+              <h2 class="card-title mb-1" id="resumen-titulo" tabindex="-1">Resumen de la venta</h2>
+              <p class="small text-body-secondary mb-0">
+                Se registra en {{ sede.sucursal }}.
+                @if (lineas().length) {
+                  Se guarda en esta pestaña hasta que la registres o la descartes.
+                }
+              </p>
+            </div>
+
+            @if (recuperada(); as r) {
+              @if (lineas().length) {
+                <div class="franja-estado small">
+                  <fa-icon [icon]="iconos.faClockRotateLeft" class="mt-1" aria-hidden="true" />
+                  <div>
+                    <p class="mb-1"><span class="fw-medium">Venta recuperada.</span> Quedó sin registrar en esta pestaña.</p>
+                    @if (r.recortados.length) {
+                      <p class="mb-1">Se ajustó a lo que hay ahora: {{ r.recortados.join(', ') }}.</p>
+                    }
+                    <button type="button" class="btn btn-link btn-sm p-0" (click)="empezarDeNuevo()">Empezar de nuevo</button>
+                  </div>
+                </div>
+              }
+            }
+
+            <section aria-labelledby="cliente-titulo">
+              <h3 class="eyebrow mb-2" id="cliente-titulo">Cliente</h3>
+              @if (clienteElegido(); as c) {
+                <div class="cliente-elegido">
+                  <span class="fw-medium d-block text-truncate">{{ nombreCliente(c) }}</span>
+                  @if (esConsumidorFinal(c)) {
+                    <span class="small text-body-secondary d-block">
+                      Venta sin datos del comprador: la factura sale a nombre de consumidor final.
+                    </span>
+                  } @else {
+                    <span class="small text-body-secondary d-block">
+                      {{ c.tipo === 'NATURAL' ? 'C.C.' : 'NIT' }} <span class="num">{{ c.numeroDocumento }}</span>
+                    </span>
+                    <span class="small text-body-secondary d-block" aria-live="polite">
+                      @if (comprasActuales(); as h) {
+                        @if (h.compras === 0) {
+                          Es su primera compra en la cadena.
+                        } @else {
+                          <span class="num">{{ h.compras }}</span> {{ h.compras === 1 ? 'compra' : 'compras' }} en la cadena,
+                          la última el {{ h.ultima | fecha }}.
+                        }
+                      } @else if (comprasCliente.error()) {
+                        No se pudieron consultar sus compras.
+                      } @else {
+                        Consultando sus compras…
+                      }
+                    </span>
+                  }
+                  <div class="d-flex flex-wrap gap-2 mt-2">
+                    @if (!esConsumidorFinal(c)) {
+                      <button type="button" class="btn btn-sm btn-soft" (click)="verHistorial()">
+                        <fa-icon [icon]="iconos.faReceipt" aria-hidden="true" />
+                        Ver historial
+                      </button>
+                    }
+                    <button type="button" class="btn btn-sm btn-soft" (click)="cambiarCliente()">Cambiar cliente</button>
+                  </div>
+                </div>
+              } @else {
+                <div class="cliente-busqueda">
+                  <div class="flex-grow-1" style="min-width: 0">
+                    <label for="buscar-cliente" class="visually-hidden">Buscar cliente por nombre o documento</label>
+                    <input
+                      id="buscar-cliente"
+                      type="search"
+                      class="form-control"
+                      placeholder="Nombre o documento"
+                      autocomplete="off"
+                      [ngbTypeahead]="buscarCliente"
+                      [resultFormatter]="formatoCliente"
+                      [inputFormatter]="formatoCliente"
+                      (selectItem)="elegirCliente($event)"
+                      (input)="textoCliente.set($any($event.target).value)"
+                      [class.is-invalid]="intentoConfirmar() && clienteElegido() === null"
+                    />
+                  </div>
+                  @if (consumidorFinal(); as cf) {
+                    <button type="button" class="btn btn-soft text-nowrap" (click)="elegirClientePorId(cf.idCliente)">
+                      Consumidor final
+                    </button>
+                  }
+                </div>
+
+                <div aria-live="polite">
+                  @if (sinCoincidenciasCliente()) {
+                    <p class="small mt-2 mb-2">No hay clientes con "{{ textoCliente().trim() }}".</p>
+                  }
+                </div>
+                @if (sinCoincidenciasCliente()) {
+                  <button type="button" class="btn btn-soft btn-sm" (click)="crearCliente()">
+                    <fa-icon [icon]="iconos.faUserPlus" aria-hidden="true" />
+                    {{ textoEsDocumento() ? 'Crear cliente con este documento' : 'Crear cliente con este nombre' }}
+                  </button>
+                } @else {
+                  <button type="button" class="btn btn-link btn-sm px-0 mt-1" (click)="crearCliente()">
+                    <fa-icon [icon]="iconos.faUserPlus" aria-hidden="true" />
+                    Crear cliente nuevo
+                  </button>
+                }
+
+                @if (!textoCliente().trim()) {
+                  @if (frecuentes().length) {
+                    <p class="eyebrow mt-3 mb-2" id="frecuentes-titulo">
+                      Frecuentes en esta sede, últimos {{ diasFrecuentes }} días
+                    </p>
+                    <ul class="list-unstyled frecuentes mb-0" aria-labelledby="frecuentes-titulo">
+                      @for (f of frecuentes(); track f.cliente.idCliente) {
+                        <li>
+                          <button type="button" class="frecuente" (click)="elegirClientePorId(f.cliente.idCliente)">
+                            <span class="text-truncate">{{ nombreCliente(f.cliente) }}</span>
+                            <span class="small text-body-secondary text-nowrap">
+                              <span class="num">{{ f.compras }}</span> {{ f.compras === 1 ? 'compra' : 'compras' }}
+                            </span>
+                          </button>
+                        </li>
+                      }
+                    </ul>
+                  } @else if (cadena.error()) {
+                    <p class="small text-body-secondary mt-3 mb-0">
+                      No se pudieron cargar los clientes frecuentes de la sede.
+                      <button type="button" class="btn btn-link btn-sm p-0 align-baseline" (click)="cadena.reload()">
+                        Reintentar
+                      </button>
+                    </p>
+                  } @else if (cadena.hasValue()) {
+                    <p class="small text-body-secondary mt-3 mb-0">
+                      Ningún cliente registrado ha comprado en esta sede en los últimos {{ diasFrecuentes }} días.
+                    </p>
+                  }
+                }
+              }
+            </section>
+
+            <section aria-labelledby="productos-titulo">
+              <h3 class="eyebrow mb-2" id="productos-titulo" tabindex="-1">
+                Productos
+                @if (totalUnidades()) {
+                  <span>· <span class="num">{{ totalUnidades() }}</span> {{ totalUnidades() === 1 ? 'unidad' : 'unidades' }}</span>
+                }
+              </h3>
+              @if (carrito().length) {
+                <ul
+                  class="list-unstyled lineas mb-0"
+                  [attr.aria-busy]="datos.isLoading()"
+                  [class.actualizando]="datos.isLoading()"
+                >
+                  @for (linea of carrito(); track linea.idProducto) {
+                    <li class="linea" [class.marcada]="linea.estado !== 'ok'">
+                      <div class="linea-nombre">
+                        <span class="d-block fw-medium">{{ linea.nombre }}</span>
+                        <span class="small text-body-secondary">
+                          @if (linea.existe) {
+                            <span class="num">{{ linea.precio | pesos }}</span> c/u
+                          }
+                          @if (linea.ubicacion) {
+                            <span class="text-nowrap">
+                              · <span class="visually-hidden">Ubicación:</span>
+                              {{ linea.ubicacion }}
+                            </span>
+                          }
+                        </span>
+                      </div>
+
+                      @if (linea.estado === 'ok') {
+                        <button
+                          type="button"
+                          class="btn btn-soft btn-icon btn-sm linea-quitar"
+                          [attr.aria-label]="'Quitar ' + linea.nombre"
+                          [ngbTooltip]="'Quitar ' + linea.nombre"
+                          container="body"
+                          (click)="quitar(linea)"
+                        >
+                          <fa-icon [icon]="iconos.faXmark" aria-hidden="true" />
+                        </button>
+                      }
+
+                      @if (linea.disponible > 0) {
+                        <div class="cantidad" role="group" [attr.aria-label]="'Cantidad de ' + linea.nombre">
+                          <button
+                            type="button"
+                            class="btn btn-soft btn-icon btn-sm"
+                            aria-label="Una unidad menos"
+                            ngbTooltip="Una unidad menos"
+                            container="body"
+                            [disabled]="linea.cantidad <= 1"
+                            (click)="cambiarCantidad(linea, linea.cantidad - 1)"
+                          >
+                            <fa-icon [icon]="iconos.faMinus" aria-hidden="true" />
+                          </button>
+                          <input
+                            #campoCantidad
+                            type="number"
+                            inputmode="numeric"
+                            class="form-control form-control-sm num text-center"
+                            min="1"
+                            [max]="linea.disponible"
+                            [value]="linea.cantidad"
+                            [attr.aria-label]="'Unidades de ' + linea.nombre"
+                            [attr.aria-invalid]="linea.estado === 'excede'"
+                            (change)="cambiarCantidadDesdeCampo(linea, campoCantidad)"
+                          />
+                          <button
+                            type="button"
+                            class="btn btn-soft btn-icon btn-sm"
+                            aria-label="Una unidad más"
+                            ngbTooltip="Una unidad más"
+                            container="body"
+                            [disabled]="linea.cantidad >= linea.disponible"
+                            (click)="cambiarCantidad(linea, linea.cantidad + 1)"
+                          >
+                            <fa-icon [icon]="iconos.faPlus" aria-hidden="true" />
+                          </button>
+                        </div>
+                      } @else {
+                        <span class="cantidad small text-body-secondary">{{ unidades(linea.cantidad) }}</span>
+                      }
+                      <span class="num fw-medium linea-subtotal">{{ linea.subtotal | pesos }}</span>
+
+                      @if (linea.estado !== 'ok') {
+                        <div class="linea-estado">
+                          <p class="small text-danger mb-2">
+                            <fa-icon [icon]="iconos.faTriangleExclamation" aria-hidden="true" />
+                            @if (linea.estado === 'excede') {
+                              @if (linea.disponible > 0) {
+                                Solo quedan <span class="num">{{ linea.disponible }}</span> en esta sucursal.
+                              } @else {
+                                Se agotó en esta sucursal.
+                              }
+                            } @else if (linea.existe) {
+                              {{ sede.sucursal }} no maneja este producto.
+                            } @else {
+                              Este producto ya no está en el catálogo.
+                            }
+                          </p>
+                          <div class="d-flex flex-wrap gap-2">
+                            @if (linea.estado === 'excede' && linea.disponible > 0) {
+                              <button
+                                type="button"
+                                class="btn btn-soft btn-sm linea-accion"
+                                [attr.aria-label]="'Dejar ' + linea.disponible + ' de ' + linea.nombre"
+                                (click)="dejarDisponible(linea)"
+                              >
+                                Dejar {{ linea.disponible }}
+                              </button>
+                            }
+                            <button
+                              type="button"
+                              class="btn btn-outline-secondary btn-sm"
+                              [class.linea-accion]="linea.estado !== 'excede' || linea.disponible === 0"
+                              [attr.aria-label]="'Quitar ' + linea.nombre"
+                              (click)="quitar(linea)"
+                            >
+                              Quitar
+                            </button>
+                          </div>
+                        </div>
+                      }
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="text-body-secondary mb-0">
+                  Aún no hay productos. Escanea un código o agrégalos desde la lista.
+                </p>
+              }
+            </section>
+
+            <div class="total">
+              <span class="text-body-secondary">Total</span>
+              <span class="stat-value">{{ total() | pesos }}</span>
+            </div>
+
+            <fieldset>
+              <legend class="eyebrow mb-2">Método de pago</legend>
+              <div class="metodos">
+                @for (metodo of sede.metodos; track metodo.idMetodoPago) {
+                  <input
+                    type="radio"
+                    class="btn-check"
+                    name="metodo"
+                    [id]="'metodo-' + metodo.idMetodoPago"
+                    [checked]="idMetodoPago() === metodo.idMetodoPago"
+                    (change)="elegirMetodo(metodo.idMetodoPago)"
+                  />
+                  <label class="btn btn-outline-secondary btn-sm" [for]="'metodo-' + metodo.idMetodoPago">{{ metodo.tipo }}</label>
+                }
+              </div>
+
+              @if (esEfectivo()) {
+                @let cambioActual = cambio();
+                <div class="efectivo">
+                  <label for="recibido" class="form-label">Recibido</label>
+                  <input
+                    #campoRecibido
+                    id="recibido"
+                    type="text"
+                    inputmode="numeric"
+                    class="form-control num"
+                    autocomplete="off"
+                    placeholder="$ 0"
+                    aria-describedby="cambio-texto"
+                    [value]="valorRecibido()"
+                    [class.is-invalid]="intentoConfirmar() && cambioActual !== null && cambioActual < 0"
+                    (focus)="alEnfocarRecibido(campoRecibido)"
+                    (input)="alEscribirRecibido(campoRecibido.value)"
+                    (blur)="alSalirRecibido()"
+                  />
+                  @if (total() > 0) {
+                    <div class="chips mt-2" role="group" aria-label="Montos rápidos">
+                      <button type="button" [attr.aria-pressed]="recibido() === total()" (click)="fijarRecibido(total())">
+                        Exacto
+                      </button>
+                      @for (monto of montosSugeridos(); track monto) {
+                        <button type="button" class="num" [attr.aria-pressed]="recibido() === monto" (click)="fijarRecibido(monto)">
+                          {{ monto | pesos }}
+                        </button>
+                      }
+                    </div>
+                  }
+                  <div class="cambio" id="cambio-texto" aria-live="polite">
+                    @if (cambioActual === null) {
+                      <span class="small text-body-secondary">Escribe cuánto entrega el cliente para calcular el cambio.</span>
+                    } @else if (cambioActual >= 0) {
+                      <span class="text-body-secondary">Cambio</span>
+                      <span class="stat-value">{{ cambioActual | pesos }}</span>
+                    } @else {
+                      <span class="text-danger">
+                        <fa-icon [icon]="iconos.faCircleExclamation" aria-hidden="true" />
+                        Faltan
+                      </span>
+                      <span class="stat-value text-danger">{{ -cambioActual | pesos }}</span>
+                    }
+                  </div>
+                </div>
+              }
+            </fieldset>
+
+            @if (error(); as mensaje) {
+              <div class="alert alert-danger d-flex gap-2 mb-0" role="alert">
+                <fa-icon [icon]="iconos.faCircleExclamation" class="mt-1" aria-hidden="true" />
+                <span>{{ mensaje }}</span>
+              </div>
+            }
+
+            <div class="d-grid gap-2">
+              @if (intentoConfirmar() && faltantes().length) {
+                <div class="faltantes small" id="faltantes" role="alert">
+                  <p class="fw-medium mb-1">
+                    <fa-icon [icon]="iconos.faCircleExclamation" aria-hidden="true" />
+                    Para confirmar falta:
+                  </p>
+                  <ul class="mb-0">
+                    @for (faltante of faltantes(); track faltante) {
+                      <li>{{ faltante }}</li>
+                    }
+                  </ul>
+                </div>
+              } @else if (lineasMarcadas().length) {
+                <p class="small text-danger mb-0" id="faltantes">
+                  <fa-icon [icon]="iconos.faTriangleExclamation" aria-hidden="true" />
+                  Corrige las cantidades marcadas para poder confirmar.
+                </p>
+              }
+
+              <button
+                type="button"
+                class="btn btn-accent btn-lg w-100"
+                aria-keyshortcuts="Control+Enter Meta+Enter"
+                [attr.aria-describedby]="(intentoConfirmar() && faltantes().length) || lineasMarcadas().length ? 'faltantes' : null"
+                [disabled]="registrando()"
+                (click)="confirmar()"
+              >
+                @if (registrando()) {
+                  <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                  Registrando venta…
+                } @else {
+                  <fa-icon [icon]="iconos.faCartShopping" aria-hidden="true" />
+                  Confirmar venta
+                }
+              </button>
+              <button type="button" class="btn btn-link btn-sm" [disabled]="registrando()" (click)="descartar()">
+                {{ lineas().length ? 'Descartar venta' : 'Volver al inicio' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    @if (lineas().length) {
+      <button type="button" class="barra-movil d-lg-none no-print" (click)="irAlResumen()">
+        <span>
+          <span class="num">{{ totalUnidades() }}</span> {{ totalUnidades() === 1 ? 'unidad' : 'unidades' }} ·
+          <span class="num fw-semibold">{{ total() | pesos }}</span>
+        </span>
+        <span class="fw-medium">Ver resumen</span>
+      </button>
+    }
+  } @else if (datos.error()) {
+    <div class="card">
+      <app-error-carga que="El inventario de la sucursal" [error]="datos.error()" (reintentar)="datos.reload()" />
+    </div>
+  } @else {
+    <div class="venta">
+      <div>
+        <app-esqueleto-bloque [lineas]="2" texto="Cargando los productos de la sucursal" />
+        <div class="card mt-3">
+          <app-esqueleto-tabla [columnas]="['texto', 'numero', 'numero']" [filas]="8" texto="Cargando la lista de productos" />
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <app-esqueleto-bloque [lineas]="7" texto="Cargando el resumen de la venta" />
+        </div>
+      </div>
+    </div>
+  }
+</div>
+
+<ng-template #panelHistorial let-panel>
+  <div class="offcanvas-header">
+    <h2 class="offcanvas-title h5" id="historial-titulo">Historial del cliente</h2>
+    <button type="button" class="btn-close" aria-label="Cerrar historial" (click)="panel.dismiss()"></button>
+  </div>
+  <div class="offcanvas-body">
+    @if (clienteElegido(); as c) {
+      <app-cliente-historial [idCliente]="c.idCliente" [mostrarAcciones]="false" />
+    }
+  </div>
+</ng-template>

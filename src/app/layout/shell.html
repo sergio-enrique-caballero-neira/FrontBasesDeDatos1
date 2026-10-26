@@ -1,0 +1,184 @@
+<a class="visually-hidden-focusable" href="#contenido">Saltar al contenido</a>
+
+<div class="shell">
+  <aside class="lateral d-none d-lg-block no-print">
+    <app-nav-menu />
+  </aside>
+
+  <div class="principal">
+    <header class="barra no-print">
+      <button
+        type="button"
+        class="btn btn-soft btn-icon d-lg-none"
+        aria-label="Abrir menú de navegación"
+        ngbTooltip="Abrir menú de navegación"
+        container="body"
+        [openDelay]="300"
+        (click)="abrirMenu(menuMovil)"
+      >
+        <fa-icon [icon]="iconos.faBars" />
+      </button>
+
+      <div ngbDropdown class="selector me-auto">
+        <button type="button" class="btn btn-soft selector-sucursal" ngbDropdownToggle>
+          <fa-icon [icon]="iconos.faStore" />
+          <span class="text-truncate">
+            <span class="visually-hidden">Sucursal de trabajo: </span>{{ sucursalActual().nombre }}
+            @if (sucursalActual().ciudad; as ciudad) {
+              <span class="ciudad">· {{ ciudad }}</span>
+            }
+          </span>
+        </button>
+        <div ngbDropdownMenu>
+          <h2 class="dropdown-header">Sucursal de trabajo</h2>
+          @if (esAdmin()) {
+            <button
+              ngbDropdownItem
+              type="button"
+              [class.active]="esSeleccionada('TODAS')"
+              [attr.aria-current]="esSeleccionada('TODAS') ? 'true' : null"
+              (click)="cambiarSucursal('TODAS')"
+            >
+              Todas las sucursales
+            </button>
+          }
+          @for (sucursal of listaSucursales(); track sucursal.idSucursal) {
+            <button
+              ngbDropdownItem
+              type="button"
+              [class.active]="esSeleccionada(sucursal.idSucursal)"
+              [attr.aria-current]="esSeleccionada(sucursal.idSucursal) ? 'true' : null"
+              (click)="cambiarSucursal(sucursal.idSucursal)"
+            >
+              {{ sucursal.nombre }} <span class="ciudad-opcion">· {{ sucursal.ciudad }}</span>
+            </button>
+          }
+          @if (sucursales.isLoading() && !listaSucursales().length) {
+            <span class="dropdown-item-text text-body-secondary">Cargando sucursales…</span>
+          } @else if (sucursales.error() && !listaSucursales().length) {
+            <span class="dropdown-item-text text-body-secondary">No se pudo cargar la lista de sucursales.</span>
+            <button ngbDropdownItem type="button" (click)="sucursales.reload()">Reintentar</button>
+          }
+        </div>
+      </div>
+
+      @if (mostrarVentaEnCurso()) {
+        @let venta = ventaEnCurso()!;
+        <a routerLink="/ventas/nueva" class="btn btn-soft venta-en-curso">
+          <fa-icon [icon]="iconos.faCartShopping" />
+          <span class="texto-venta"
+            ><span class="oculto-bajo-md">Venta en curso ·&nbsp;</span><span class="num">{{ venta.productos }}</span
+            ><span class="oculto-bajo-md">&nbsp;{{ venta.unidad }}</span
+            >@if (venta.total !== null) {<span class="oculto-bajo-sm num">&nbsp;· {{ venta.total | pesos }}</span>}<span
+              class="visually-hidden"
+              >. Volver a la venta</span
+            ></span
+          >
+        </a>
+      } @else if (esVendedor() && !enNuevaVenta()) {
+        <a
+          routerLink="/ventas/nueva"
+          class="btn btn-accent btn-icon d-lg-none"
+          aria-label="Nueva venta"
+          ngbTooltip="Nueva venta"
+          container="body"
+          [openDelay]="300"
+        >
+          <fa-icon [icon]="iconos.faCartShopping" />
+        </a>
+      }
+
+      <app-boton-tema class="d-none d-lg-block" />
+
+      <div ngbDropdown placement="bottom-end" class="d-none d-lg-block">
+        <button type="button" class="btn btn-soft" ngbDropdownToggle>
+          <fa-icon [icon]="iconos.faDatabase" />
+          Datos de demostración
+        </button>
+        <div ngbDropdownMenu class="menu-ancho">
+          <p class="px-2 pt-1 mb-2 small text-body-secondary" id="demo-explicacion">
+            Mientras no exista el back, los datos viven en este navegador. Las marcas son reales; personas, empresas y
+            cifras son de prueba.
+          </p>
+          <button
+            ngbDropdownItem
+            type="button"
+            class="text-danger"
+            aria-describedby="demo-explicacion"
+            (click)="restaurarDatos()"
+          >
+            Restaurar datos de demostración
+          </button>
+        </div>
+      </div>
+
+      <div ngbDropdown placement="bottom-end">
+        <button type="button" class="btn btn-soft usuario" ngbDropdownToggle [attr.aria-label]="'Menú de ' + nombreUsuario()">
+          <span class="avatar" aria-hidden="true">{{ iniciales() }}</span>
+          <span class="d-none d-md-flex flex-column align-items-start lh-sm">
+            <span class="fw-medium">{{ nombreUsuario() }}</span>
+            <span class="small text-body-secondary">{{ rol() }}</span>
+          </span>
+        </button>
+        <div ngbDropdownMenu class="menu-ancho" role="menu" [attr.aria-label]="'Opciones de ' + nombreUsuario()">
+          <div class="dropdown-item-text d-md-none identidad" aria-hidden="true">
+            <span class="fw-medium d-block">{{ nombreUsuario() }}</span>
+            <span class="small text-body-secondary">{{ rol() }}</span>
+          </div>
+          @if (!pantallaAncha()) {
+            <button
+              ngbDropdownItem
+              type="button"
+              role="menuitemcheckbox"
+              class="item-con-icono"
+              [attr.aria-checked]="oscuro()"
+              (click)="tema.alternar()"
+            >
+              <fa-icon [icon]="iconos.faMoon" [fixedWidth]="true" />
+              Modo oscuro
+              @if (oscuro()) {
+                <fa-icon [icon]="iconos.faCheck" class="ms-auto" />
+              }
+            </button>
+          }
+          <button ngbDropdownItem type="button" role="menuitem" class="item-con-icono" (click)="cerrarSesion()">
+            <fa-icon [icon]="iconos.faRightFromBracket" [fixedWidth]="true" />
+            Cerrar sesión
+          </button>
+          @if (!pantallaAncha()) {
+            <div class="dropdown-divider" role="separator"></div>
+            <p class="px-2 pt-1 mb-2 small text-body-secondary" id="demo-explicacion-menu" aria-hidden="true">
+              Los datos viven en este navegador mientras no exista el back. Las marcas son reales; personas, empresas y
+              cifras son de prueba.
+            </p>
+            <button
+              ngbDropdownItem
+              type="button"
+              role="menuitem"
+              class="item-con-icono text-danger"
+              aria-describedby="demo-explicacion-menu"
+              (click)="restaurarDatos()"
+            >
+              <fa-icon [icon]="iconos.faDatabase" [fixedWidth]="true" />
+              Restaurar datos de demostración
+            </button>
+          }
+        </div>
+      </div>
+    </header>
+
+    <main id="contenido" tabindex="-1">
+      <router-outlet />
+    </main>
+  </div>
+</div>
+
+<ng-template #menuMovil>
+  <div class="offcanvas-header">
+    <h2 class="visually-hidden" id="menu-movil-titulo">Menú de navegación</h2>
+    <button type="button" class="btn-close ms-auto" aria-label="Cerrar menú" (click)="cerrarMenu()"></button>
+  </div>
+  <div class="offcanvas-body pt-0">
+    <app-nav-menu (navego)="cerrarMenu()" />
+  </div>
+</ng-template>

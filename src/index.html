@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Ferretería</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f5f5" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <script>
+    try {
+      var tema = localStorage.getItem('ferreteria.tema');
+      if (tema !== 'claro' && tema !== 'oscuro') {
+        tema = matchMedia('(prefers-color-scheme: dark)').matches ? 'oscuro' : 'claro';
+      }
+      document.documentElement.setAttribute('data-bs-theme', tema === 'oscuro' ? 'dark' : 'light');
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <app-root></app-root>
+</body>
+</html>

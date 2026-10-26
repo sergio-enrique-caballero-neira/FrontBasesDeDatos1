@@ -1,0 +1,1032 @@
+// Sistema visual de la ferretería.
+// Base: DESIGN.md (monocromático, Geist, tarjetas de 24px con borde fino).
+// Excepciones acordadas con el equipo: el rojo #e7000b es el acento de marca
+// (solo en la marca y en las acciones de vender) y los radios marcan jerarquía:
+// píldora en botones y etiquetas, 10px en campos, 24px en tarjetas.
+//
+// Modo claro y oscuro: los colores de superficie y texto viven en variables CSS
+// (--ink, --paper, --canvas...) que cambian con [data-bs-theme]. Las variables de
+// Bootstrap que afectan esas superficies apuntan a esas variables CSS en vez de a
+// un color fijo, así un solo build sirve para los dos modos.
+
+$white: #fff;
+$gray-100: #f5f5f5;
+$gray-200: #e5e5e5;
+$gray-300: #d4d4d4;
+$gray-400: #a3a3a3;
+$gray-500: #737373;
+$gray-600: #525252;
+$gray-700: #404040;
+$gray-800: #262626;
+$gray-900: #171717;
+$black: #0a0a0a;
+
+$primary: $black;
+$secondary: $gray-600;
+$light: $gray-100;
+$dark: $gray-900;
+// Rojo más oscuro que el acento para que un error nunca se confunda con la marca.
+$danger: #c10007;
+$custom-colors: (
+  'accent': #e7000b,
+);
+
+$body-bg: $gray-100;
+$body-color: $black;
+// #737373 sobre el lienzo #f5f5f5 da 4.3:1; este gris pasa AA (4.9:1).
+$body-secondary-color: #6b6b6b;
+$border-color: $gray-200;
+
+// Modo oscuro: lienzo casi negro, tarjetas un paso más claras, texto casi blanco.
+$body-bg-dark: $black;
+$body-color-dark: #fafafa;
+$body-emphasis-color-dark: $white;
+$body-secondary-color-dark: $gray-400;
+$border-color-dark: $gray-800;
+$headings-color-dark: null;
+$link-color-dark: #fafafa;
+$link-hover-color-dark: $gray-300;
+// El rojo de error se aclara en oscuro para conservar el contraste AA sobre fondos negros.
+$danger-text-emphasis-dark: #ffa2a2;
+$danger-bg-subtle-dark: #2a0b0c;
+$danger-border-subtle-dark: #5c1215;
+
+$font-family-sans-serif:
+  'Geist Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+$font-size-base: 0.875rem;
+$line-height-base: 1.43;
+$headings-font-weight: 600;
+$h1-font-size: 1.875rem;
+$h2-font-size: 1.5rem;
+$h3-font-size: 1.125rem;
+$h4-font-size: 1rem;
+$h5-font-size: 0.875rem;
+$h6-font-size: 0.75rem;
+
+$link-color: $black;
+$link-hover-color: $gray-600;
+$link-decoration: underline;
+$link-underline-offset: 0.2em;
+
+$border-radius: 10px;
+$border-radius-sm: 6px;
+$border-radius-lg: 14px;
+$border-radius-xl: 24px;
+$border-radius-pill: 50rem;
+
+$btn-border-radius: $border-radius-pill;
+$btn-border-radius-sm: $border-radius-pill;
+$btn-border-radius-lg: $border-radius-pill;
+$btn-font-weight: 500;
+$btn-padding-y: 0.5rem;
+$btn-padding-x: 1rem;
+
+$input-bg: var(--surface-input);
+// Borde propio de los campos, más oscuro que --hairline: un campo debe distinguirse de la
+// tarjeta con al menos 3:1 (WCAG 1.4.11), y #e5e5e5 sobre blanco solo da 1.3:1.
+$input-border-color: var(--input-border);
+$input-focus-bg: var(--paper);
+$input-focus-border-color: var(--ink);
+$input-focus-box-shadow: 0 0 0 1px var(--ink);
+$input-color: var(--ink);
+$input-disabled-bg: var(--canvas);
+$input-border-radius: $border-radius;
+$input-border-radius-sm: $border-radius-sm;
+$input-border-radius-lg: $border-radius;
+$input-placeholder-color: var(--muted);
+$input-padding-y: 0.5rem;
+$input-padding-x: 0.75rem;
+$form-label-font-weight: 500;
+$form-label-margin-bottom: 0.375rem;
+$form-check-input-focus-box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink);
+$form-check-input-bg: var(--surface-input);
+$form-check-input-border: var(--bs-border-width) solid var(--input-border);
+// Va dentro de un SVG en data URI, donde las variables CSS no funcionan: color fijo.
+$form-switch-focus-color: $gray-500;
+
+$card-border-radius: $border-radius-xl;
+$card-border-color: var(--hairline);
+$card-bg: var(--paper);
+$card-spacer-y: 1.25rem;
+// Sube a 1.5rem desde md (regla .card). Las tablas pegadas al borde de la tarjeta usan
+// este mismo margen en su primera y última celda.
+$card-spacer-x: 1rem;
+$card-cap-bg: transparent;
+
+$modal-content-border-radius: $border-radius-xl;
+$modal-header-border-color: transparent;
+$modal-footer-border-color: transparent;
+$modal-inner-padding: 1.25rem;
+$modal-content-bg: var(--paper);
+$modal-content-border-color: var(--hairline);
+$dropdown-border-radius: $border-radius-lg;
+$dropdown-bg: var(--paper);
+$dropdown-color: var(--ink);
+$dropdown-border-color: var(--hairline);
+$dropdown-link-color: var(--ink);
+$dropdown-link-hover-color: var(--ink);
+$dropdown-link-hover-bg: var(--canvas);
+$dropdown-link-active-bg: var(--canvas);
+$dropdown-link-active-color: var(--ink);
+$dropdown-header-color: var(--muted);
+$toast-border-radius: $border-radius-lg;
+$toast-background-color: var(--paper);
+$toast-border-color: var(--hairline);
+$offcanvas-bg-color: var(--surface-alt);
+$list-group-bg: var(--paper);
+$list-group-border-color: var(--hairline);
+
+$table-cell-padding-y: 0.75rem;
+$table-cell-padding-x: 0.75rem;
+$table-th-font-weight: 500;
+$table-border-color: var(--hairline);
+$table-hover-bg-factor: 0.03;
+
+$badge-border-radius: $border-radius-pill;
+$badge-font-weight: 500;
+$badge-padding-y: 0.3em;
+$badge-padding-x: 0.65em;
+
+$pagination-border-radius: $border-radius-pill;
+$pagination-color: var(--ink);
+$pagination-bg: var(--paper);
+$pagination-border-color: var(--hairline);
+$pagination-hover-color: var(--ink);
+$pagination-hover-bg: var(--canvas);
+$pagination-hover-border-color: var(--hairline);
+$pagination-active-color: var(--on-ink);
+$pagination-active-bg: var(--ink);
+$pagination-active-border-color: var(--ink);
+$pagination-disabled-color: var(--muted);
+$pagination-disabled-bg: var(--paper);
+$pagination-disabled-border-color: var(--hairline);
+$pagination-focus-box-shadow: 0 0 0 2px var(--ink);
+
+$offcanvas-horizontal-width: 280px;
+
+// Migas de pan de las fichas: tipográficas, como en DESIGN.md (separador gris, sin fondo).
+$breadcrumb-font-size: 0.8125rem;
+$breadcrumb-margin-bottom: 0.5rem;
+$breadcrumb-divider: '›';
+$breadcrumb-divider-color: var(--muted);
+$breadcrumb-active-color: var(--ink);
+
+@import 'bootstrap/scss/functions';
+@import 'bootstrap/scss/variables';
+$theme-colors: map-merge($theme-colors, $custom-colors);
+@import 'bootstrap/scss/variables-dark';
+@import 'bootstrap/scss/maps';
+@import 'bootstrap/scss/mixins';
+@import 'bootstrap/scss/utilities';
+@import 'bootstrap/scss/root';
+@import 'bootstrap/scss/reboot';
+@import 'bootstrap/scss/type';
+@import 'bootstrap/scss/containers';
+@import 'bootstrap/scss/grid';
+@import 'bootstrap/scss/tables';
+@import 'bootstrap/scss/forms';
+@import 'bootstrap/scss/buttons';
+@import 'bootstrap/scss/transitions';
+@import 'bootstrap/scss/dropdown';
+@import 'bootstrap/scss/button-group';
+@import 'bootstrap/scss/nav';
+@import 'bootstrap/scss/card';
+@import 'bootstrap/scss/breadcrumb';
+@import 'bootstrap/scss/pagination';
+@import 'bootstrap/scss/badge';
+@import 'bootstrap/scss/alert';
+@import 'bootstrap/scss/list-group';
+@import 'bootstrap/scss/close';
+@import 'bootstrap/scss/toasts';
+@import 'bootstrap/scss/modal';
+@import 'bootstrap/scss/tooltip';
+@import 'bootstrap/scss/offcanvas';
+@import 'bootstrap/scss/spinners';
+@import 'bootstrap/scss/helpers';
+@import 'bootstrap/scss/utilities/api';
+
+// Tokens del modo claro. Viven en un mixin porque la impresión los reutiliza tal cual
+// (ver @media print al final): el papel siempre sale en claro.
+@mixin tokens-claros {
+  --ink: #{$black};
+  /** Texto sobre una superficie de color --ink (avatar, botón primario). */
+  --on-ink: #{$white};
+  --muted: #6b6b6b;
+  --hairline: #{$gray-200};
+  --canvas: #{$gray-100};
+  --paper: #{$white};
+  --surface-alt: #fafafa;
+  --surface-input: #{$gray-100};
+  /** 3.2:1 sobre blanco y 2.9:1 sobre #f5f5f5 (el relleno del campo también lo distingue). */
+  --input-border: #8f8f8f;
+  // Gráficos: una sola tinta para la serie; el gris de énfasis (las barras que no se
+  // destacan) da 3.2:1 sobre blanco, así que también es legible como marca.
+  --chart-mark: var(--ink);
+  --chart-muted: #8f8f8f;
+  --chart-grid: var(--hairline);
+  --soft-bg: #{$gray-100};
+  --soft-hover: #{$gray-200};
+  --soft-active: #{$gray-300};
+  /** Fondo de los botones de vender; el texto encima siempre es blanco (4.8:1). */
+  --accent: #e7000b;
+  /** Rojo de marca usado como texto (el nombre de la app). */
+  --accent-text: #e7000b;
+  --danger: #{$danger};
+  --shadow-card:
+    0 0 0 1px rgba(23, 23, 23, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1),
+    0 1px 2px -1px rgba(0, 0, 0, 0.1);
+}
+
+:root,
+[data-bs-theme='light'] {
+  @include tokens-claros;
+}
+
+// Valores verificados con WCAG AA: texto #fafafa sobre #171717 es 17:1, el gris
+// secundario #a3a3a3 sobre #171717 es 7.4:1 y el rojo de marca #ff6467 sobre
+// #0a0a0a es 6.8:1 (el #e7000b solo da 4.2:1 sobre negro).
+[data-bs-theme='dark'] {
+  --ink: #fafafa;
+  --on-ink: #{$black};
+  --muted: #{$gray-400};
+  --hairline: #{$gray-800};
+  --canvas: #{$black};
+  --paper: #{$gray-900};
+  --surface-alt: #111111;
+  --surface-input: #212121;
+  /** 3.4:1 sobre las tarjetas #171717. */
+  --input-border: #6b6b6b;
+  --chart-mark: var(--ink);
+  --chart-muted: #6b6b6b;
+  --chart-grid: var(--hairline);
+  --soft-bg: #{$gray-800};
+  --soft-hover: #2f2f2f;
+  --soft-active: #3a3a3a;
+  --accent: #e7000b;
+  --accent-text: #ff6467;
+  --danger: #ffa2a2;
+  --bs-danger-rgb: 255, 162, 162;
+  --bs-light-rgb: 38, 38, 38;
+  --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 1px 3px rgba(0, 0, 0, 0.5);
+
+  // Primario invertido: botón claro con texto oscuro, igual que en DESIGN.md pero en negativo.
+  .btn-primary {
+    --bs-btn-bg: #fafafa;
+    --bs-btn-border-color: #fafafa;
+    --bs-btn-color: #{$black};
+    --bs-btn-hover-bg: #{$gray-200};
+    --bs-btn-hover-border-color: #{$gray-200};
+    --bs-btn-hover-color: #{$black};
+    --bs-btn-active-bg: #{$gray-300};
+    --bs-btn-active-border-color: #{$gray-300};
+    --bs-btn-active-color: #{$black};
+    --bs-btn-disabled-bg: #{$gray-600};
+    --bs-btn-disabled-border-color: #{$gray-600};
+    --bs-btn-disabled-color: #{$gray-200};
+  }
+
+  .form-check-input:checked {
+    background-color: #{$gray-600};
+    border-color: #{$gray-600};
+  }
+
+  .text-bg-dark {
+    background-color: #fafafa !important;
+    color: #{$black} !important;
+  }
+
+  .text-bg-light {
+    color: #fafafa !important;
+  }
+}
+
+body {
+  font-feature-settings:
+    'ss01' on,
+    'cv11' on;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+.h1 {
+  letter-spacing: -0.025em;
+}
+
+h2,
+.h2 {
+  letter-spacing: -0.025em;
+}
+
+// Foco visible y uniforme en todo lo que se puede tocar con el teclado.
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.btn:focus-visible,
+.page-link:focus-visible,
+.nav-link:focus-visible,
+.dropdown-item:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+.form-control:focus-visible,
+.form-select:focus-visible {
+  outline: none;
+}
+
+.btn {
+  min-height: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-sm {
+  min-height: 2rem;
+}
+
+// Botón secundario de DESIGN.md: relleno gris suave, sin borde.
+.btn-soft {
+  --bs-btn-bg: var(--soft-bg);
+  --bs-btn-color: var(--ink);
+  --bs-btn-border-color: var(--soft-bg);
+  --bs-btn-hover-bg: var(--soft-hover);
+  --bs-btn-hover-border-color: var(--soft-hover);
+  --bs-btn-hover-color: var(--ink);
+  --bs-btn-active-bg: var(--soft-active);
+  --bs-btn-active-border-color: var(--soft-active);
+  --bs-btn-active-color: var(--ink);
+  --bs-btn-disabled-bg: var(--soft-bg);
+  --bs-btn-disabled-border-color: var(--soft-bg);
+  --bs-btn-disabled-color: var(--muted);
+}
+
+.btn-outline-secondary {
+  --bs-btn-color: var(--ink);
+  --bs-btn-border-color: var(--hairline);
+  --bs-btn-hover-bg: var(--soft-bg);
+  --bs-btn-hover-border-color: var(--soft-active);
+  --bs-btn-hover-color: var(--ink);
+  --bs-btn-active-bg: var(--soft-hover);
+  --bs-btn-active-border-color: var(--soft-active);
+  --bs-btn-active-color: var(--ink);
+}
+
+.btn-icon {
+  width: 2.5rem;
+  padding: 0;
+}
+
+.btn-icon.btn-sm {
+  width: 2rem;
+}
+
+.card {
+  // El encabezado sigue el mismo margen lateral que el cuerpo en los dos tamaños.
+  --bs-card-cap-padding-x: var(--bs-card-spacer-x);
+  box-shadow: var(--shadow-card);
+
+  @include media-breakpoint-up(md) {
+    --bs-card-spacer-x: 1.5rem;
+  }
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.form-control,
+.form-select {
+  min-height: 2.5rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+  background-color: var(--paper);
+}
+
+// Control segmentado (Gráfico | Tabla, filtros de periodo). La opción activa se marca
+// con superficie y peso, igual que el menú lateral.
+.segmento {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.125rem;
+  padding: 0.1875rem;
+  border-radius: 50rem;
+  background: var(--soft-bg);
+
+  button {
+    min-height: 2rem;
+    padding: 0.25rem 0.75rem;
+    border: 0;
+    border-radius: 50rem;
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    transition: background-color 120ms ease, color 120ms ease;
+  }
+
+  button:hover {
+    color: var(--ink);
+  }
+
+  button[aria-pressed=true] {
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: var(--shadow-card);
+  }
+}
+
+// Chips: el mismo lenguaje que .segmento (botones con aria-pressed) para cuando hay muchas
+// opciones (categorías, marcas). Se envuelven en varias líneas y no hay pista: cada opción
+// es su propia píldora. Pensado para ir sobre una tarjeta (--paper).
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+
+  button {
+    min-height: 2rem;
+    padding: 0.25rem 0.75rem;
+    border: 0;
+    border-radius: 50rem;
+    background: var(--soft-bg);
+    color: var(--muted);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    transition: background-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
+  }
+
+  button:hover {
+    background: var(--soft-hover);
+    color: var(--ink);
+  }
+
+  // Sin pista alrededor, la sombra de tarjeta sola no marca el borde de la píldora activa
+  // (en oscuro el papel es el mismo tono que la tarjeta): se suma un filete interior.
+  button[aria-pressed=true] {
+    background: var(--paper);
+    color: var(--ink);
+    font-weight: 600;
+    box-shadow: var(--shadow-card), inset 0 0 0 1px var(--hairline);
+  }
+
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// Fila de filtros de una lista: buscador, segmentos y chips en una línea que se envuelve.
+// Se alinean por abajo para que un control sin etiqueta quede a la altura de los campos.
+.barra-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+
+  > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  > app-campo-busqueda,
+  > .campo-busqueda {
+    flex: 1 1 16rem;
+    max-width: 26rem;
+  }
+}
+
+// Buscador (app-campo-busqueda): lupa dentro del campo a la izquierda y botón de borrar a
+// la derecha. Los dos se anclan al borde inferior del contenedor, así funciona igual con
+// la etiqueta visible encima o sin ella.
+.campo-busqueda {
+  position: relative;
+
+  .form-control {
+    padding-left: 2.25rem;
+    padding-right: 2.75rem;
+  }
+
+  // El navegador dibuja su propia X en los campos de búsqueda; ya hay un botón para eso.
+  input[type='search']::-webkit-search-cancel-button {
+    display: none;
+    appearance: none;
+  }
+
+  .campo-busqueda-icono,
+  > fa-icon {
+    position: absolute;
+    bottom: 0;
+    left: 0.875rem;
+    display: flex;
+    align-items: center;
+    height: 2.5rem;
+    color: var(--muted);
+    pointer-events: none;
+  }
+
+  .campo-busqueda-borrar,
+  > button {
+    position: absolute;
+    right: 0.25rem;
+    bottom: 0.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    min-height: 2rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50rem;
+    background: transparent;
+    color: var(--muted);
+  }
+
+  .campo-busqueda-borrar:hover,
+  > button:hover {
+    background: var(--soft-hover);
+    color: var(--ink);
+  }
+}
+
+// La paginación de ng-bootstrap vive en otro componente; sus márgenes se ajustan aquí.
+app-pie-tabla .pagination {
+  margin: 0;
+  flex-wrap: wrap;
+}
+
+.grafico-encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+// Campo de clave con el botón de mostrarla dentro, a la derecha.
+.campo-clave {
+  position: relative;
+
+  .form-control,
+  .form-control.is-invalid {
+    padding-right: 3rem;
+    background-image: none;
+  }
+
+  .btn-ver-clave {
+    position: absolute;
+    top: 50%;
+    right: 0.25rem;
+    transform: translateY(-50%);
+    width: 2.25rem;
+    min-height: 2.25rem;
+    padding: 0;
+    border: 0;
+    color: var(--muted);
+  }
+
+  .btn-ver-clave:hover,
+  .btn-ver-clave[aria-pressed=true] {
+    color: var(--ink);
+  }
+}
+
+.invalid-feedback {
+  font-size: 0.8125rem;
+}
+
+// Sin esto, los textos .visually-hidden (position: absolute) de las celdas escapan
+// del contenedor con scroll y desbordan la página en horizontal.
+.table-responsive {
+  position: relative;
+}
+
+.table {
+  --bs-table-bg: transparent;
+  margin-bottom: 0;
+}
+
+.table > thead th {
+  color: var(--muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  border-bottom-color: var(--hairline);
+}
+
+// En celular los encabezados se parten en dos líneas: un "Utilidad estimada (30 días)"
+// en una sola línea empujaba la columna de acciones fuera de la pantalla.
+@include media-breakpoint-down(md) {
+  .table > thead th {
+    white-space: normal;
+  }
+
+  // Fechas largas ("24 de oct de 2026") se parten en dos líneas. Los montos no se
+  // parten: el formato de pesos separa el signo con un espacio que no se corta.
+  .table > tbody > tr > td.num,
+  .table > tbody > tr > td > .num {
+    white-space: normal !important;
+  }
+
+  // Columna de acciones al final de la fila: en celular los botones se apilan en vez
+  // de ir en fila, así la columna ocupa un botón de ancho y no se sale de la pantalla.
+  .table > tbody > tr > td:last-child:has(> .btn) {
+    white-space: normal !important;
+
+    > .btn {
+      display: flex;
+      width: max-content;
+      margin: 0 0 0.25rem auto !important;
+    }
+
+    > .btn:last-child {
+      margin-bottom: 0 !important;
+    }
+  }
+
+  // Si aun así la tabla es más ancha que la pantalla, la columna de acciones queda fija
+  // al borde derecho: el resto de la fila se desplaza por debajo y los botones siempre
+  // están a la vista.
+  .table > tbody > tr > td:last-child:has(> .btn),
+  .table:has(> tbody > tr > td:last-child > .btn) > thead > tr > th:last-child {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    background-color: var(--paper);
+    box-shadow: inset 1px 0 0 var(--hairline);
+  }
+}
+
+.table > tbody > tr:last-child > * {
+  border-bottom: 0;
+}
+
+.table-clickable tbody tr {
+  cursor: pointer;
+}
+
+// Tablas pegadas al borde de la tarjeta: la primera y la última celda de cada fila usan
+// el margen de .card-body, así la tabla queda alineada con el título y los filtros.
+// También cuando la tabla va dentro del contenedor de carga sin parpadeo ([aria-busy]).
+.card > .table-responsive > .table,
+.card > .table,
+.card > [aria-busy] > .table-responsive > .table,
+.card > [aria-busy] > .table {
+  > :not(caption) > tr > :first-child {
+    padding-left: var(--bs-card-spacer-x);
+  }
+
+  > :not(caption) > tr > :last-child {
+    padding-right: var(--bs-card-spacer-x);
+  }
+}
+
+// Tablas en móvil: las columnas secundarias (.col-sec) se ocultan bajo md y lo que
+// mostraban pasa a una línea .solo-movil dentro de la celda principal. Solo en pantalla:
+// una hoja impresa mide menos de 768px y debe salir con todas las columnas.
+@media screen and (max-width: #{breakpoint-max(md)}) {
+  .col-sec {
+    display: none !important;
+  }
+}
+
+@media print, screen and (min-width: #{breakpoint-min(md)}) {
+  .solo-movil {
+    display: none !important;
+  }
+}
+
+// Recarga sin parpadeo: mientras un recurso vuelve a pedir datos, lo que ya se veía se
+// queda en su sitio, atenuado, y sus botones no responden. La transición va también en
+// [aria-busy] para que la vuelta a opacidad completa no sea un salto.
+[aria-busy],
+.actualizando {
+  transition: opacity 120ms ease;
+}
+
+.actualizando {
+  opacity: 0.6;
+  cursor: progress;
+
+  :is(button, .btn) {
+    pointer-events: none;
+  }
+}
+
+.badge.text-bg-light {
+  border: 1px solid var(--hairline);
+}
+
+.modal-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.dropdown-menu {
+  box-shadow: var(--shadow-card);
+  padding: 0.375rem;
+}
+
+.dropdown-item {
+  border-radius: $border-radius-sm;
+}
+
+// Cifras de dinero y cantidades alineadas en columnas.
+.num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.text-muted-strong {
+  color: var(--muted);
+}
+
+// Motivo de identidad: los códigos de producto y los números de factura se
+// muestran como la etiqueta colgante que lleva cada artículo en una
+// ferretería, con su perforación a la izquierda.
+.code-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.125rem 0.5rem 0.125rem 0.4rem;
+  border: 1px solid var(--hairline);
+  border-radius: $border-radius-sm;
+  background: var(--paper);
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: var(--ink);
+
+  &::before {
+    content: '';
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 50%;
+    border: 1px solid var(--muted);
+    flex: none;
+  }
+}
+
+// Etiqueta de estado de stock: icono + texto, no solo color.
+.stock-low,
+.table > :not(caption) > * > .stock-low {
+  color: var(--danger);
+  font-weight: 500;
+}
+
+.eyebrow {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 1.875rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+// Teclas de atajo (la "/" del buscador): etiqueta suave en la tipografía de la interfaz,
+// no el bloque negro de Bootstrap.
+kbd {
+  display: inline-block;
+  min-width: 1.375rem;
+  padding: 0.0625rem 0.375rem;
+  border: 1px solid var(--hairline);
+  border-radius: $border-radius-sm;
+  background: var(--soft-bg);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.33;
+  text-align: center;
+}
+
+// Aviso dentro de la página (por qué falta algo, qué pasa con un registro). Sin color:
+// si es un peligro, el icono lleva .text-danger y el texto lo dice.
+.franja-estado {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--hairline);
+  border-radius: $border-radius-lg;
+  background: var(--soft-bg);
+  color: var(--ink);
+
+  > * {
+    min-width: 0;
+  }
+
+  > fa-icon {
+    flex: none;
+  }
+
+  p:last-child {
+    margin-bottom: 0;
+  }
+
+  // La franja ya está sobre --soft-bg: la tecla pasa a papel para no fundirse con ella.
+  kbd {
+    background: var(--paper);
+  }
+}
+
+// Datos clave de una ficha (producto, proveedor, cliente): el bloque de cifras de
+// DESIGN.md, solo tipografía y sin tarjetas. Cada par dt/dd va dentro de un div.
+// La columna mínima es la mayor entre 8rem y un cuarto del ancho: de 2 a 4 columnas.
+.datos-clave {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(max(8rem, calc((100% - 3 * 1.5rem) / 4)), 1fr));
+  gap: 1rem 1.5rem;
+  margin: 0;
+
+  > div {
+    min-width: 0;
+  }
+
+  dt {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--muted);
+  }
+
+  dd {
+    margin: 0.25rem 0 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  // Aclaración bajo la cifra ("de 6 entregas", "hace 3 días").
+  dd small,
+  dd .small {
+    display: block;
+    margin-top: 0.125rem;
+    font-size: 0.8125rem;
+    font-weight: 400;
+    line-height: 1.43;
+    color: var(--muted);
+  }
+}
+
+// Migas de pan: enlaces en tinta con subrayado tenue, la página actual sin subrayado.
+.breadcrumb-item {
+  min-width: 0;
+  overflow-wrap: anywhere;
+
+  a {
+    color: var(--ink);
+    text-decoration-color: var(--input-border);
+  }
+
+  a:hover {
+    text-decoration-color: currentColor;
+  }
+
+  &.active,
+  &[aria-current='page'] {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  // El separador es decorativo: con texto alternativo vacío los lectores no lo leen.
+  // Donde no se entienda esta sintaxis queda la regla de Bootstrap.
+  + .breadcrumb-item::before {
+    content: var(--bs-breadcrumb-divider, '›') / '';
+  }
+}
+
+.page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+
+  @include media-breakpoint-up(md) {
+    padding: 2rem 2rem 4rem;
+  }
+}
+
+.visually-hidden-focusable:focus {
+  position: fixed !important;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 2000;
+  padding: 0.5rem 1rem !important;
+  background: var(--paper);
+  border-radius: $border-radius;
+  box-shadow: var(--shadow-card);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+// Solo para el papel (encabezados de factura, notas al pie): no ocupan la pantalla.
+@media screen {
+  .solo-impresion {
+    display: none !important;
+  }
+}
+
+@page {
+  margin: 14mm;
+}
+
+@media print {
+  // El papel siempre sale en claro. core/tema.ts ya cambia a claro en beforeprint; esto
+  // cubre el caso en que el evento no llegue. Además de los tokens propios se reponen las
+  // variables de Bootstrap que cambia el modo oscuro (sin --bs-emphasis-color, por
+  // ejemplo, el texto de las tablas saldría blanco sobre blanco).
+  :root,
+  [data-bs-theme] {
+    @include tokens-claros;
+    color-scheme: light;
+    --bs-body-color: #{$body-color};
+    --bs-body-color-rgb: #{to-rgb($body-color)};
+    --bs-body-bg: #{$white};
+    --bs-body-bg-rgb: #{to-rgb($white)};
+    --bs-emphasis-color: #{$body-emphasis-color};
+    --bs-emphasis-color-rgb: #{to-rgb($body-emphasis-color)};
+    --bs-secondary-color: #{$body-secondary-color};
+    --bs-secondary-color-rgb: #{to-rgb($body-secondary-color)};
+    --bs-secondary-bg: #{$body-secondary-bg};
+    --bs-secondary-bg-rgb: #{to-rgb($body-secondary-bg)};
+    --bs-tertiary-color: #{$body-tertiary-color};
+    --bs-tertiary-color-rgb: #{to-rgb($body-tertiary-color)};
+    --bs-tertiary-bg: #{$body-tertiary-bg};
+    --bs-tertiary-bg-rgb: #{to-rgb($body-tertiary-bg)};
+    --bs-heading-color: inherit;
+    --bs-link-color: #{$link-color};
+    --bs-link-color-rgb: #{to-rgb($link-color)};
+    --bs-link-hover-color: #{$link-hover-color};
+    --bs-link-hover-color-rgb: #{to-rgb($link-hover-color)};
+    --bs-border-color: #{$border-color};
+    --bs-danger-rgb: #{to-rgb($danger)};
+    --bs-light-rgb: #{to-rgb($light)};
+
+    @each $color, $value in $theme-colors-text {
+      --bs-#{$color}-text-emphasis: #{$value};
+    }
+
+    @each $color, $value in $theme-colors-bg-subtle {
+      --bs-#{$color}-bg-subtle: #{$value};
+    }
+
+    @each $color, $value in $theme-colors-border-subtle {
+      --bs-#{$color}-border-subtle: #{$value};
+    }
+  }
+
+  body {
+    background: #fff;
+  }
+
+  .page {
+    padding: 0;
+    max-width: none;
+  }
+
+  .no-print,
+  .visually-hidden-focusable {
+    display: none !important;
+  }
+
+  .card {
+    box-shadow: none;
+    border: 0;
+  }
+
+  .table-responsive {
+    overflow: visible;
+  }
+
+  // Las tablas largas repiten el encabezado en cada hoja y no parten una fila en dos.
+  thead {
+    display: table-header-group;
+  }
+
+  tr {
+    break-inside: avoid;
+  }
+}

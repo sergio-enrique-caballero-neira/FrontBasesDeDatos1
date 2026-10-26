@@ -1,0 +1,37 @@
+/* Cada parte bajo los filtros (resumen, aviso del día, conteo, tabla) se separa con un filete. */
+.bloque {
+  border-top: 1px solid var(--hairline);
+}
+
+.filtro-lista {
+  flex: 0 1 13rem;
+}
+
+/* En un teléfono cada lista ocupa la fila entera: nada se sale de la pantalla. */
+@media (max-width: 575.98px) {
+  .filtro-lista {
+    flex-basis: 100%;
+  }
+}
+
+.filtros-activos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filtros-activos .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.conteo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.75rem var(--bs-card-spacer-x);
+}

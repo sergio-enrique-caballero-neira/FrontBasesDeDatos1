@@ -1,0 +1,111 @@
+/*
+ * En el celular el panel arranca arriba con un margen cómodo (centrarlo deja el formulario
+ * bajo el teclado); desde sm se centra en la pantalla. Los env() solo valen algo en iPhone.
+ */
+.auth {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  padding: calc(1.5rem + env(safe-area-inset-top, 0px)) max(1.25rem, env(safe-area-inset-right))
+    calc(2rem + env(safe-area-inset-bottom, 0px)) max(1.25rem, env(safe-area-inset-left));
+}
+
+@media (min-width: 576px) {
+  .auth {
+    align-content: center;
+    padding-top: calc(3rem + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(3rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.auth-panel {
+  width: 100%;
+  max-width: 28rem;
+}
+
+/* Marca y cambio de tema en una fila: el botón no flota sobre el contenido en pantallas chicas. */
+.auth-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+/* El nombre de la marca es uno de los pocos lugares con el rojo de acento. */
+.auth-marca {
+  color: var(--accent-text);
+  font-weight: 600;
+  font-size: 1.125rem;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.opcion {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3.5rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+}
+
+.opcion fa-icon {
+  color: var(--muted);
+}
+
+.opcion:hover {
+  border-color: var(--soft-active);
+  background: var(--surface-alt);
+}
+
+.opcion[aria-pressed='true'] {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+
+.opcion[aria-pressed='true'] fa-icon {
+  color: var(--ink);
+}
+
+/* La pista de la sede habitual es texto con el dato, en tinta para separarse de la dirección. */
+.sugerencia {
+  margin-top: 0.25rem;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.opcion-esqueleto,
+.opcion-esqueleto:hover {
+  border-color: var(--hairline);
+  background: var(--paper);
+}
+
+.barra,
+.barra-icono {
+  display: block;
+  border-radius: 50rem;
+  background: var(--soft-bg);
+}
+
+.barra {
+  height: 0.75rem;
+}
+
+.barra-fina {
+  height: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.barra-icono {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+}

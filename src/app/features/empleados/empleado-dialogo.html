@@ -1,0 +1,126 @@
+<form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+  <div class="modal-header">
+    <h2 class="modal-title" id="empleado-titulo">{{ existente() ? 'Editar empleado' : 'Nuevo empleado' }}</h2>
+    <button type="button" class="btn-close" aria-label="Cerrar" (click)="modal.dismiss()"></button>
+  </div>
+
+  <div class="modal-body pt-0 d-grid gap-3">
+    @if (error(); as error) {
+      <div class="alert alert-danger d-flex gap-2 mb-0" role="alert">
+        <fa-icon [icon]="iconoError" class="mt-1" />
+        <span>{{ error }}</span>
+      </div>
+    }
+
+    <fieldset [attr.aria-describedby]="esUsuarioActual() ? 'empleado-rol-ayuda' : null">
+      <legend class="form-label fs-6">Rol</legend>
+      <div class="btn-group w-100" role="group">
+        <input type="radio" class="btn-check" id="rol-vendedor" value="VENDEDOR" formControlName="rol" />
+        <label class="btn btn-outline-secondary" for="rol-vendedor">Vendedor</label>
+        <input type="radio" class="btn-check" id="rol-admin" value="ADMINISTRADOR" formControlName="rol" />
+        <label class="btn btn-outline-secondary" for="rol-admin">Administrador</label>
+      </div>
+      @if (esUsuarioActual()) {
+        <div class="form-text" id="empleado-rol-ayuda">No puedes cambiar tu propio rol mientras tienes la sesión abierta.</div>
+      }
+    </fieldset>
+
+    <div class="row g-3">
+      <div class="col-sm-6">
+        <label for="emp-nombre" class="form-label">Nombre</label>
+        <input id="emp-nombre" class="form-control" formControlName="nombre" autocomplete="off"
+          [class.is-invalid]="invalido('nombre')" aria-describedby="emp-nombre-error" />
+        <app-campo-error [control]="form.controls.nombre" [enviado]="enviado()" id="emp-nombre-error" />
+      </div>
+      <div class="col-sm-6">
+        <label for="emp-apellido" class="form-label">Apellido</label>
+        <input id="emp-apellido" class="form-control" formControlName="apellido" autocomplete="off"
+          [class.is-invalid]="invalido('apellido')" aria-describedby="emp-apellido-error" />
+        <app-campo-error [control]="form.controls.apellido" [enviado]="enviado()" id="emp-apellido-error" />
+      </div>
+      <div class="col-sm-5">
+        <label for="emp-documento" class="form-label">Documento de identidad</label>
+        <input id="emp-documento" class="form-control num" formControlName="documento" inputmode="numeric" autocomplete="off"
+          [class.is-invalid]="invalido('documento')" aria-describedby="emp-documento-error" />
+        <app-campo-error [control]="form.controls.documento" [enviado]="enviado()" id="emp-documento-error"
+          [mensajes]="{ pattern: 'Escribe solo números, entre 5 y 12 dígitos.' }" />
+      </div>
+      <div class="col-sm-7">
+        <label for="emp-cargo" class="form-label">Cargo</label>
+        <input id="emp-cargo" class="form-control" formControlName="cargo" placeholder="Por ejemplo: Asesor de ventas" autocomplete="off"
+          [class.is-invalid]="invalido('cargo')" aria-describedby="emp-cargo-error" />
+        <app-campo-error [control]="form.controls.cargo" [enviado]="enviado()" id="emp-cargo-error" />
+      </div>
+      <div class="col-12">
+        <label for="emp-correo" class="form-label">Correo empresarial</label>
+        <input id="emp-correo" type="email" class="form-control" formControlName="correo" placeholder="nombre@empresa.com" autocomplete="off"
+          [class.is-invalid]="invalido('correo')" aria-describedby="emp-correo-error emp-correo-ayuda" />
+        <div class="form-text" id="emp-correo-ayuda">Es el usuario con el que ingresa al sistema.</div>
+        <app-campo-error [control]="form.controls.correo" [enviado]="enviado()" id="emp-correo-error" />
+      </div>
+    </div>
+
+    <app-lista-campos
+      [arreglo]="form.controls.telefonos"
+      etiqueta="Teléfonos"
+      idBase="emp-telefono"
+      tipo="tel"
+      [minimo]="1"
+      textoAgregar="Agregar teléfono"
+      [enviado]="enviado()"
+    />
+
+    @if (form.controls.rol.value === 'ADMINISTRADOR') {
+      <div class="row g-3">
+        <div class="col-sm-5">
+          <label for="emp-nivel" class="form-label">Nivel de acceso</label>
+          <select id="emp-nivel" class="form-select" formControlName="nivelAcceso" aria-describedby="emp-nivel-ayuda">
+            <option [ngValue]="1">1 · Consulta</option>
+            <option [ngValue]="2">2 · Operación</option>
+            <option [ngValue]="3">3 · Total</option>
+          </select>
+          <div class="form-text" id="emp-nivel-ayuda">Se guarda para cuando el back aplique permisos por nivel.</div>
+        </div>
+        <div class="col-sm-7">
+          <label for="emp-clave" class="form-label">Clave de seguridad</label>
+          <div class="campo-clave">
+            <input #campoClave id="emp-clave" type="password" class="form-control" formControlName="claveSeguridad" autocomplete="new-password"
+              [class.is-invalid]="invalido('claveSeguridad')" aria-describedby="emp-clave-error emp-clave-ayuda" />
+            <app-ver-clave [campo]="campoClave" />
+          </div>
+          <div class="form-text" id="emp-clave-ayuda">La pide el inicio de sesión. Mínimo 6 caracteres.</div>
+          <app-campo-error [control]="form.controls.claveSeguridad" [enviado]="enviado()" id="emp-clave-error" />
+        </div>
+      </div>
+    } @else {
+      <div class="row g-3">
+        <div class="col-sm-5">
+          <label for="emp-comision" class="form-label">Comisión por venta (%)</label>
+          <input id="emp-comision" type="number" class="form-control num" formControlName="comision" inputmode="decimal"
+            min="0" max="50" step="0.5" autocomplete="off"
+            [class.is-invalid]="invalido('comision')" aria-describedby="emp-comision-error emp-comision-ayuda" />
+          <app-campo-error [control]="form.controls.comision" [enviado]="enviado()" id="emp-comision-error"
+            [mensajes]="{ min: 'La comisión no puede ser negativa.', max: 'La comisión no puede pasar del 50 %.' }" />
+        </div>
+        <div class="col-sm-7 d-flex align-items-end">
+          <p class="form-text mb-sm-2 mt-0" id="emp-comision-ayuda">
+            Porcentaje sobre el total de cada venta; la tasa general es {{ comisionPorDefecto }} %. Si la cambias, también
+            cambian las liquidaciones de periodos anteriores.
+          </p>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-soft" (click)="modal.dismiss()">Cancelar</button>
+    <button type="submit" class="btn btn-primary" [disabled]="guardando()">
+      @if (guardando()) {
+        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        Guardando…
+      } @else {
+        {{ existente() ? 'Guardar cambios' : 'Crear empleado' }}
+      }
+    </button>
+  </div>
+</form>

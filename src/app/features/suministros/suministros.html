@@ -1,0 +1,211 @@
+<div class="page">
+  <app-page-header
+    titulo="Suministros"
+    descripcion="Qué proveedor abastece cada producto en cada sucursal, a qué precio y en cuántos días."
+  >
+    <button type="button" class="btn btn-primary" [disabled]="!datos.hasValue()" (click)="editar(null)">
+      <fa-icon [icon]="iconos.faPlus" />
+      Nuevo suministro
+    </button>
+  </app-page-header>
+
+  <div class="card">
+    @if (datos.hasValue()) {
+      @let d = datos.value();
+      @if (d.filas.length === 0) {
+        <div [attr.aria-busy]="datos.isLoading()" [class.actualizando]="datos.isLoading()">
+          <app-vacio
+            [icono]="iconos.faTruckRampBox"
+            [titulo]="porTodas() ? 'Aún no hay suministros registrados' : 'Esta sucursal aún no tiene suministros'"
+            detalle="Un suministro une a un proveedor con un producto y la sucursal que lo recibe, con su precio y días de entrega. Es lo que después se evalúa en calidad."
+          >
+            <button type="button" class="btn btn-primary" (click)="editar(null)">Registrar el primer suministro</button>
+          </app-vacio>
+        </div>
+      } @else {
+        <div class="card-body d-grid gap-3">
+          <div class="barra-filtros">
+            <app-campo-busqueda etiqueta="Producto" placeholder="Nombre o código" [atajo]="true" [(valor)]="busqueda" />
+            <div class="form-check form-switch mb-2">
+              <input
+                id="sum-sin-evaluar"
+                class="form-check-input"
+                type="checkbox"
+                role="switch"
+                [checked]="soloSinEvaluar()"
+                (change)="soloSinEvaluar.set(!soloSinEvaluar())"
+              />
+              <label class="form-check-label" for="sum-sin-evaluar">
+                Solo sin evaluar (<span class="num">{{ sinEvaluar() }}</span>)
+              </label>
+            </div>
+            @if (filtrosActivos()) {
+              <button type="button" class="btn btn-link mb-1 px-0" (click)="quitarFiltros()">
+                Quitar filtros ({{ filtrosActivos() }})
+              </button>
+            }
+          </div>
+          @if (proveedoresEnVista().length > 1) {
+            <div role="group" aria-labelledby="sum-proveedor-etiqueta">
+              <p class="form-label mb-2" id="sum-proveedor-etiqueta">Proveedor</p>
+              <div class="chips">
+                <button type="button" [attr.aria-pressed]="!nit()" (click)="elegirProveedor('')">Todos</button>
+                @for (p of proveedoresEnVista(); track p.nit) {
+                  <button type="button" [attr.aria-pressed]="nit() === p.nit" (click)="elegirProveedor(nit() === p.nit ? '' : p.nit)">
+                    {{ p.nombre }}
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <div [attr.aria-busy]="datos.isLoading()" [class.actualizando]="datos.isLoading()">
+          @if (filtradas().length === 0) {
+            <app-vacio [titulo]="sinResultados().titulo" [detalle]="sinResultados().detalle">
+              <button type="button" class="btn btn-soft" (click)="quitarFiltros()">Quitar filtros</button>
+            </app-vacio>
+          } @else {
+            <div class="table-responsive">
+              <table class="table align-middle">
+                <caption class="visually-hidden">Suministros por producto, proveedor y sucursal</caption>
+                <thead>
+                  <tr>
+                    <th scope="col" [attr.aria-sort]="orden.ariaSort('producto')">
+                      <app-encabezado-orden [orden]="orden" columna="producto" texto="Producto" />
+                    </th>
+                    <th scope="col" class="col-sec" [attr.aria-sort]="orden.ariaSort('proveedor')">
+                      <app-encabezado-orden [orden]="orden" columna="proveedor" texto="Proveedor" />
+                    </th>
+                    @if (porTodas()) {
+                      <th scope="col" class="col-sec" [attr.aria-sort]="orden.ariaSort('sucursal')">
+                        <app-encabezado-orden [orden]="orden" columna="sucursal" texto="Sucursal" />
+                      </th>
+                    }
+                    <th scope="col" class="text-end" [attr.aria-sort]="orden.ariaSort('precio')">
+                      <app-encabezado-orden [orden]="orden" columna="precio" texto="Precio c/u" />
+                    </th>
+                    <th scope="col" class="text-end col-sec" [attr.aria-sort]="orden.ariaSort('entrega')">
+                      <app-encabezado-orden [orden]="orden" columna="entrega" texto="Entrega" />
+                    </th>
+                    <th scope="col" [attr.aria-sort]="orden.ariaSort('calidad')">
+                      <app-encabezado-orden [orden]="orden" columna="calidad" texto="Calidad" />
+                    </th>
+                    <th scope="col"><span class="visually-hidden">Acciones</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (fila of enPagina(); track fila.clave) {
+                    <tr>
+                      <td>
+                        @if (fila.existeProducto) {
+                          <a class="d-block fw-medium link-body-emphasis" [routerLink]="['/productos', fila.suministro.idProducto]">{{ fila.producto }}</a>
+                        } @else {
+                          <span class="d-block fw-medium">{{ fila.producto }}</span>
+                        }
+                        @if (fila.codigo) {
+                          <span class="code-tag mt-1">{{ fila.codigo }}</span>
+                        }
+                        <span class="d-block solo-movil small text-body-secondary mt-1">
+                          <a class="text-body-secondary" [routerLink]="['/proveedores', fila.suministro.nit]">{{ fila.proveedor }}</a>
+                          @if (porTodas()) {
+                            · {{ fila.sucursal }}
+                          }
+                          · <span class="num">{{ fila.suministro.tiempoEntregaDias }} {{ fila.suministro.tiempoEntregaDias === 1 ? 'día' : 'días' }}</span>
+                        </span>
+                      </td>
+                      <td class="col-sec">
+                        <a class="link-body-emphasis" [routerLink]="['/proveedores', fila.suministro.nit]">{{ fila.proveedor }}</a>
+                      </td>
+                      @if (porTodas()) {
+                        <td class="col-sec">{{ fila.sucursal }}</td>
+                      }
+                      <td class="text-end num">{{ fila.suministro.precioSuministro | pesos }}</td>
+                      <td class="text-end num col-sec">
+                        {{ fila.suministro.tiempoEntregaDias }} {{ fila.suministro.tiempoEntregaDias === 1 ? 'día' : 'días' }}
+                      </td>
+                      <td>
+                        @if (fila.evaluaciones) {
+                          <span class="text-nowrap">
+                            <fa-icon [icon]="iconos.faStar" class="me-1" aria-hidden="true" />
+                            <span class="num fw-medium">{{ formatoCalificacion(fila.promedio) }}</span>
+                            <span class="text-body-secondary"> de 5</span>
+                          </span>
+                          <span class="d-block small text-body-secondary">
+                            {{ fila.evaluaciones }} {{ fila.evaluaciones === 1 ? 'evaluación' : 'evaluaciones' }}, la última el
+                            <span class="num text-nowrap">{{ fila.ultima | fecha }}</span>
+                          </span>
+                        } @else {
+                          <span class="text-body-secondary">Sin evaluar</span>
+                        }
+                      </td>
+                      <td class="text-end text-nowrap">
+                        <button
+                          type="button"
+                          class="btn btn-outline-secondary btn-sm"
+                          (click)="evaluar(fila.clave)"
+                          [attr.aria-label]="'Evaluar ' + fila.producto + ' de ' + fila.proveedor + ' en ' + fila.sucursal"
+                          [ngbTooltip]="'Evaluar ' + fila.producto + ' de ' + fila.proveedor + ' en ' + fila.sucursal"
+                          container="body"
+                        >
+                          <fa-icon [icon]="iconos.faClipboardCheck" aria-hidden="true" />
+                          <span class="d-none d-xl-inline ms-1">Evaluar</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-soft btn-icon btn-sm ms-1"
+                          [attr.aria-label]="'Editar suministro de ' + fila.producto + ' en ' + fila.sucursal"
+                          [ngbTooltip]="'Editar suministro de ' + fila.producto + ' en ' + fila.sucursal"
+                          container="body"
+                          (click)="editar(fila.suministro)"
+                        >
+                          <fa-icon [icon]="iconos.faPen" />
+                        </button>
+                        @if (fila.evaluaciones) {
+                          <span
+                            class="d-inline-block ms-1"
+                            tabindex="0"
+                            [ngbTooltip]="'No se puede eliminar: tiene ' + fila.evaluaciones + (fila.evaluaciones === 1 ? ' evaluación' : ' evaluaciones') + ' de calidad'"
+                            container="body"
+                          >
+                            <button
+                              type="button"
+                              class="btn btn-soft btn-icon btn-sm text-danger"
+                              disabled
+                              [attr.aria-label]="'Eliminar suministro de ' + fila.producto + ' en ' + fila.sucursal + ' (no disponible: tiene evaluaciones)'"
+                            >
+                              <fa-icon [icon]="iconos.faTrashCan" />
+                            </button>
+                          </span>
+                        } @else {
+                          <button
+                            type="button"
+                            class="btn btn-soft btn-icon btn-sm ms-1 text-danger"
+                            [attr.aria-label]="'Eliminar suministro de ' + fila.producto + ' en ' + fila.sucursal"
+                            [ngbTooltip]="'Eliminar suministro de ' + fila.producto + ' en ' + fila.sucursal"
+                            container="body"
+                            (click)="eliminar(fila.suministro, fila.proveedor + ' · ' + fila.producto + ' · ' + fila.sucursal)"
+                          >
+                            <fa-icon [icon]="iconos.faTrashCan" />
+                          </button>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <app-pie-tabla [total]="filtradas().length" nombre="suministros" [(pagina)]="pagina" [(porPagina)]="porPagina" />
+          }
+        </div>
+      }
+    } @else if (datos.error()) {
+      <app-error-carga que="Los suministros" [error]="datos.error()" (reintentar)="datos.reload()" />
+    } @else {
+      <app-esqueleto-tabla
+        texto="Cargando suministros"
+        [columnas]="['texto', 'texto', 'texto', 'numero', 'numero', 'texto', 'numero']"
+      />
+    }
+  </div>
+</div>

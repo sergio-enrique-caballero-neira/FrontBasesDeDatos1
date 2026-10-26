@@ -1,0 +1,257 @@
+.venta {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 992px) {
+  .venta {
+    grid-template-columns: minmax(0, 1fr) 24rem;
+    align-items: start;
+  }
+
+  /* El resumen acompaña la lista; si crece más que la ventana, se desplaza por dentro
+     para que Confirmar siga alcanzable sin bajar hasta el final del catálogo. */
+  .resumen {
+    position: sticky;
+    top: 5rem;
+  }
+
+  .resumen > .card {
+    max-height: calc(100dvh - 6rem);
+    overflow-y: auto;
+  }
+}
+
+.anuncio {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.productos {
+  overflow: hidden;
+}
+
+/* En un teléfono: nombre arriba, precio y existencias debajo, botón a la derecha. */
+.producto {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'info boton'
+    'precio boton';
+  align-items: center;
+  gap: 0.375rem 0.75rem;
+  padding: 0.875rem var(--bs-card-spacer-x);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.producto:last-child {
+  border-bottom: 0;
+}
+
+.producto-info {
+  grid-area: info;
+  min-width: 0;
+}
+
+.producto-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.625rem;
+  margin-top: 0.25rem;
+}
+
+.producto-precio {
+  grid-area: precio;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.625rem;
+}
+
+.producto-agregar {
+  grid-area: boton;
+  white-space: nowrap;
+}
+
+@media (min-width: 576px) {
+  .producto {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas: 'info precio boton';
+    gap: 0.75rem 1rem;
+  }
+
+  .producto-precio {
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+  }
+}
+
+.cliente-busqueda {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.cliente-elegido {
+  padding: 0.75rem;
+  border-radius: 14px;
+  background: var(--soft-bg);
+}
+
+.frecuentes {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.frecuente {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+  transition: background-color 120ms ease;
+}
+
+.frecuente:hover {
+  background: var(--soft-bg);
+}
+
+.frecuente:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.frecuente > .text-truncate {
+  min-width: 0;
+}
+
+.lineas {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.linea {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'nombre quitar'
+    'cantidad subtotal'
+    'estado estado';
+  align-items: center;
+  gap: 0.375rem 0.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--hairline);
+}
+
+/* Línea con un problema: un filete a la izquierda además del texto y el icono. */
+.linea.marcada {
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--danger);
+}
+
+.linea-nombre {
+  grid-area: nombre;
+  min-width: 0;
+}
+
+.linea-quitar {
+  grid-area: quitar;
+  justify-self: end;
+}
+
+.linea-subtotal {
+  grid-area: subtotal;
+  justify-self: end;
+}
+
+.linea-estado {
+  grid-area: estado;
+}
+
+.cantidad {
+  grid-area: cantidad;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.cantidad .form-control {
+  width: 3.5rem;
+  min-height: 2rem;
+  -moz-appearance: textfield;
+}
+
+.cantidad .form-control::-webkit-inner-spin-button,
+.cantidad .form-control::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.metodos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.efectivo {
+  margin-top: 1rem;
+}
+
+.total,
+.cambio {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.total {
+  padding-top: 1rem;
+  border-top: 1px solid var(--hairline);
+}
+
+.cambio {
+  margin-top: 0.75rem;
+}
+
+.faltantes {
+  color: var(--danger);
+}
+
+.faltantes ul {
+  padding-left: 1.25rem;
+}
+
+/* En móvil el resumen queda debajo de la lista; esta barra lleva hasta él. */
+.barra-movil {
+  position: sticky;
+  /* En teléfonos con barra de gestos la píldora no queda bajo el indicador de inicio. */
+  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.875rem 1.25rem;
+  border: 0;
+  border-radius: 50rem;
+  background: var(--ink);
+  color: var(--on-ink);
+  text-align: left;
+  box-shadow: var(--shadow-card);
+}
+
+.barra-movil:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}

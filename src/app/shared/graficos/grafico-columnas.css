@@ -1,0 +1,69 @@
+/* En paneles pequeños solo queda el cambio Gráfico | Tabla, en la esquina. */
+.grafico-encabezado.compacto {
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.lienzo.seleccionable {
+  cursor: pointer;
+}
+
+.columna {
+  fill: var(--chart-mark);
+  transition: fill 120ms ease;
+}
+
+.columna.atenuada {
+  fill: var(--chart-muted);
+}
+
+/* Lavado detrás del día activo: muestra qué responde sin cambiar el valor de la marca. */
+.banda-activa {
+  fill: var(--soft-bg);
+}
+
+/* Tramos bajo el eje: una línea fina que abarca sus días y el nombre debajo. */
+.tramos {
+  display: flex;
+}
+
+.tramo {
+  flex: none;
+  min-width: 0;
+  padding-right: 2px;
+}
+
+.tramo > span {
+  display: block;
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--chart-muted);
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.fila-tramo th {
+  padding-top: 0.75rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.boton-dia {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.boton-dia:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.fila-elegida > td {
+  font-weight: 600;
+}

@@ -1,0 +1,205 @@
+<div class="page">
+  <app-page-header
+    titulo="Productos"
+    [descripcion]="'Catálogo de la cadena y lo que vendió cada producto en los últimos 30 días (' + textoPeriodo + '), en todas las sucursales.'"
+  >
+    @if (catalogo.hasValue() && filtrados().length > 0) {
+      <button type="button" class="btn btn-soft" (click)="exportar()">
+        <fa-icon [icon]="iconos.faFileArrowDown" />
+        Exportar CSV
+      </button>
+    }
+    <button type="button" class="btn btn-primary" [disabled]="!catalogo.hasValue()" (click)="editar(null)">
+      <fa-icon [icon]="iconos.faPlus" />
+      Nuevo producto
+    </button>
+  </app-page-header>
+
+  <div class="card">
+    <div class="card-body d-grid gap-3">
+      <div class="barra-filtros">
+        <app-campo-busqueda etiqueta="Buscar" placeholder="Nombre, código o marca" [atajo]="true" [(valor)]="busqueda" />
+        <div class="form-check form-switch mb-2">
+          <input
+            id="prod-sin-ventas"
+            class="form-check-input"
+            type="checkbox"
+            role="switch"
+            [checked]="soloSinVentas()"
+            (change)="soloSinVentas.set(!soloSinVentas())"
+          />
+          <label class="form-check-label" for="prod-sin-ventas">
+            Sin ventas en 30 días
+            @if (catalogo.hasValue()) {
+              <span class="num">({{ cantidadSinVentas() }})</span>
+            }
+          </label>
+        </div>
+        @if (filtrosActivos() > 0) {
+          <button type="button" class="btn btn-link px-0 mb-1" (click)="quitarFiltros()">
+            Quitar filtros (<span class="num">{{ filtrosActivos() }}</span>)
+          </button>
+        }
+      </div>
+
+      @if (catalogo.hasValue()) {
+        <div>
+          <span class="form-label d-block" id="prod-categoria-etiqueta">Categoría</span>
+          <div class="chips" role="group" aria-labelledby="prod-categoria-etiqueta">
+            <button type="button" [attr.aria-pressed]="idCategoria() === null" (click)="elegirCategoria(null)">Todas</button>
+            @for (c of principales(); track c.idCategoria) {
+              <button type="button" [attr.aria-pressed]="idCategoria() === c.idCategoria" (click)="elegirCategoria(c.idCategoria)">
+                {{ c.nombre }}
+              </button>
+            }
+            @if (subcategoriaElegida(); as sub) {
+              <button type="button" aria-pressed="true" (click)="elegirCategoria(null)">{{ sub.nombre }}</button>
+            }
+          </div>
+        </div>
+        <div>
+          <span class="form-label d-block" id="prod-marca-etiqueta">Marca</span>
+          <div class="chips" role="group" aria-labelledby="prod-marca-etiqueta">
+            <button type="button" [attr.aria-pressed]="idMarca() === null" (click)="elegirMarca(null)">Todas</button>
+            @for (m of catalogo.value().marcas; track m.idMarca) {
+              <button type="button" [attr.aria-pressed]="idMarca() === m.idMarca" (click)="elegirMarca(m.idMarca)">
+                {{ m.nombre }}
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    @if (catalogo.hasValue()) {
+      <div [attr.aria-busy]="catalogo.isLoading()" [class.actualizando]="catalogo.isLoading()">
+        @if (catalogo.value().filas.length === 0) {
+          <app-vacio
+            [icono]="iconos.faScrewdriverWrench"
+            titulo="El catálogo está vacío"
+            detalle="Antes de crear productos, asegúrate de tener marcas y categorías registradas."
+          >
+            <button type="button" class="btn btn-primary" (click)="editar(null)">Crear el primer producto</button>
+          </app-vacio>
+        } @else if (filtrados().length === 0) {
+          <app-vacio
+            [titulo]="soloSinVentas() && filtrosActivos() === 1 ? 'Todos los productos vendieron en los últimos 30 días' : 'Ningún producto coincide con los filtros'"
+            [detalle]="soloSinVentas() && filtrosActivos() === 1 ? 'Cada producto vendió al menos una unidad ' + textoPeriodo + '.' : 'Prueba con el código, otra marca u otra categoría.'"
+          >
+            <button type="button" class="btn btn-soft" (click)="quitarFiltros()">Ver todo el catálogo</button>
+          </app-vacio>
+        } @else {
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <caption class="visually-hidden">
+                Productos del catálogo con sus ventas {{ textoPeriodo }}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col" [attr.aria-sort]="orden.ariaSort('nombre')">
+                    <app-encabezado-orden [orden]="orden" columna="nombre" texto="Producto" />
+                  </th>
+                  <th scope="col" class="col-sec" [attr.aria-sort]="orden.ariaSort('marca')">
+                    <app-encabezado-orden [orden]="orden" columna="marca" texto="Marca" />
+                  </th>
+                  <th scope="col" class="col-sec" [attr.aria-sort]="orden.ariaSort('categoria')">
+                    <app-encabezado-orden [orden]="orden" columna="categoria" texto="Categoría" />
+                  </th>
+                  <th scope="col" class="text-end col-sec" [attr.aria-sort]="orden.ariaSort('precio')">
+                    <app-encabezado-orden [orden]="orden" columna="precio" texto="Precio" />
+                  </th>
+                  <th scope="col" class="text-end col-sec" [attr.aria-sort]="orden.ariaSort('margen')">
+                    <app-encabezado-orden [orden]="orden" columna="margen" texto="Margen" />
+                  </th>
+                  <th scope="col" class="text-end col-sec" [attr.aria-sort]="orden.ariaSort('stock')">
+                    <app-encabezado-orden [orden]="orden" columna="stock" texto="Stock" />
+                  </th>
+                  <th scope="col" class="text-end" [attr.aria-sort]="orden.ariaSort('vendidas')">
+                    <app-encabezado-orden [orden]="orden" columna="vendidas" texto="Vendidas (30 días)" />
+                  </th>
+                  <th scope="col" class="text-end" [attr.aria-sort]="orden.ariaSort('utilidad')">
+                    <app-encabezado-orden [orden]="orden" columna="utilidad" texto="Utilidad estimada (30 días)" />
+                    <span class="d-block small fw-normal text-body-secondary">con el costo actual</span>
+                  </th>
+                  <th scope="col"><span class="visually-hidden">Acciones</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (fila of paginaActual(); track fila.producto.idProducto) {
+                  <tr>
+                    <td>
+                      <a class="d-block fw-medium link-body-emphasis" [routerLink]="['/productos', fila.producto.idProducto]">
+                        {{ fila.producto.nombre }}
+                      </a>
+                      <span class="code-tag mt-1">{{ fila.producto.codigo }}</span>
+                      <span class="d-block solo-movil small text-body-secondary mt-1">
+                        {{ fila.marca }} · {{ fila.categoria }} · stock <span class="num">{{ fila.producto.stock }}</span>
+                      </span>
+                    </td>
+                    <td class="col-sec">{{ fila.marca }}</td>
+                    <td class="col-sec">
+                      <span class="d-block">{{ fila.categoria }}</span>
+                      @if (fila.principal !== fila.categoria) {
+                        <span class="small text-body-secondary">{{ fila.principal }}</span>
+                      }
+                    </td>
+                    <td class="text-end col-sec">
+                      <span class="d-block num fw-medium">{{ fila.producto.precioBaseVenta | pesos }}</span>
+                      <span class="small text-body-secondary num">costo {{ fila.producto.costoCompra | pesos }}</span>
+                    </td>
+                    <td class="text-end num col-sec">{{ porcentaje(fila.margen) }}</td>
+                    <td class="text-end num col-sec">{{ fila.producto.stock }}</td>
+                    <td class="text-end">
+                      @if (fila.unidades > 0) {
+                        <app-barra-celda [texto]="unidades(fila.unidades)" [proporcion]="proporcion(fila.unidades, maxUnidades())" />
+                      } @else {
+                        <span class="text-body-secondary text-nowrap">Sin ventas</span>
+                      }
+                    </td>
+                    <td class="text-end">
+                      @if (fila.unidades > 0) {
+                        <app-barra-celda [texto]="dinero(fila.utilidad)" [proporcion]="proporcion(fila.utilidad, maxUtilidad())" />
+                      } @else {
+                        <span class="text-body-secondary num">{{ 0 | pesos }}</span>
+                      }
+                    </td>
+                    <td class="text-end text-nowrap">
+                      <button
+                        type="button"
+                        class="btn btn-soft btn-icon btn-sm"
+                        [attr.aria-label]="'Editar ' + fila.producto.nombre"
+                        [ngbTooltip]="'Editar ' + fila.producto.nombre"
+                        container="body"
+                        (click)="editar(fila.producto)"
+                      >
+                        <fa-icon [icon]="iconos.faPen" />
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-soft btn-icon btn-sm ms-1 text-danger"
+                        [attr.aria-label]="'Eliminar ' + fila.producto.nombre"
+                        [ngbTooltip]="'Eliminar ' + fila.producto.nombre"
+                        container="body"
+                        (click)="eliminar(fila.producto)"
+                      >
+                        <fa-icon [icon]="iconos.faTrashCan" />
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <app-pie-tabla [total]="filtrados().length" nombre="productos" [(pagina)]="pagina" [(porPagina)]="porPagina" />
+        }
+      </div>
+    } @else if (catalogo.error()) {
+      <app-error-carga que="El catálogo de productos" [error]="catalogo.error()" (reintentar)="catalogo.reload()" />
+    } @else {
+      <app-esqueleto-tabla
+        texto="Cargando productos"
+        [columnas]="['texto', 'texto', 'texto', 'numero', 'numero', 'numero', 'numero', 'numero', 'texto']"
+      />
+    }
+  </div>
+</div>

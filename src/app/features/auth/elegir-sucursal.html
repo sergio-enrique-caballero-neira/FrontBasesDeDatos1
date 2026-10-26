@@ -1,0 +1,77 @@
+<main class="auth">
+  <div class="auth-panel">
+    <div class="auth-cabecera">
+      <p class="auth-marca">{{ nombreApp }}</p>
+      <app-boton-tema />
+    </div>
+    <h1 class="mb-1">¿En qué sucursal trabajas hoy?</h1>
+    <p class="text-body-secondary mb-4">
+      Hola, {{ usuario()?.nombre }}.
+      @if (esAdmin()) {
+        Elige una sede o revisa todas a la vez. Puedes cambiarla después desde la barra superior.
+      } @else {
+        Tus ventas e inventario se registran en la sucursal que elijas. Puedes cambiarla después desde la barra superior.
+      }
+    </p>
+
+    @if (sucursales.hasValue()) {
+      @if (!sucursales.value().length) {
+        <app-vacio
+          [icono]="iconos.faStore"
+          titulo="No hay sucursales registradas"
+          detalle="Un administrador debe crear al menos una sucursal antes de poder vender."
+        />
+      } @else {
+        @let sugerida = sugerencia.hasValue() ? sugerencia.value() : null;
+        <div class="d-grid gap-2" role="group" aria-label="Sucursales">
+          @if (esAdmin()) {
+            <button type="button" class="opcion" [attr.aria-pressed]="esActual('TODAS')" (click)="elegir('TODAS')">
+              <fa-icon [icon]="iconos.faLayerGroup" [fixedWidth]="true" />
+              <span>
+                <span class="fw-medium d-block">Todas las sucursales</span>
+                <span class="small text-body-secondary">Ventas, inventario y suministros de toda la cadena</span>
+              </span>
+            </button>
+          }
+          @for (sucursal of sucursales.value(); track sucursal.idSucursal) {
+            <button
+              type="button"
+              class="opcion"
+              [id]="idOpcion(sucursal.idSucursal)"
+              [attr.aria-pressed]="esActual(sucursal.idSucursal)"
+              (click)="elegir(sucursal.idSucursal)"
+            >
+              <fa-icon [icon]="iconos.faStore" [fixedWidth]="true" />
+              <span>
+                <span class="fw-medium d-block">{{ sucursal.nombre }} · {{ sucursal.ciudad }}</span>
+                <span class="small text-body-secondary d-block">{{ sucursal.direccion }}</span>
+                @if (sugerida && sugerida.idSucursal === sucursal.idSucursal) {
+                  <span class="sugerencia small d-block">{{ textoSugerencia(sugerida) }}</span>
+                }
+              </span>
+            </button>
+          }
+        </div>
+      }
+    } @else if (sucursales.error()) {
+      <app-error-carga que="La lista de sucursales" [error]="sucursales.error()" (reintentar)="sucursales.reload()" />
+    } @else {
+      <div role="status">
+        <span class="visually-hidden">Cargando sucursales…</span>
+        <div class="d-grid gap-2" aria-hidden="true">
+          @for (fila of filasEsqueleto; track fila) {
+            <div class="opcion opcion-esqueleto">
+              <span class="barra-icono"></span>
+              <span class="flex-grow-1">
+                <span class="barra" [style.width.%]="45 + fila * 10"></span>
+                <span class="barra barra-fina" [style.width.%]="65 - fila * 8"></span>
+              </span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <button type="button" class="btn btn-link px-0 mt-4" (click)="salir()">Entrar con otro usuario</button>
+  </div>
+</main>

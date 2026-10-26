@@ -1,0 +1,51 @@
+<div class="marca">
+  <a routerLink="/inicio" class="marca-nombre" (click)="navego.emit()">{{ nombreApp }}</a>
+  <span class="marca-sub">Gestión de sucursales</span>
+</div>
+
+@if (esVendedor()) {
+  <a
+    [routerLink]="rutaNuevaVenta"
+    [attr.aria-current]="enNuevaVenta() ? 'page' : null"
+    class="btn btn-accent w-100 mb-3 vender"
+    (click)="navego.emit()"
+  >
+    <fa-icon [icon]="iconoNuevaVenta" />
+    @if (ventaEnCurso(); as venta) {
+      <span class="vender-texto">
+        Continuar venta
+        <span class="vender-detalle num">
+          {{ venta.productos }} {{ venta.unidad }}
+          @if (venta.total !== null) {
+            · {{ venta.total | pesos }}
+          }
+        </span>
+      </span>
+    } @else {
+      Nueva venta
+    }
+  </a>
+}
+
+<nav aria-label="Navegación principal">
+  @for (grupo of grupos(); track grupo.titulo) {
+    <p class="grupo-titulo" [id]="prefijo + '-' + $index">{{ grupo.titulo }}</p>
+    <ul class="list-unstyled mb-3" [attr.aria-labelledby]="prefijo + '-' + $index">
+      @for (enlace of grupo.enlaces; track enlace.ruta) {
+        @let esActivo = activo(enlace);
+        <li>
+          <a
+            [routerLink]="enlace.ruta"
+            class="enlace"
+            [class.activo]="esActivo"
+            [attr.aria-current]="esActivo ? 'page' : null"
+            (click)="navego.emit()"
+          >
+            <fa-icon [icon]="enlace.icono" [fixedWidth]="true" />
+            {{ enlace.texto }}
+          </a>
+        </li>
+      }
+    </ul>
+  }
+</nav>

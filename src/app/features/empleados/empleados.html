@@ -1,0 +1,324 @@
+<div class="page">
+  <app-page-header class="no-print" titulo="Empleados" descripcion="Liquida las comisiones de los vendedores por periodo y administra el personal.">
+    <button type="button" class="btn btn-primary" (click)="editar(null)">
+      <fa-icon [icon]="iconos.faUserPlus" />
+      Nuevo empleado
+    </button>
+  </app-page-header>
+
+  <!-- Comisiones del periodo: lo que se paga a cada vendedor y el soporte para entregarlo. -->
+  <section class="card mb-4" aria-labelledby="comisiones-titulo">
+    <div class="card-body">
+      <div class="solo-impresion mb-3">
+        <p class="h4 mb-1">Liquidación de comisiones</p>
+        <p class="mb-0">{{ pieImpresion() }}</p>
+      </div>
+
+      <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 no-print">
+        <div class="me-auto">
+          <h2 class="card-title" id="comisiones-titulo">Comisiones del periodo</h2>
+          <p class="text-body-secondary mb-0" aria-live="polite">{{ frasePeriodo() }}.</p>
+        </div>
+        @if (comisiones.hasValue() && hayVentas()) {
+          <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-soft" (click)="imprimir()">
+              <fa-icon [icon]="iconos.faPrint" />
+              Imprimir liquidación
+            </button>
+            <button type="button" class="btn btn-soft" (click)="exportar()">
+              <fa-icon [icon]="iconos.faFileArrowDown" />
+              Exportar CSV
+            </button>
+          </div>
+        }
+      </div>
+
+      <div class="barra-filtros mt-3 no-print">
+        <div>
+          <span class="form-label d-block" id="comisiones-periodo">Periodo</span>
+          <div class="segmento" role="group" aria-labelledby="comisiones-periodo">
+            @for (opcion of opcionesPeriodo(); track opcion.modo) {
+              <button type="button" [attr.aria-pressed]="modo() === opcion.modo" (click)="elegirModo(opcion.modo)">
+                {{ opcion.texto }}
+                @if (opcion.detalle) {
+                  <span class="fw-normal">({{ opcion.detalle }})</span>
+                }
+              </button>
+            }
+          </div>
+        </div>
+        @if (modo() === 'rango') {
+          <div>
+            <label for="comisiones-desde" class="form-label">Desde</label>
+            <input id="comisiones-desde" type="date" class="form-control" [max]="periodo().hasta" [value]="periodo().desde"
+              (change)="cambiarFecha('desde', $event)" />
+          </div>
+          <div>
+            <label for="comisiones-hasta" class="form-label">Hasta</label>
+            <input id="comisiones-hasta" type="date" class="form-control" [min]="periodo().desde" [max]="hoy" [value]="periodo().hasta"
+              (change)="cambiarFecha('hasta', $event)" />
+          </div>
+        }
+      </div>
+
+      @if (comisiones.hasValue() && hayVentas()) {
+        <div class="mt-4" [class.actualizando]="comisiones.isLoading()">
+          <span class="eyebrow d-block">Total a pagar</span>
+          <span class="stat-value">{{ totales().comision | pesos }}</span>
+          <span class="d-block text-body-secondary mt-1">
+            A {{ totales().vendedores }} {{ totales().vendedores === 1 ? 'vendedor' : 'vendedores' }}, sobre
+            {{ totales().total | pesos }} en {{ totales().cantidad }} {{ totales().cantidad === 1 ? 'venta' : 'ventas' }}.
+          </span>
+        </div>
+      }
+    </div>
+
+    @if (comisiones.hasValue()) {
+      @if (!hayVentas()) {
+        <div [attr.aria-busy]="comisiones.isLoading()" [class.actualizando]="comisiones.isLoading()">
+          <app-vacio [icono]="iconos.faReceipt" [titulo]="vacioComisiones().titulo" [detalle]="vacioComisiones().detalle">
+            @if (comisiones.value().registradas; as registradas) {
+              <button type="button" class="btn btn-soft" (click)="verRegistradas(registradas)">Ver las fechas con ventas</button>
+            } @else if (!comisiones.value().filas.length) {
+              <button type="button" class="btn btn-primary" (click)="editar(null)">Crear empleado</button>
+            }
+          </app-vacio>
+        </div>
+      } @else {
+        <div class="table-responsive" [attr.aria-busy]="comisiones.isLoading()" [class.actualizando]="comisiones.isLoading()">
+          <table class="table align-middle mb-0">
+            <caption class="visually-hidden">Comisiones de los vendedores {{ frasePeriodo() }}</caption>
+            <thead>
+              <tr>
+                <th scope="col" [attr.aria-sort]="orden.ariaSort('nombre')">
+                  <app-encabezado-orden [orden]="orden" columna="nombre" texto="Vendedor" />
+                </th>
+                <th scope="col" class="col-sec">Sucursales donde vendió</th>
+                <th scope="col" class="text-end col-sec" [attr.aria-sort]="orden.ariaSort('cantidad')">
+                  <app-encabezado-orden [orden]="orden" columna="cantidad" texto="Ventas" />
+                </th>
+                <th scope="col" class="text-end" [attr.aria-sort]="orden.ariaSort('total')">
+                  <app-encabezado-orden [orden]="orden" columna="total" texto="Total vendido" />
+                </th>
+                <th scope="col" class="text-end col-sec" [attr.aria-sort]="orden.ariaSort('ticket')">
+                  <app-encabezado-orden [orden]="orden" columna="ticket" texto="Ticket promedio" />
+                </th>
+                <th scope="col" class="text-end col-sec" [attr.aria-sort]="orden.ariaSort('tasa')">
+                  <app-encabezado-orden [orden]="orden" columna="tasa" texto="Tasa" />
+                </th>
+                <th scope="col" class="text-end" [attr.aria-sort]="orden.ariaSort('comision')">
+                  <app-encabezado-orden [orden]="orden" columna="comision" texto="Comisión" />
+                </th>
+                <th scope="col" class="no-print"><span class="visually-hidden">Ventas del vendedor</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (fila of filasComision(); track fila.idEmpleado) {
+                <tr>
+                  <th scope="row" class="fw-normal">
+                    <span class="d-block fw-medium">{{ fila.nombre }}</span>
+                    @if (fila.documento) {
+                      <span class="d-block small text-body-secondary">C.C. <span class="num">{{ fila.documento }}</span></span>
+                    }
+                    <span class="solo-movil small text-body-secondary">
+                      @if (fila.cantidad) {
+                        {{ fila.cantidad }} {{ fila.cantidad === 1 ? 'venta' : 'ventas' }} · tasa {{ porcentaje(fila.tasa) }} ·
+                        {{ fila.sucursales.join(', ') }}
+                      } @else {
+                        Sin ventas en el periodo
+                      }
+                    </span>
+                  </th>
+                  <td class="col-sec">
+                    @if (fila.sucursales.length) {
+                      {{ fila.sucursales.join(', ') }}
+                    } @else {
+                      <span class="text-body-secondary">Sin ventas</span>
+                    }
+                  </td>
+                  <td class="text-end num col-sec">{{ fila.cantidad }}</td>
+                  <td class="text-end">
+                    <app-barra-celda [texto]="pesos(fila.total)" [proporcion]="proporcion(fila.total)" />
+                  </td>
+                  <td class="text-end num col-sec">
+                    @if (fila.cantidad) {
+                      {{ fila.ticketPromedio | pesos }}
+                    } @else {
+                      <span class="text-body-secondary">Sin ventas</span>
+                    }
+                  </td>
+                  <td class="text-end num col-sec">{{ porcentaje(fila.tasa) }}</td>
+                  <td class="text-end num fw-medium">{{ fila.comision | pesos }}</td>
+                  <td class="text-end no-print">
+                    @if (fila.cantidad) {
+                      <a
+                        class="btn btn-soft btn-sm text-nowrap"
+                        routerLink="/ventas"
+                        [queryParams]="{ vendedor: fila.idEmpleado, desde: periodo().desde, hasta: periodo().hasta }"
+                        [attr.aria-label]="'Ver ventas de ' + fila.nombre"
+                        [ngbTooltip]="'Ver ventas de ' + fila.nombre"
+                        container="body"
+                      >
+                        <fa-icon [icon]="iconos.faReceipt" />
+                        <span class="d-none d-md-inline ms-1">Ver ventas</span>
+                      </a>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row">
+                  Totales
+                  <span class="solo-movil small fw-normal text-body-secondary">
+                    {{ totales().cantidad }} {{ totales().cantidad === 1 ? 'venta' : 'ventas' }}
+                  </span>
+                </th>
+                <td class="col-sec"></td>
+                <td class="text-end num fw-semibold col-sec">{{ totales().cantidad }}</td>
+                <td class="text-end num fw-semibold">{{ totales().total | pesos }}</td>
+                <td class="text-end num fw-semibold col-sec">{{ totales().ticket | pesos }}</td>
+                <td class="col-sec"></td>
+                <td class="text-end num fw-semibold">
+                  <span class="d-block small fw-normal text-body-secondary">Total a pagar</span>
+                  {{ totales().comision | pesos }}
+                </td>
+                <td class="no-print"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <p class="card-footer bg-transparent small text-body-secondary mb-0">
+          La comisión es el total vendido por la tasa vigente de cada vendedor. El ticket promedio es el total vendido entre el número de ventas.
+        </p>
+      }
+    } @else if (comisiones.error()) {
+      <app-error-carga que="La liquidación de comisiones" [error]="comisiones.error()" (reintentar)="comisiones.reload()" />
+    } @else {
+      <app-esqueleto-tabla [columnas]="['texto', 'numero', 'numero', 'numero']" [filas]="4" texto="Cargando comisiones" />
+    }
+  </section>
+
+  <!-- Personal: directorio de contacto, rol y acceso. Sin cifras de ventas: esas están arriba. -->
+  <section class="card no-print" aria-labelledby="personal-titulo">
+    <div class="card-body">
+      <h2 class="card-title" id="personal-titulo">Personal</h2>
+      <p class="text-body-secondary mb-3">Contacto, rol y nivel de acceso de cada empleado.</p>
+      <div class="barra-filtros">
+        <app-campo-busqueda etiqueta="Buscar empleado" placeholder="Nombre, documento, correo o cargo" [atajo]="true" [(valor)]="busqueda" />
+        <div>
+          <span class="form-label d-block" id="personal-rol">Rol</span>
+          <div class="segmento" role="group" aria-labelledby="personal-rol">
+            <button type="button" [attr.aria-pressed]="rol() === null" (click)="rol.set(null)">Todos</button>
+            <button type="button" [attr.aria-pressed]="rol() === 'VENDEDOR'" (click)="rol.set('VENDEDOR')">Vendedores</button>
+            <button type="button" [attr.aria-pressed]="rol() === 'ADMINISTRADOR'" (click)="rol.set('ADMINISTRADOR')">Administradores</button>
+          </div>
+        </div>
+        @if (filtrosActivos()) {
+          <button type="button" class="btn btn-link" (click)="quitarFiltros()">Quitar filtros ({{ filtrosActivos() }})</button>
+        }
+      </div>
+    </div>
+
+    @if (personal.hasValue()) {
+      @if (!personal.value().length) {
+        <app-vacio [icono]="iconos.faIdBadge" titulo="Aún no hay empleados registrados" detalle="Registra a los administradores y vendedores de la cadena.">
+          <button type="button" class="btn btn-primary" (click)="editar(null)">Crear empleado</button>
+        </app-vacio>
+      } @else if (!filtrados().length) {
+        <app-vacio [icono]="iconos.faIdBadge" titulo="Ningún empleado coincide con los filtros"
+          detalle="Prueba con otro nombre, documento o correo, o muestra todos los roles.">
+          <button type="button" class="btn btn-soft" (click)="quitarFiltros()">Quitar filtros</button>
+        </app-vacio>
+      } @else {
+        <div class="table-responsive" [attr.aria-busy]="personal.isLoading()" [class.actualizando]="personal.isLoading()">
+          <table class="table align-middle mb-0">
+            <caption class="visually-hidden">Personal de la cadena</caption>
+            <thead>
+              <tr>
+                <th scope="col">Empleado</th>
+                <th scope="col">Rol</th>
+                <th scope="col" class="col-sec">Contacto</th>
+                <th scope="col"><span class="visually-hidden">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (empleado of visibles(); track empleado.idEmpleado) {
+                <tr>
+                  <th scope="row" class="fw-normal">
+                    <span class="d-block fw-medium">
+                      {{ nombre(empleado) }}
+                      @if (empleado.idEmpleado === idUsuario()) {
+                        <span class="small fw-normal text-body-secondary">(tu usuario)</span>
+                      }
+                    </span>
+                    <span class="d-block small text-body-secondary">
+                      {{ empleado.cargo }} · C.C. <span class="num">{{ empleado.documento }}</span>
+                    </span>
+                    <span class="solo-movil small text-body-secondary text-break">{{ empleado.correo }}</span>
+                  </th>
+                  <td>
+                    @if (empleado.rol === 'ADMINISTRADOR') {
+                      <span class="badge text-bg-dark">Administrador</span>
+                    } @else {
+                      <span class="badge text-bg-light">Vendedor</span>
+                    }
+                    <span class="d-block small text-body-secondary mt-1">{{ detalleRol(empleado) }}</span>
+                  </td>
+                  <td class="col-sec">
+                    <span class="d-block text-break">{{ empleado.correo }}</span>
+                    @for (telefono of empleado.telefonos; track telefono) {
+                      <span class="d-block small text-body-secondary num">{{ telefono }}</span>
+                    }
+                  </td>
+                  <td class="text-end text-nowrap">
+                    <button
+                      type="button"
+                      class="btn btn-soft btn-icon btn-sm"
+                      [attr.aria-label]="'Editar a ' + nombre(empleado)"
+                      [ngbTooltip]="'Editar a ' + nombre(empleado)"
+                      container="body"
+                      (click)="editar(empleado)"
+                    >
+                      <fa-icon [icon]="iconos.faPen" />
+                    </button>
+                    @if (empleado.idEmpleado === idUsuario()) {
+                      <!-- Sigue enfocable (aria-disabled) para que el tooltip diga por qué no se puede. -->
+                      <button
+                        type="button"
+                        class="btn btn-soft btn-icon btn-sm ms-1 opacity-50"
+                        aria-disabled="true"
+                        aria-label="No puedes eliminar tu propio usuario"
+                        ngbTooltip="No puedes eliminar tu propio usuario"
+                        container="body"
+                      >
+                        <fa-icon [icon]="iconos.faTrashCan" />
+                      </button>
+                    } @else {
+                      <button
+                        type="button"
+                        class="btn btn-soft btn-icon btn-sm ms-1 text-danger"
+                        [attr.aria-label]="'Eliminar a ' + nombre(empleado)"
+                        [ngbTooltip]="'Eliminar a ' + nombre(empleado)"
+                        container="body"
+                        (click)="eliminar(empleado)"
+                      >
+                        <fa-icon [icon]="iconos.faTrashCan" />
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <app-pie-tabla [total]="filtrados().length" nombre="empleados" [(pagina)]="pagina" [(porPagina)]="porPagina" />
+      }
+    } @else if (personal.error()) {
+      <app-error-carga que="La lista de empleados" [error]="personal.error()" (reintentar)="personal.reload()" />
+    } @else {
+      <app-esqueleto-tabla [columnas]="3" [filas]="6" texto="Cargando empleados" />
+    }
+  </section>
+</div>

@@ -1,0 +1,245 @@
+<div class="page">
+  <app-page-header
+    titulo="Clientes"
+    descripcion="Personas naturales y empresas que compran en la cadena. Las compras se cuentan en todas las sucursales."
+  >
+    <button type="button" class="btn btn-primary" (click)="editar(null)">
+      <fa-icon [icon]="iconos.faUserPlus" />
+      Nuevo cliente
+    </button>
+  </app-page-header>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="barra-filtros">
+        <app-campo-busqueda
+          etiqueta="Buscar"
+          placeholder="Nombre, documento, teléfono o correo"
+          [atajo]="true"
+          [(valor)]="busqueda"
+        />
+        <div>
+          <span class="form-label d-block" id="clientes-tipo">Tipo</span>
+          <div class="segmento" role="group" aria-labelledby="clientes-tipo">
+            @for (opcion of tipos; track opcion.texto) {
+              <button type="button" [attr.aria-pressed]="tipo() === opcion.valor" (click)="tipo.set(opcion.valor)">
+                {{ opcion.texto }}
+              </button>
+            }
+          </div>
+        </div>
+        @if (filtrosActivos() > 0) {
+          <button type="button" class="btn btn-link" (click)="quitarFiltros()">Quitar filtros ({{ filtrosActivos() }})</button>
+        }
+      </div>
+    </div>
+
+    <p class="visually-hidden" aria-live="polite">{{ anuncio() }}</p>
+
+    @if (clientes.hasValue()) {
+      @let datos = clientes.value();
+      <div [attr.aria-busy]="clientes.isLoading()" [class.actualizando]="clientes.isLoading()">
+        @if (datos.registrados.length === 0) {
+          <app-vacio
+            [icono]="iconos.faUsers"
+            titulo="Aún no hay clientes registrados"
+            detalle="Crea el primero aquí o directamente al registrar una venta. Las ventas sin datos del comprador van a consumidor final."
+          >
+            <button type="button" class="btn btn-primary" (click)="editar(null)">Crear el primer cliente</button>
+          </app-vacio>
+        } @else if (filtrados().length === 0 && !consumidorFinal()) {
+          <app-vacio
+            titulo="Ningún cliente coincide con los filtros"
+            detalle="Revisa el documento o prueba con parte del nombre. Si es un cliente nuevo, créalo con lo que escribiste."
+          >
+            <div class="d-flex flex-wrap justify-content-center gap-2">
+              <button type="button" class="btn btn-soft" (click)="quitarFiltros()">Quitar filtros</button>
+              @if (busqueda().trim()) {
+                <button type="button" class="btn btn-outline-secondary" (click)="crearDesdeBusqueda()">
+                  <fa-icon [icon]="iconos.faUserPlus" />
+                  Crear cliente con «{{ busqueda().trim() }}»
+                </button>
+              }
+            </div>
+          </app-vacio>
+        } @else {
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <caption class="visually-hidden">Clientes, con sus compras en todas las sucursales</caption>
+              <thead>
+                <tr>
+                  <th scope="col" [attr.aria-sort]="orden.ariaSort('cliente')">
+                    <app-encabezado-orden [orden]="orden" columna="cliente" texto="Cliente" />
+                  </th>
+                  <th scope="col" class="col-sec">Documento</th>
+                  <th scope="col" class="col-sec">Contacto</th>
+                  <th scope="col" class="text-end" [attr.aria-sort]="orden.ariaSort('compras')">
+                    <app-encabezado-orden [orden]="orden" columna="compras" texto="Compras" />
+                  </th>
+                  <th scope="col" class="col-sec" [attr.aria-sort]="orden.ariaSort('ultima')">
+                    <app-encabezado-orden [orden]="orden" columna="ultima" texto="Última compra" />
+                  </th>
+                  <th scope="col"><span class="visually-hidden">Acciones</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                @if (consumidorFinal(); as fila) {
+                  <tr class="fila-sistema">
+                    <td>
+                      <a
+                        [routerLink]="['/clientes', fila.cliente.idCliente]"
+                        class="fw-medium link-body-emphasis link-underline-opacity-25 link-underline-opacity-100-hover"
+                      >
+                        {{ fila.nombre }}
+                      </a>
+                      <span class="d-block small text-body-secondary">
+                        Registro del sistema para las ventas en que el comprador no da sus datos. No se edita ni se elimina.
+                      </span>
+                    </td>
+                    <td class="col-sec num">{{ documento(fila.cliente) }}</td>
+                    <td class="col-sec text-body-secondary">No aplica</td>
+                    <td class="text-end num">
+                      @if (fila.compras > 0) {
+                        <a
+                          routerLink="/ventas"
+                          [queryParams]="{ cliente: fila.cliente.idCliente }"
+                          class="link-body-emphasis"
+                          [attr.aria-label]="etiquetaCompras(fila)"
+                        >
+                          {{ fila.compras }}
+                        </a>
+                      } @else {
+                        <span class="text-body-secondary">0</span>
+                      }
+                    </td>
+                    <td class="col-sec num">
+                      @if (fila.ultimaCompra) {
+                        {{ fila.ultimaCompra | fecha }}
+                      } @else {
+                        <span class="text-body-secondary">Sin compras</span>
+                      }
+                    </td>
+                    <td><span class="visually-hidden">Sin acciones: es un registro del sistema</span></td>
+                  </tr>
+                }
+                @for (fila of visibles(); track fila.cliente.idCliente) {
+                  <tr>
+                    <td>
+                      <a
+                        [routerLink]="['/clientes', fila.cliente.idCliente]"
+                        class="fw-medium link-body-emphasis link-underline-opacity-25 link-underline-opacity-100-hover"
+                      >
+                        {{ fila.nombre }}
+                      </a>
+                      <span class="d-block small text-body-secondary">
+                        {{ fila.cliente.tipo === 'NATURAL' ? 'Persona natural' : 'Persona jurídica' }}
+                      </span>
+                      <span class="d-block solo-movil small text-body-secondary">
+                        <span class="num">{{ documento(fila.cliente) }}</span> ·
+                        @if (fila.ultimaCompra) {
+                          última <span class="num">{{ fila.ultimaCompra | fecha }}</span>
+                        } @else {
+                          sin compras
+                        }
+                      </span>
+                    </td>
+                    <td class="col-sec num">{{ documento(fila.cliente) }}</td>
+                    <td class="col-sec">
+                      @for (telefono of fila.cliente.telefonos; track telefono) {
+                        <span class="d-block num">{{ telefono }}</span>
+                      }
+                      @for (correo of fila.cliente.correos; track correo) {
+                        <span class="d-block small text-body-secondary text-break">{{ correo }}</span>
+                      }
+                    </td>
+                    <td class="text-end num">
+                      @if (fila.compras > 0) {
+                        <a
+                          routerLink="/ventas"
+                          [queryParams]="{ cliente: fila.cliente.idCliente }"
+                          class="link-body-emphasis"
+                          [attr.aria-label]="etiquetaCompras(fila)"
+                        >
+                          {{ fila.compras }}
+                        </a>
+                      } @else {
+                        <span class="text-body-secondary">0</span>
+                      }
+                    </td>
+                    <td class="col-sec num">
+                      @if (fila.ultimaCompra) {
+                        {{ fila.ultimaCompra | fecha }}
+                      } @else {
+                        <span class="text-body-secondary">Sin compras</span>
+                      }
+                    </td>
+                    <td class="text-end text-nowrap">
+                      @if (esVendedor()) {
+                        <a
+                          class="btn btn-soft btn-icon btn-sm me-1"
+                          routerLink="/ventas/nueva"
+                          [queryParams]="{ cliente: fila.cliente.idCliente }"
+                          [attr.aria-label]="'Nueva venta para ' + fila.nombre"
+                          [ngbTooltip]="'Nueva venta para ' + fila.nombre"
+                          container="body"
+                        >
+                          <fa-icon [icon]="iconos.faCartShopping" />
+                        </a>
+                      }
+                      <button
+                        type="button"
+                        class="btn btn-soft btn-icon btn-sm"
+                        [attr.aria-label]="'Editar ' + fila.nombre"
+                        [ngbTooltip]="'Editar ' + fila.nombre"
+                        container="body"
+                        (click)="editar(fila.cliente)"
+                      >
+                        <fa-icon [icon]="iconos.faPen" />
+                      </button>
+                      @if (esAdmin()) {
+                        @if (fila.compras > 0) {
+                          <button
+                            type="button"
+                            class="btn btn-soft btn-icon btn-sm ms-1"
+                            aria-disabled="true"
+                            [attr.aria-label]="'Eliminar ' + fila.nombre + '. ' + motivoSinEliminar(fila)"
+                            [ngbTooltip]="motivoSinEliminar(fila)"
+                            container="body"
+                          >
+                            <fa-icon [icon]="iconos.faTrashCan" />
+                          </button>
+                        } @else {
+                          <button
+                            type="button"
+                            class="btn btn-soft btn-icon btn-sm ms-1 text-danger"
+                            [attr.aria-label]="'Eliminar ' + fila.nombre"
+                            [ngbTooltip]="'Eliminar ' + fila.nombre"
+                            container="body"
+                            (click)="eliminar(fila)"
+                          >
+                            <fa-icon [icon]="iconos.faTrashCan" />
+                          </button>
+                        }
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @if (filtrados().length > 0) {
+            <app-pie-tabla [total]="filtrados().length" nombre="clientes" [(pagina)]="pagina" [(porPagina)]="porPagina" />
+          } @else {
+            <p class="mb-0 px-3 px-md-4 py-3 border-top text-body-secondary">
+              Ningún otro cliente coincide con los filtros.
+            </p>
+          }
+        }
+      </div>
+    } @else if (clientes.error()) {
+      <app-error-carga que="La lista de clientes" [error]="clientes.error()" (reintentar)="clientes.reload()" />
+    } @else {
+      <app-esqueleto-tabla texto="Cargando clientes" [columnas]="['texto', 'texto', 'texto', 'numero', 'texto', 'texto']" />
+    }
+  </div>
+</div>

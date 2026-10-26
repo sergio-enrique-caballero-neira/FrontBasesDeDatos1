@@ -1,0 +1,398 @@
+<div class="page">
+  @if (!esAdmin()) {
+    <app-page-header [titulo]="saludo()" [descripcion]="descripcionVendedor()">
+      <a routerLink="/ventas/nueva" class="btn btn-accent">
+        <fa-icon [icon]="iconos.faCartShopping" />
+        @if (hayVentaEnCurso()) {
+          Continuar la venta en curso
+        } @else {
+          Registrar una venta
+        }
+      </a>
+    </app-page-header>
+
+    @if (vendedor.hasValue()) {
+      @let datos = vendedor.value();
+      <div [attr.aria-busy]="vendedor.isLoading()" [class.actualizando]="vendedor.isLoading()">
+        <dl class="resumen">
+          <div app-indicador etiqueta="Vendido hoy" [valor]="pesos(datos.hoy.total)" [ayuda]="cuentaVentas(datos.hoy.cantidad)"></div>
+          <div
+            app-indicador
+            [etiqueta]="'Tu comisión de hoy (' + porcentaje(datos.tasa) + ')'"
+            [valor]="pesos(datos.hoy.comision)"
+          ></div>
+          <div
+            app-indicador
+            [etiqueta]="'Tu comisión de ' + datos.mes.nombre"
+            [valor]="pesos(datos.mes.comision)"
+            [variacion]="datos.mes.variacion"
+            [ayuda]="datos.mes.ayuda"
+            [tendencia]="datos.mes.tendencia"
+          ></div>
+        </dl>
+
+        <div class="row g-4">
+          <div [class]="datos.hoy.cantidad ? 'col-12 col-xl-7' : 'col-12'">
+            <section class="card h-100" aria-labelledby="ventas-hoy-titulo">
+              <div class="card-body pb-0">
+                <h2 class="card-title" id="ventas-hoy-titulo">Tus ventas de hoy</h2>
+              </div>
+              @if (datos.filas.length) {
+                <div class="table-responsive">
+                  <table class="table table-hover align-middle">
+                    <thead>
+                      <tr>
+                        <th scope="col">Factura</th>
+                        <th scope="col" class="col-sec">Hora</th>
+                        <th scope="col" class="col-sec">Cliente</th>
+                        <th scope="col" class="col-sec">Pago</th>
+                        <th scope="col" class="text-end">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (fila of filasVentasHoy(); track fila.venta.idVenta) {
+                        <tr>
+                          <td>
+                            <a [routerLink]="['/ventas', fila.venta.idVenta]" class="code-tag text-decoration-none">
+                              {{ fila.venta.numeroFactura }}
+                            </a>
+                            <div class="solo-movil small text-body-secondary mt-1">
+                              <span class="num">{{ fila.venta.hora }}</span> · {{ fila.cliente }} · {{ fila.metodo }}
+                            </div>
+                          </td>
+                          <td class="num col-sec">{{ fila.venta.hora }}</td>
+                          <td class="col-sec">{{ fila.cliente }}</td>
+                          <td class="col-sec">{{ fila.metodo }}</td>
+                          <td class="text-end num fw-medium">{{ fila.venta.montoTotal | pesos }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+                <app-pie-tabla
+                  [total]="datos.filas.length"
+                  nombre="ventas"
+                  [(pagina)]="paginaVentasHoy"
+                  [(porPagina)]="porPaginaVentasHoy"
+                />
+              } @else {
+                <app-vacio
+                  [icono]="iconos.faReceipt"
+                  titulo="Aún no registras ventas hoy"
+                  detalle="Cuando registres una venta aparecerá aquí con su factura, y el total y tu comisión se actualizan solos."
+                >
+                  <a routerLink="/ventas/nueva" class="btn btn-primary">Registrar la primera venta</a>
+                </app-vacio>
+              }
+            </section>
+          </div>
+
+          @if (datos.hoy.cantidad) {
+            <div class="col-12 col-xl-5">
+              <section class="card h-100">
+                <div class="card-body">
+                  <app-grafico-barras
+                    titulo="¿Cuánto cobraste hoy por cada medio de pago?"
+                    descripcion="El efectivo es lo que debes entregar en caja al cerrar tu turno."
+                    [datos]="datos.porMetodo"
+                    [formato]="pesos"
+                    nombreEtiqueta="Medio de pago"
+                    nombreValor="Cobrado hoy"
+                  />
+                </div>
+              </section>
+            </div>
+          }
+        </div>
+      </div>
+    } @else if (vendedor.error()) {
+      <div class="card">
+        <app-error-carga que="Tus ventas de hoy" [error]="vendedor.error()" (reintentar)="vendedor.reload()" />
+      </div>
+    } @else {
+      <div class="resumen" aria-hidden="true">
+        @for (i of [0, 1, 2]; track i) {
+          <div>
+            <span class="marcador marcador-etiqueta"></span>
+            <span class="marcador marcador-cifra"></span>
+          </div>
+        }
+      </div>
+      <div class="card">
+        <div class="card-body pb-0">
+          <h2 class="card-title">Tus ventas de hoy</h2>
+        </div>
+        <app-esqueleto-tabla [columnas]="['texto', 'texto', 'texto', 'texto', 'numero']" [filas]="4" texto="Cargando tus ventas de hoy" />
+      </div>
+    }
+  } @else {
+    <app-page-header [titulo]="saludo()" [descripcion]="descripcionAdmin()">
+      @if (ventas.hasValue()) {
+        <p class="mb-0 text-body-secondary">
+          Hoy: <span class="fw-medium text-body num">{{ cuentaVentas(ventas.value().hoy.cantidad) }}</span> por
+          <span class="fw-medium text-body num">{{ ventas.value().hoy.total | pesos }}</span>
+        </p>
+      }
+    </app-page-header>
+
+    <div class="d-grid gap-4">
+      <section class="card" aria-labelledby="reabastecer-titulo">
+        <div class="card-body pb-2">
+          <h2 class="card-title" id="reabastecer-titulo" tabindex="-1">Productos por reabastecer</h2>
+          <p class="text-body-secondary mb-1">
+            Con {{ umbral }} unidades o menos, o que se agotarían antes de que llegue un pedido al ritmo de los últimos
+            {{ diasRitmo }} días en esa sucursal. Arriba, lo agotado y lo que se acaba antes de la entrega.
+          </p>
+          <p class="small text-body-secondary mb-0">
+            Proveedor sugerido: el que entrega más rápido a esa sucursal; si empatan, el de mejor calificación y luego el
+            de menor precio. En la barra, el relleno son los días que alcanza (hasta 30) y la raya vertical, los días que
+            tarda el pedido.
+          </p>
+        </div>
+
+        @if (reabastecer.hasValue()) {
+          @let datos = reabastecer.value();
+          @if (datos.filas.length) {
+            <div [attr.aria-busy]="reabastecer.isLoading()" [class.actualizando]="reabastecer.isLoading()">
+              <div class="table-responsive">
+                <table class="table align-middle">
+                  <thead>
+                    <tr>
+                      <th scope="col">Producto</th>
+                      @if (porTodas()) {
+                        <th scope="col" class="col-sec">Sucursal</th>
+                      }
+                      <th scope="col" class="text-end">Quedan</th>
+                      <th scope="col" class="text-end col-sec">Vendidas en {{ diasRitmo }} días</th>
+                      <th scope="col">Alcanza para</th>
+                      <th scope="col" class="col-sec">Proveedor sugerido</th>
+                      <th scope="col"><span class="visually-hidden">Acciones</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (item of filasReabastecer(); track item.clave) {
+                      <tr>
+                        <td>
+                          <a [routerLink]="['/productos', item.producto.idProducto]" class="d-block fw-medium enlace-tinta">
+                            {{ item.producto.nombre }}
+                          </a>
+                          <span class="code-tag mt-1">{{ item.producto.codigo }}</span>
+                          <div class="solo-movil small text-body-secondary mt-1">
+                            @if (porTodas()) {
+                              {{ item.sucursal.nombre }} ·
+                            }
+                            <span class="num">{{ cuentaVendidas(item.vendidas) }}</span> en {{ diasRitmo }} días
+                            @if (item.sugerido; as s) {
+                              · {{ s.proveedor }}, {{ cuentaDias(s.suministro.tiempoEntregaDias) }}
+                            } @else {
+                              · Sin proveedor registrado
+                            }
+                          </div>
+                        </td>
+                        @if (porTodas()) {
+                          <td class="col-sec">{{ item.sucursal.nombre }}</td>
+                        }
+                        <td class="text-end num" [class.stock-low]="item.fila.cantidadDisponible <= umbral">
+                          @if (item.fila.cantidadDisponible <= umbral) {
+                            <fa-icon [icon]="iconos.faTriangleExclamation" class="me-1" />
+                          }
+                          {{ item.fila.cantidadDisponible }}
+                        </td>
+                        <td class="text-end num col-sec">{{ item.vendidas }}</td>
+                        <td class="celda-alcanza">
+                          <span class="d-block fw-medium">{{ item.alcanza }}</span>
+                          <app-bala class="d-none d-md-inline-block my-1" [valor]="item.cobertura" [marca]="item.entrega" />
+                          @if (item.veredicto; as v) {
+                            <span class="veredicto small" [class.stock-low]="v.alerta" [class.text-body-secondary]="!v.alerta">
+                              <fa-icon [icon]="v.alerta ? iconos.faTriangleExclamation : iconos.faCircleCheck" />
+                              <span>{{ v.texto }}</span>
+                            </span>
+                          }
+                        </td>
+                        <td class="col-sec">
+                          @if (item.sugerido; as s) {
+                            <a [routerLink]="['/proveedores', s.suministro.nit]" class="d-block enlace-tinta">{{ s.proveedor }}</a>
+                            <span class="small text-body-secondary">
+                              <span class="num">{{ cuentaDias(s.suministro.tiempoEntregaDias) }} · {{ s.suministro.precioSuministro | pesos }} c/u</span>
+                              · {{ calidadTexto(s.calidad) }}
+                            </span>
+                            @if (item.otrasOpciones) {
+                              <a [routerLink]="['/productos', item.producto.idProducto]" class="d-block small enlace-tinta">
+                                +{{ item.otrasOpciones }} {{ item.otrasOpciones === 1 ? 'opción' : 'opciones' }}
+                                <span class="visually-hidden">de proveedor para {{ item.producto.nombre }}</span>
+                              </a>
+                            }
+                          } @else {
+                            <span class="text-body-secondary">Sin proveedor registrado</span>
+                          }
+                        </td>
+                        <td class="text-end">
+                          <button
+                            type="button"
+                            class="btn btn-soft btn-sm boton-entrada"
+                            [id]="'entrada-' + item.clave"
+                            [attr.aria-label]="etiquetaEntrada(item)"
+                            [ngbTooltip]="etiquetaEntrada(item)"
+                            (click)="registrarEntrada(item)"
+                          >
+                            <fa-icon [icon]="iconos.faTruckRampBox" />
+                            <span class="d-none d-lg-inline">Registrar entrada</span>
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <app-pie-tabla
+                [total]="datos.filas.length"
+                nombre="productos"
+                [(pagina)]="paginaReabastecer"
+                [(porPagina)]="porPaginaReabastecer"
+              />
+            </div>
+          } @else {
+            <app-vacio
+              [icono]="iconos.faCircleCheck"
+              titulo="Nada por reabastecer"
+              detalle="Ningún producto tiene {{ umbral }} unidades o menos, y al ritmo de los últimos {{ diasRitmo }} días todos alcanzan hasta que llegaría un pedido."
+            >
+              <a routerLink="/inventario" class="btn btn-soft">Ver el inventario</a>
+            </app-vacio>
+          }
+        } @else if (reabastecer.error()) {
+          <app-error-carga que="La lista de reabastecimiento" [error]="reabastecer.error()" (reintentar)="reabastecer.reload()" />
+        } @else {
+          <app-esqueleto-tabla
+            [columnas]="
+              porTodas()
+                ? ['texto', 'texto', 'numero', 'numero', 'texto', 'texto', 'numero']
+                : ['texto', 'numero', 'numero', 'texto', 'texto', 'numero']
+            "
+            [filas]="5"
+            texto="Cargando productos por reabastecer"
+          />
+        }
+      </section>
+
+      <section class="card" aria-labelledby="ventas-semana-titulo">
+        <div class="card-body">
+          <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
+            <div class="me-auto">
+              <h2 class="card-title" id="ventas-semana-titulo">¿Cómo van las ventas frente a la semana anterior?</h2>
+              <p class="text-body-secondary mb-0">
+                @if (porTodas()) {
+                  Últimos 7 días contra los 7 anteriores, una sucursal por panel y todas con la misma escala. Incluye
+                  hoy hasta ahora.
+                } @else {
+                  Últimos 7 días contra los 7 anteriores. Incluye hoy hasta ahora.
+                }
+              </p>
+            </div>
+            <a routerLink="/sucursales" class="btn btn-outline-secondary btn-sm">Comparar sucursales</a>
+          </div>
+
+          @if (ventas.hasValue()) {
+            @let v = ventas.value();
+            @let una = v.una;
+            <div [attr.aria-busy]="ventas.isLoading()" [class.actualizando]="ventas.isLoading()">
+              @if (v.vacio) {
+                <app-vacio
+                  [icono]="iconos.faReceipt"
+                  titulo="No hubo ventas en los últimos 14 días"
+                  detalle="Cuando los vendedores registren ventas, aquí verás cada día frente a la semana anterior."
+                >
+                  <a routerLink="/ventas" class="btn btn-soft">Ver el historial de ventas</a>
+                </app-vacio>
+              } @else if (una) {
+                <dl class="resumen resumen-ventas">
+                  <div
+                    app-indicador
+                    etiqueta="Ventas de los últimos 7 días"
+                    [valor]="pesos(una.total)"
+                    [variacion]="una.variacionTotal"
+                    [ayuda]="una.variacionTotal ? cuentaVentas(una.cantidad) : cuentaVentas(una.cantidad) + '. ' + v.sinBase + '.'"
+                  ></div>
+                  <div
+                    app-indicador
+                    etiqueta="Ticket promedio"
+                    [valor]="una.cantidad ? pesos(una.ticket) : 'Sin ventas'"
+                    [variacion]="una.variacionTicket"
+                    ayuda="Total vendido entre el número de ventas"
+                  ></div>
+                </dl>
+                <app-grafico-columnas
+                  titulo="Ventas por día, últimos 14 días"
+                  [puntos]="una.puntos"
+                  [formato]="pesos"
+                  [formatoEje]="pesosCompactos"
+                  nombreValor="Vendido"
+                  [enfasisDesde]="v.enfasisDesde"
+                  [tramos]="v.tramos"
+                  [mostrarEncabezado]="false"
+                />
+              } @else {
+                <div class="paneles">
+                  @for (panel of v.paneles; track panel.idSucursal) {
+                    <section class="panel" [attr.aria-labelledby]="'panel-ventas-' + panel.idSucursal">
+                      <h3 class="panel-titulo" [id]="'panel-ventas-' + panel.idSucursal">{{ panel.nombre }}</h3>
+                      <p class="mb-1">
+                        <span class="panel-total">{{ panel.total | pesos }}</span>
+                        <span class="small text-body-secondary"> en 7 días · {{ cuentaVentas(panel.cantidad) }}</span>
+                      </p>
+                      <p class="panel-variacion small mb-2">
+                        @if (panel.relativa === null) {
+                          <span class="text-body-secondary">{{ v.sinBase }}</span>
+                        } @else {
+                          <fa-icon [icon]="iconoVariacion(panel.relativa)" />
+                          <strong class="num">{{ textoVariacion(panel.relativa) }}</strong>
+                          <span class="text-body-secondary">{{ v.comparacion }}</span>
+                        }
+                      </p>
+                      <app-grafico-columnas
+                        [titulo]="'Ventas por día en ' + panel.nombre + ', últimos 14 días'"
+                        [puntos]="panel.puntos"
+                        [formato]="pesos"
+                        [formatoEje]="pesosCompactos"
+                        nombreValor="Vendido"
+                        [enfasisDesde]="v.enfasisDesde"
+                        [tramos]="v.tramos"
+                        [maximo]="v.maximo"
+                        [alto]="96"
+                        [mostrarEncabezado]="false"
+                        textoVacio="Sin ventas en estos 14 días."
+                      />
+                    </section>
+                  }
+                </div>
+              }
+            </div>
+          } @else if (ventas.error()) {
+            <app-error-carga que="Las ventas de la semana" [error]="ventas.error()" (reintentar)="ventas.reload()" />
+          } @else if (porTodas()) {
+            <div class="paneles">
+              <app-esqueleto-bloque [lineas]="3" alto="120px" texto="Cargando las ventas de cada sucursal" />
+              @for (i of [0, 1]; track i) {
+                <div aria-hidden="true">
+                  <span class="marcador marcador-etiqueta"></span>
+                  <span class="marcador marcador-cifra"></span>
+                  <span class="marcador marcador-area"></span>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="resumen resumen-ventas" aria-hidden="true">
+              @for (i of [0, 1]; track i) {
+                <div>
+                  <span class="marcador marcador-etiqueta"></span>
+                  <span class="marcador marcador-cifra"></span>
+                </div>
+              }
+            </div>
+            <app-esqueleto-bloque [lineas]="0" alto="206px" texto="Cargando las ventas de la semana" />
+          }
+        </div>
+      </section>
+    </div>
+  }
+</div>
