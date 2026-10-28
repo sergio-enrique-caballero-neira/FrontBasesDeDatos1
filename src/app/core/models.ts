@@ -10,6 +10,8 @@ export interface Sucursal {
   ciudad: string;
   direccion: string;
   telefono: string;
+  idAdministrador: number;
+  nombreAdministrador: string;
 }
 
 export interface Marca {
@@ -106,8 +108,6 @@ export interface Empleado {
   rol: Rol;
   /** Solo ADMINISTRADOR. */
   nivelAcceso?: number;
-  /** Solo ADMINISTRADOR. */
-  claveSeguridad?: string;
   /** Solo VENDEDOR, como fracción (0.1 = 10 %). */
   comisionVenta?: number;
   idSucursal?: number;

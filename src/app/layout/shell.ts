@@ -20,6 +20,7 @@ import {
   NgbTooltip,
 } from '@ng-bootstrap/ng-bootstrap';
 import { filter, map } from 'rxjs';
+import { Api } from '../core/api';
 import { nombreEmpleado, Sucursal } from '../core/models';
 import { SeleccionSucursal, Session } from '../core/session';
 import { TemaService } from '../core/tema';
@@ -60,6 +61,7 @@ export class Shell {
   private readonly offcanvas = inject(NgbOffcanvas);
   private readonly confirmar = inject(Confirmar);
   private readonly db = inject(MockDb);
+  private readonly api = inject(Api);
   private readonly sucursalesRepo = inject(SucursalesRepository);
   private readonly venta = inject(VentaEnCurso);
   protected readonly tema = inject(TemaService);
@@ -71,7 +73,7 @@ export class Shell {
   protected readonly oscuro = computed(() => this.tema.tema() === 'oscuro');
 
   protected readonly sucursales = resource({
-    params: () => this.db.version(),
+    params: () => this.api.cambios(),
     loader: () => this.sucursalesRepo.listar(),
   });
   /**

@@ -1,25 +1,26 @@
 import { TestBed } from '@angular/core/testing';
 import { DomainError, NoEncontrado } from '../core/domain-error';
 import { MockDb } from './mock-db';
-import { InventarioRepository, ProductosRepository } from './productos.repository';
 import { VentasRepository } from './ventas.repository';
 
 describe('VentasRepository.registrar', () => {
   let ventas: VentasRepository;
-  let inventario: InventarioRepository;
-  let productos: ProductosRepository;
+  let db: MockDb;
 
   beforeEach(() => {
     localStorage.clear();
     TestBed.configureTestingModule({});
-    TestBed.inject(MockDb).restaurar();
+    db = TestBed.inject(MockDb);
+    db.restaurar();
     ventas = TestBed.inject(VentasRepository);
-    inventario = TestBed.inject(InventarioRepository);
-    productos = TestBed.inject(ProductosRepository);
   });
 
+  async function inventarioDe(idSucursal: number) {
+    return (await db.leer('inventario')).filter((f) => f.idSucursal === idSucursal);
+  }
+
   async function filaConStock(idSucursal: number, minimo: number) {
-    const filas = await inventario.listar(idSucursal);
+    const filas = await inventarioDe(idSucursal);
     const fila = filas.find((f) => f.cantidadDisponible >= minimo);
     if (!fila) throw new Error('Los datos semilla no tienen stock suficiente para la prueba');
     return fila;
@@ -27,7 +28,7 @@ describe('VentasRepository.registrar', () => {
 
   it('calcula el total desde las líneas y descuenta el inventario de la sucursal', async () => {
     const fila = await filaConStock(1, 2);
-    const producto = (await productos.listar()).find((p) => p.idProducto === fila.idProducto)!;
+    const producto = (await db.leer('productos')).find((p) => p.idProducto === fila.idProducto)!;
 
     const { venta, detalles } = await ventas.registrar({
       idCliente: 1,
@@ -41,15 +42,15 @@ describe('VentasRepository.registrar', () => {
     expect(detalles).toEqual([
       { idVenta: venta.idVenta, idProducto: fila.idProducto, cantidad: 2, precioUnitario: producto.precioBaseVenta },
     ]);
-    const despues = (await inventario.listar(1)).find((f) => f.idProducto === fila.idProducto)!;
+    const despues = (await inventarioDe(1)).find((f) => f.idProducto === fila.idProducto)!;
     expect(despues.cantidadDisponible).toBe(fila.cantidadDisponible - 2);
-    const productoDespues = (await productos.listar()).find((p) => p.idProducto === fila.idProducto)!;
+    const productoDespues = (await db.leer('productos')).find((p) => p.idProducto === fila.idProducto)!;
     expect(productoDespues.stock).toBe(producto.stock - 2);
   });
 
   it('rechaza la venta completa si una línea supera el stock y no toca el inventario', async () => {
     const conStock = await filaConStock(1, 1);
-    const otra = (await inventario.listar(1)).find((f) => f.idProducto !== conStock.idProducto)!;
+    const otra = (await inventarioDe(1)).find((f) => f.idProducto !== conStock.idProducto)!;
 
     await expect(
       ventas.registrar({
@@ -64,7 +65,7 @@ describe('VentasRepository.registrar', () => {
       }),
     ).rejects.toBeInstanceOf(DomainError);
 
-    const sinCambios = (await inventario.listar(1)).find((f) => f.idProducto === conStock.idProducto)!;
+    const sinCambios = (await inventarioDe(1)).find((f) => f.idProducto === conStock.idProducto)!;
     expect(sinCambios.cantidadDisponible).toBe(conStock.cantidadDisponible);
   });
 

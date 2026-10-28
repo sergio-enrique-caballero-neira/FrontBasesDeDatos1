@@ -21,7 +21,7 @@ import { mensajeDeError, NoEncontrado } from '../../core/domain-error';
 import { nombreEmpleado, Suministro } from '../../core/models';
 import { Session } from '../../core/session';
 import { SucursalesRepository } from '../../data/catalogos.repository';
-import { EmpleadosRepository } from '../../data/personas.repository';
+import { EmpleadosRepository } from '../../data/empleados.repository';
 import { ProductosRepository } from '../../data/productos.repository';
 import {
   claveSuministro,

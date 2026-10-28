@@ -22,9 +22,9 @@ import type { Tablas } from './mock-db';
 // personas, empresas, direcciones y teléfonos son inventados para la demo.
 
 const sucursales: Sucursal[] = [
-  { idSucursal: 1, nombre: 'Sede Centro', ciudad: 'Bogotá', direccion: 'Calle 13 # 8-45', telefono: '601 342 1180' },
-  { idSucursal: 2, nombre: 'Sede Norte', ciudad: 'Bogotá', direccion: 'Autopista Norte # 145-30', telefono: '601 615 2290' },
-  { idSucursal: 3, nombre: 'Sede Laureles', ciudad: 'Medellín', direccion: 'Circular 1 # 70-12', telefono: '604 411 3375' },
+  { idSucursal: 1, nombre: 'Sede Centro', ciudad: 'Bogotá', direccion: 'Calle 13 # 8-45', telefono: '601 342 1180', idAdministrador: 1, nombreAdministrador: 'Laura Gómez' },
+  { idSucursal: 2, nombre: 'Sede Norte', ciudad: 'Bogotá', direccion: 'Autopista Norte # 145-30', telefono: '601 615 2290', idAdministrador: 1, nombreAdministrador: 'Laura Gómez' },
+  { idSucursal: 3, nombre: 'Sede Laureles', ciudad: 'Medellín', direccion: 'Circular 1 # 70-12', telefono: '604 411 3375', idAdministrador: 1, nombreAdministrador: 'Laura Gómez' },
 ];
 
 const marcas: Marca[] = [
@@ -98,8 +98,8 @@ const planSuministro: [string, number[], number[], number][] = [
 ];
 
 const empleados: Empleado[] = [
-  { idEmpleado: 1, documento: '52814736', nombre: 'Laura', apellido: 'Gómez', cargo: 'Gerente de operaciones', correo: 'laura.gomez@ferreteria.demo', telefonos: ['310 555 0141'], rol: 'ADMINISTRADOR', nivelAcceso: 3, claveSeguridad: 'demo-admin' },
-  { idEmpleado: 2, documento: '80123987', nombre: 'Andrés', apellido: 'Pardo', cargo: 'Jefe de compras', correo: 'andres.pardo@ferreteria.demo', telefonos: ['315 555 0177'], rol: 'ADMINISTRADOR', nivelAcceso: 2, claveSeguridad: 'demo-compras' },
+  { idEmpleado: 1, documento: '52814736', nombre: 'Laura', apellido: 'Gómez', cargo: 'Gerente de operaciones', correo: 'laura.gomez@ferreteria.demo', telefonos: ['310 555 0141'], rol: 'ADMINISTRADOR', nivelAcceso: 3 },
+  { idEmpleado: 2, documento: '80123987', nombre: 'Andrés', apellido: 'Pardo', cargo: 'Jefe de compras', correo: 'andres.pardo@ferreteria.demo', telefonos: ['315 555 0177'], rol: 'ADMINISTRADOR', nivelAcceso: 2 },
   { idEmpleado: 3, documento: '1020456789', nombre: 'Camila', apellido: 'Rojas', cargo: 'Asesora de ventas', correo: 'camila.rojas@ferreteria.demo', telefonos: ['300 555 0123', '601 555 0190'], rol: 'VENDEDOR', comisionVenta: 0.1 },
   { idEmpleado: 4, documento: '1015332048', nombre: 'Julián', apellido: 'Herrera', cargo: 'Asesor de ventas', correo: 'julian.herrera@ferreteria.demo', telefonos: ['311 555 0166'], rol: 'VENDEDOR', comisionVenta: 0.1 },
   { idEmpleado: 5, documento: '1032478115', nombre: 'Daniela', apellido: 'Ortiz', cargo: 'Asesora de ventas', correo: 'daniela.ortiz@ferreteria.demo', telefonos: ['318 555 0105'], rol: 'VENDEDOR', comisionVenta: 0.1 },

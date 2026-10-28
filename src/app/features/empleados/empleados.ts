@@ -17,7 +17,7 @@ import { fechaISO, hoyISO } from '../../core/fechas';
 import { COMISION_VENDEDOR, Empleado, nombreEmpleado, Rol } from '../../core/models';
 import { Session } from '../../core/session';
 import { ComisionVendedor, EstadisticasRepository } from '../../data/estadisticas.repository';
-import { EmpleadosRepository } from '../../data/personas.repository';
+import { EmpleadosRepository } from '../../data/empleados.repository';
 import { normalizar } from '../../data/reglas';
 import { VentasRepository } from '../../data/ventas.repository';
 import { Confirmar } from '../../shared/confirmar';
@@ -342,7 +342,8 @@ export class Empleados {
       const nivel = empleado.nivelAcceso ?? 1;
       return `Nivel ${nivel} · ${NIVELES[nivel] ?? 'Sin definir'}`;
     }
-    return `Comisión ${porcentaje(empleado.comisionVenta ?? COMISION_VENDEDOR)}`;
+    const comision = `Comisión ${porcentaje(empleado.comisionVenta ?? COMISION_VENDEDOR)}`;
+    return empleado.nombreSucursal ? `${empleado.nombreSucursal} · ${comision}` : comision;
   }
 
   protected quitarFiltros(): void {
@@ -357,7 +358,7 @@ export class Empleados {
   });
 
   protected async editar(empleado: Empleado | null): Promise<void> {
-    const guardado = await abrirDialogoEmpleado(this.modal, empleado, this.idUsuario() ?? 0);
+    const guardado = await abrirDialogoEmpleado(this.modal, empleado);
     if (!guardado) return;
     this.avisos.exito(empleado ? 'Cambios guardados.' : `Empleado ${nombreEmpleado(guardado)} creado.`);
     if (guardado.idEmpleado === this.idUsuario()) {

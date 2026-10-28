@@ -13,9 +13,10 @@ import {
 import { NgbModal, NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
 import { Avisos } from '../../core/avisos';
 import { mensajeDeError } from '../../core/domain-error';
-import { Sucursal, UMBRAL_STOCK_BAJO } from '../../core/models';
+import { Empleado, nombreEmpleado, Sucursal, UMBRAL_STOCK_BAJO } from '../../core/models';
 import { Session } from '../../core/session';
 import { SucursalesRepository } from '../../data/catalogos.repository';
+import { EmpleadosRepository } from '../../data/empleados.repository';
 import { EstadisticasRepository, SucursalDetallada } from '../../data/estadisticas.repository';
 import { InventarioRepository } from '../../data/productos.repository';
 import { Confirmar } from '../../shared/confirmar';
@@ -71,6 +72,7 @@ export class Sucursales {
   private readonly repo = inject(SucursalesRepository);
   private readonly estadisticas = inject(EstadisticasRepository);
   private readonly inventarioRepo = inject(InventarioRepository);
+  private readonly empleadosRepo = inject(EmpleadosRepository);
   private readonly session = inject(Session);
   private readonly router = inject(Router);
   private readonly modal = inject(NgbModal);
@@ -189,6 +191,20 @@ export class Sucursales {
   }
 
   protected async editar(sucursal: Sucursal | null): Promise<void> {
+    let encargados: Empleado[];
+    let sucursales: Sucursal[];
+    try {
+      [encargados, sucursales] = await Promise.all([this.empleadosRepo.listar(), this.repo.listar()]);
+    } catch (error) {
+      this.avisos.error(mensajeDeError(error));
+      return;
+    }
+    const ocupados = new Set(sucursales.filter((s) => s.idSucursal !== sucursal?.idSucursal).map((s) => s.idAdministrador));
+    const libres = encargados.filter((e) => e.rol === 'ADMINISTRADOR' && !ocupados.has(e.idEmpleado));
+    if (!libres.length) {
+      this.avisos.error('Todos los administradores ya dirigen una sucursal. Registra otro administrador en Empleados para encargarle esta sede.');
+      return;
+    }
     const guardada = await abrirFormulario(this.modal, {
       titulo: sucursal ? 'Editar sucursal' : 'Nueva sucursal',
       textoGuardar: sucursal ? 'Guardar cambios' : 'Crear sucursal',
@@ -197,8 +213,26 @@ export class Sucursales {
         { clave: 'ciudad', etiqueta: 'Ciudad', requerido: true, mitad: true },
         { clave: 'direccion', etiqueta: 'Dirección', requerido: true },
         { clave: 'telefono', etiqueta: 'Teléfono', tipo: 'tel', requerido: true, patron: /^[0-9 +()-]{7,20}$/, mitad: true },
+        {
+          clave: 'idAdministrador',
+          etiqueta: 'Administrador encargado',
+          tipo: 'select',
+          requerido: true,
+          mitad: true,
+          placeholder: 'Elige quién la dirige',
+          ayuda: 'Cada administrador dirige una sola sede.',
+          opciones: libres.map((e) => ({ valor: String(e.idEmpleado), texto: nombreEmpleado(e) })),
+        },
       ],
-      valores: sucursal ? ({ ...sucursal } as unknown as Record<string, string>) : undefined,
+      valores: sucursal
+        ? {
+            nombre: sucursal.nombre,
+            ciudad: sucursal.ciudad,
+            direccion: sucursal.direccion,
+            telefono: sucursal.telefono,
+            idAdministrador: String(sucursal.idAdministrador),
+          }
+        : undefined,
       guardar: (v) =>
         this.repo.guardar({
           idSucursal: sucursal?.idSucursal ?? 0,
@@ -206,6 +240,7 @@ export class Sucursales {
           ciudad: v['ciudad'],
           direccion: v['direccion'],
           telefono: v['telefono'],
+          idAdministrador: Number(v['idAdministrador']),
         }),
     });
     if (guardada) {

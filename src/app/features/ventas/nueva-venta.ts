@@ -762,10 +762,9 @@ export class NuevaVentaPage {
     }
     this.intentoConfirmar.set(true);
     const idSucursal = this.idSucursal();
-    const idEmpleado = this.session.usuario()?.idEmpleado;
     const cliente = this.clienteElegido();
     const metodo = this.metodoElegido();
-    if (this.faltantes().length > 0 || idSucursal === null || !idEmpleado || !cliente || !metodo) {
+    if (this.faltantes().length > 0 || idSucursal === null || !cliente || !metodo) {
       this.enfocarPrimerFaltante();
       return;
     }
@@ -776,8 +775,6 @@ export class NuevaVentaPage {
       const { venta } = await this.ventasRepo.registrar({
         idCliente: cliente.idCliente,
         idMetodoPago: metodo.idMetodoPago,
-        idSucursal,
-        idEmpleado,
         lineas: this.lineas(),
       });
       // La factura muestra la confirmación con el cambio; la venta en curso ya no existe.
