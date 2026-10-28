@@ -5,10 +5,6 @@ import { faHouse, faRightFromBracket } from '@fortawesome/free-solid-svg-icons';
 import { nombreEmpleado } from '../../core/models';
 import { Session } from '../../core/session';
 
-/**
- * Sección de otro rol: dice para quién es, con qué usuario se entró y ofrece
- * volver o cambiar de usuario, en vez de devolver al inicio sin explicar nada.
- */
 @Component({
   selector: 'app-sin-permiso',
   imports: [RouterLink, FaIconComponent],
@@ -43,14 +39,12 @@ export class SinPermiso {
   private readonly session = inject(Session);
   private readonly router = inject(Router);
 
-  /** Query param `seccion`: el título de la pantalla que se pidió. */
   readonly seccion = input<string>();
 
   protected readonly iconos = { faHouse, faRightFromBracket };
 
   private readonly nombreSeccion = computed(() => this.seccion()?.trim().slice(0, 60) ?? '');
 
-  /** La sección es del rol contrario al del usuario: un vendedor pidió algo de administración, o al revés. */
   private readonly paraQuien = computed(() => (this.session.esAdmin() ? 'vendedores' : 'administradores'));
 
   protected readonly titulo = computed(() =>

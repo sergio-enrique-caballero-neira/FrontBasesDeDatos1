@@ -1,13 +1,8 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { AbstractControl } from '@angular/forms';
 
-/**
- * Mensaje de validación de un campo. Aparece cuando el campo ya fue tocado o
- * se intentó enviar el formulario, y se asocia al input con `id`.
- */
 @Component({
   selector: 'app-campo-error',
-  // Lee el estado del formulario (no son signals), así que se revisa en cada ciclo.
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     @if (mensaje(); as mensaje) {
@@ -19,7 +14,6 @@ export class CampoError {
   readonly control = input.required<AbstractControl | null>();
   readonly id = input<string>();
   readonly enviado = input(false);
-  /** Mensajes propios por clave de error, cuando el genérico no explica bien qué hacer. */
   readonly mensajes = input<Record<string, string>>({});
 
   protected mensaje(): string | null {

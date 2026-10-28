@@ -30,7 +30,6 @@ import { Confirmar } from '../shared/confirmar';
 import { pesos, PesosPipe } from '../shared/formato';
 import { NavMenu } from './nav-menu';
 
-/** Desde lg la barra tiene sitio para el tema y los datos de demostración; debajo pasan al menú del usuario. */
 const CONSULTA_ANCHA = '(min-width: 992px)';
 
 const RUTA_NUEVA_VENTA = '/ventas/nueva';
@@ -73,20 +72,11 @@ export class Shell {
     params: () => this.api.cambios(),
     loader: () => this.sucursalesRepo.listar(),
   });
-  /**
-   * Conserva la lista anterior mientras se recarga, para que la barra no parpadee. Se lee con
-   * hasValue(): value() lanza si la carga falló y tumbaría la barra entera.
-   */
   protected readonly listaSucursales = linkedSignal<Sucursal[] | undefined, Sucursal[]>({
     source: () => (this.sucursales.hasValue() ? this.sucursales.value() : undefined),
     computation: (nueva, previa) => nueva ?? previa?.value ?? [],
   });
 
-  /**
-   * El menú del usuario muestra el tema y los datos de demostración solo cuando la barra
-   * no los tiene. Se renderizan con @if y no con clases d-*: el teclado de ngbDropdown
-   * recorre todos los ngbDropdownItem y se atascaría en uno oculto con display: none.
-   */
   protected readonly pantallaAncha = signal(false);
 
   private readonly url = toSignal(
@@ -99,7 +89,6 @@ export class Shell {
 
   protected readonly enNuevaVenta = computed(() => this.url().split(/[?#]/)[0] === RUTA_NUEVA_VENTA);
 
-  /** Venta sin registrar, con las cifras que la página de venta dejó en el servicio. */
   protected readonly ventaEnCurso = computed(() => {
     if (!this.venta.hayVenta()) {
       return null;
@@ -109,7 +98,6 @@ export class Shell {
     return { productos: cantidad, unidad: cantidad === 1 ? 'producto' : 'productos', total: total > 0 ? total : null };
   });
 
-  /** En la página de venta el indicador sobra: el carrito ya está a la vista. */
   protected readonly mostrarVentaEnCurso = computed(() => this.ventaEnCurso() !== null && !this.enNuevaVenta());
 
   protected readonly nombreUsuario = computed(() => {
@@ -147,11 +135,6 @@ export class Shell {
     return this.session.sucursal() === seleccion;
   }
 
-  /**
-   * La venta en curso se guarda por sucursal: al cambiar, la de la sede actual queda en
-   * esta pestaña y vuelve al regresar. Se pregunta para que el vendedor no crea que se perdió
-   * ni registre en la sede equivocada.
-   */
   protected async cambiarSucursal(seleccion: SeleccionSucursal): Promise<void> {
     if (this.esSeleccionada(seleccion)) {
       return;
@@ -184,7 +167,6 @@ export class Shell {
     this.offcanvas.dismiss();
   }
 
-  /** Cerrar sesión descarta la venta sin registrar (VentaEnCurso la borra), así que se pregunta antes. */
   protected async cerrarSesion(): Promise<void> {
     const venta = this.ventaEnCurso();
     if (venta) {

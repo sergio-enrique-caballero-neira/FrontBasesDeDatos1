@@ -34,16 +34,9 @@ type Columna = 'nombre' | 'ventas' | 'total' | 'ticket' | 'utilidad' | 'stock' |
 
 interface FilaSucursal extends SucursalDetallada {
   sucursal: Sucursal;
-  /** Registros de inventario de la sede (productos que maneja). */
   productos: number;
 }
 
-/**
- * Comparativo de sedes en un mismo periodo: cuánto vende cada una, con qué ticket
- * y qué utilidad estimada deja, y cuánto capital tiene hoy en bodega. Sirve para
- * ver qué sede vende menos o deja menos margen y dónde hay inventario parado.
- * Desde aquí también se crean, editan y eliminan las sedes.
- */
 @Component({
   selector: 'app-sucursales',
   imports: [FaIconComponent, NgbTooltip, PageHeader, ErrorCarga, Vacio, EsqueletoTabla, SelectorPeriodo, EncabezadoOrden, BarraCelda, PesosPipe],
@@ -114,7 +107,6 @@ export class Sucursales {
     }),
   );
 
-  /** Sumas de toda la cadena; el ticket es el de todas las ventas juntas, no la suma de tickets. */
   protected readonly cadena = computed(() => {
     const filas = this.datos.value() ?? [];
     const cantidad = filas.reduce((s, f) => s + f.cantidad, 0);
@@ -131,7 +123,6 @@ export class Sucursales {
     };
   });
 
-  /** "25 sept al 24 oct 2026", con las fechas exactas del periodo elegido. */
   protected readonly rango = computed(() => {
     const { desde, hasta } = this.periodo();
     if (desde === hasta) return fechaCorta(hasta);
@@ -153,7 +144,6 @@ export class Sucursales {
     return desde === porDefecto.desde && hasta === porDefecto.hasta ? 0 : 1;
   });
 
-  /** Lo que oye un lector de pantalla cuando cambia el periodo y llegan los datos. */
   protected readonly anuncio = computed(() => {
     if (!this.datos.hasValue() || this.datos.isLoading()) return '';
     const sedes = this.datos.value().length;
@@ -163,7 +153,6 @@ export class Sucursales {
   });
 
   constructor() {
-    // Orden inicial explícito para que la flecha de "Total vendido" lo muestre.
     this.orden.estado.set({ columna: 'total', direccion: 'desc' });
   }
 

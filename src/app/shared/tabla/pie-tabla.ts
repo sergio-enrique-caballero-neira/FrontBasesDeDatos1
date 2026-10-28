@@ -1,10 +1,6 @@
 import { Component, computed, input, model } from '@angular/core';
 import { NgbPagination } from '@ng-bootstrap/ng-bootstrap';
 
-/**
- * Pie de una tabla paginada: cuántas filas se ven de cuántas, cuántas por página
- * y las páginas. Si todo cabe en una página solo muestra el conteo.
- */
 @Component({
   selector: 'app-pie-tabla',
   imports: [NgbPagination],
@@ -73,7 +69,6 @@ import { NgbPagination } from '@ng-bootstrap/ng-bootstrap';
 })
 export class PieTabla {
   readonly total = input.required<number>();
-  /** Lo que se cuenta, en plural: "ventas", "productos". */
   readonly nombre = input('resultados');
   readonly pagina = model(1);
   readonly porPagina = model(15);
@@ -88,7 +83,6 @@ export class PieTabla {
   }
 }
 
-/** Recorta las filas de la página actual. */
 export function paginar<T>(filas: T[], pagina: number, porPagina: number): T[] {
   const inicio = (pagina - 1) * porPagina;
   return filas.slice(inicio, inicio + porPagina);

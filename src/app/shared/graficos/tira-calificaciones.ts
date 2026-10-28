@@ -1,35 +1,24 @@
 import { Component, computed, input } from '@angular/core';
 import { numero } from '../formato';
 
-/** Ancho fijo de la tira y de su escala, para alinear filas y encabezado de una tabla. */
 export const TIRA_ANCHO = 160;
 const TIRA_ALTO = 44;
-/** Aire a los lados para que el punto de 1 y el de 5 no se corten (radio 4 + anillo). */
 const MARGEN_X = 8;
 const EJE_Y = 40.5;
-/** Centro del primer punto de cada pila y del más alto que cabe bajo la etiqueta. */
 const PRIMER_PUNTO = 34;
 const PUNTO_MAS_ALTO = 19;
 const PASO_PILA = 7;
 
-/** Posición horizontal de una calificación de 1 a 5 dentro de la tira. */
 function xCalificacion(valor: number): number {
   return MARGEN_X + ((valor - 1) / 4) * (TIRA_ANCHO - 2 * MARGEN_X);
 }
 
-/**
- * Tira de calificaciones de 1 a 5: un punto por evaluación (apilados si se
- * repiten) y una marca vertical en el promedio, con su valor como única
- * etiqueta. La escala es fija y del mismo ancho en todas las filas, así una
- * columna de tiras se compara de un vistazo y `app-escala-calificaciones` puede
- * ir en el encabezado alineada con los puntos.
- */
 @Component({
   selector: 'app-tira-calificaciones',
   styles: `
     :host {
       display: inline-block;
-      width: 160px; /* TIRA_ANCHO */
+      width: 160px;
       vertical-align: middle;
       line-height: 0;
     }
@@ -41,7 +30,6 @@ function xCalificacion(valor: number): number {
       stroke: var(--chart-grid);
       stroke-width: 1;
     }
-    /* Punto en tinta con anillo del color de la superficie: se separa del vecino y de la marca. */
     .punto {
       fill: var(--chart-mark);
       stroke: var(--grafico-superficie, var(--paper));
@@ -81,7 +69,6 @@ function xCalificacion(valor: number): number {
   `,
 })
 export class TiraCalificaciones {
-  /** Calificaciones de 1 a 5, una por evaluación. */
   readonly valores = input.required<number[]>();
 
   protected readonly ancho = TIRA_ANCHO;
@@ -94,7 +81,6 @@ export class TiraCalificaciones {
       .map((v) => Math.min(5, Math.max(1, v)));
     if (valores.length === 0) return null;
 
-    // Pilas por calificación; si una pila no cabe, sus puntos se acercan (el anillo los sigue separando).
     const pilas = new Map<number, number>();
     for (const v of valores) pilas.set(v, (pilas.get(v) ?? 0) + 1);
     const masAlta = Math.max(...pilas.values());
@@ -124,16 +110,12 @@ export class TiraCalificaciones {
   });
 }
 
-/**
- * Escala 1 a 5 con el mismo ancho y las mismas posiciones que la tira, para el
- * `th` de la columna. Es decorativa: el encabezado lleva su propio texto.
- */
 @Component({
   selector: 'app-escala-calificaciones',
   styles: `
     :host {
       display: inline-block;
-      width: 160px; /* TIRA_ANCHO */
+      width: 160px;
       vertical-align: bottom;
       line-height: 0;
     }

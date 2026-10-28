@@ -3,11 +3,9 @@ import { RouterLink } from '@angular/router';
 
 export interface Miga {
   texto: string;
-  /** Ruta de la miga; la última (la página actual) no lleva enlace. */
   enlace?: string | unknown[];
 }
 
-/** Migas de pan de las fichas: de dónde viene la pantalla y cómo volver un nivel. */
 @Component({
   selector: 'app-migas',
   imports: [RouterLink],

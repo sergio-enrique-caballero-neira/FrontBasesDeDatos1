@@ -164,7 +164,6 @@ export class Marcas {
   protected readonly pagina = computed(() => paginar(this.filas(), this.numeroPagina(), this.porPagina()));
 
   constructor() {
-    // Al eliminar la última marca de la última página, se vuelve a la página que sigue existiendo.
     effect(() => {
       const ultima = Math.max(1, Math.ceil(this.filas().length / this.porPagina()));
       if (this.numeroPagina() > ultima) {
@@ -173,7 +172,6 @@ export class Marcas {
     });
   }
 
-  /** El repositorio no deja borrar una marca con productos; se avisa antes de intentarlo. */
   protected motivoNoEliminar(fila: FilaMarca): string | null {
     if (fila.productos === 0) {
       return null;
@@ -201,7 +199,6 @@ export class Marcas {
 
   protected async eliminar(fila: FilaMarca, motivo: string | null): Promise<void> {
     if (motivo) {
-      // En pantallas táctiles el tooltip no aparece: el toque explica por qué no se puede.
       this.avisos.error(`${motivo}. Primero cambia esos productos a otra marca.`);
       return;
     }

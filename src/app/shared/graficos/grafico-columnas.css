@@ -1,4 +1,3 @@
-/* En paneles pequeños solo queda el cambio Gráfico | Tabla, en la esquina. */
 .grafico-encabezado.compacto {
   justify-content: flex-end;
   margin-bottom: 0.5rem;
@@ -17,12 +16,10 @@
   fill: var(--chart-muted);
 }
 
-/* Lavado detrás del día activo: muestra qué responde sin cambiar el valor de la marca. */
 .banda-activa {
   fill: var(--soft-bg);
 }
 
-/* Tramos bajo el eje: una línea fina que abarca sus días y el nombre debajo. */
 .tramos {
   display: flex;
 }

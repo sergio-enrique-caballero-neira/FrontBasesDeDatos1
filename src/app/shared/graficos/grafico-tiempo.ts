@@ -3,22 +3,14 @@ import { diaLargo, diaMes } from '../formato';
 import { topeRedondo } from './escala';
 
 export interface PuntoTiempo {
-  /** AAAA-MM-DD */
   fecha: string;
   valor: number;
-  /** Texto extra para el tooltip y la tabla (por ejemplo, "4 ventas"). */
   detalle?: string;
 }
 
 const ALTO_GRAFICO = 180;
 const MARGEN = { arriba: 12, derecha: 12, abajo: 28, izquierda: 64 };
 
-/**
- * Serie de tiempo de una sola serie: línea de 2px con un área muy suave debajo.
- * Una guía vertical sigue al puntero y se ajusta al día más cercano; con el
- * teclado se recorren los días con las flechas. El tooltip nunca es la única
- * forma de leer un valor: la vista de tabla los muestra todos.
- */
 @Component({
   selector: 'app-grafico-tiempo',
   styleUrls: ['./grafico-comun.css', './grafico-tiempo.css'],
@@ -123,13 +115,10 @@ export class GraficoTiempo {
   protected readonly id = `grafico-tiempo-${++GraficoTiempo.siguiente}`;
   private readonly lienzo = viewChild<ElementRef<HTMLElement>>('lienzo');
 
-  /** La pregunta que responde el gráfico. */
   readonly titulo = input.required<string>();
   readonly descripcion = input<string>();
-  /** Puntos en orden cronológico, un punto por día. */
   readonly puntos = input.required<PuntoTiempo[]>();
   readonly formato = input<(valor: number) => string>((v) => String(v));
-  /** Formato corto para el eje Y. */
   readonly formatoEje = input<(valor: number) => string>((v) => String(v));
   readonly nombreValor = input('Valor');
   readonly textoVacio = input('No hay datos para este periodo.');
@@ -168,7 +157,6 @@ export class GraficoTiempo {
     const linea = xs.map((x, i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
     const area = `${linea} L${xs[xs.length - 1].toFixed(1)},${base} L${xs[0].toFixed(1)},${base} Z`;
     const ticksY = [0, maximo / 2, maximo].map((valor) => ({ valor, y: base - (maximo > 0 ? (valor / maximo) * ALTO_GRAFICO : 0) }));
-    // Unas cinco fechas en el eje, siempre la primera y la última.
     const cada = Math.max(1, Math.ceil(puntos.length / 5));
     const ticksX = puntos
       .map((p, i) => ({ indice: i, x: xs[i], texto: diaMes(p.fecha) }))
@@ -178,7 +166,6 @@ export class GraficoTiempo {
   });
 
   constructor() {
-    // El lienzo aparece y desaparece al cambiar entre gráfico y tabla: se observa cada vez que existe.
     effect((alLimpiar) => {
       const elemento = this.lienzo()?.nativeElement;
       if (!elemento) return;

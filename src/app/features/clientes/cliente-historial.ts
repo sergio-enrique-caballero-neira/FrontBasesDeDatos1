@@ -20,11 +20,6 @@ import { abrirDialogoCliente } from './cliente-dialogo';
 
 const TOP_PRODUCTOS = 5;
 
-/**
- * Quién es el cliente y qué le ha comprado a la cadena: contacto, cuántas compras
- * y por cuánto, sus facturas y los productos que más lleva. Sirve para atenderlo
- * (qué ofrecerle, cuándo vino) y, si es vendedor, para empezarle una venta.
- */
 @Component({
   selector: 'app-cliente-historial',
   imports: [RouterLink, FaIconComponent, ErrorCarga, Vacio, EsqueletoBloque, EsqueletoTabla, BarraCelda, PieTabla, PesosPipe, FechaPipe],
@@ -47,7 +42,6 @@ const TOP_PRODUCTOS = 5;
       margin: 0.125rem 0 0;
       overflow-wrap: anywhere;
     }
-    /* Dos columnas cuando el espacio del componente lo permite (ficha), una en un panel angosto. */
     .rejilla {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
@@ -268,18 +262,14 @@ export class ClienteHistorial {
   private readonly avisos = inject(Avisos);
 
   readonly idCliente = input.required<number>();
-  /** Editar y "Nueva venta para este cliente". En un panel de solo consulta se apagan. */
   readonly mostrarAcciones = input(true);
-  /** Nivel del nombre: h1 en la ficha del cliente, h2 dentro de otra pantalla. */
   readonly encabezado = input<'h1' | 'h2'>('h2');
-  /** Avisa al padre cuando se editaron los datos del cliente. */
   readonly cambio = output<Cliente>();
 
   protected readonly id = `historial-${++ClienteHistorial.siguiente}`;
   protected readonly iconos = { faCartShopping, faCircleInfo, faPen, faReceipt, faUserSlash };
   protected readonly documentoConsumidorFinal = DOCUMENTO_CONSUMIDOR_FINAL;
   protected readonly esVendedor = this.session.esVendedor;
-  /** La ficha de producto está bajo soloAdministrador: el vendedor ve el nombre sin enlace. */
   protected readonly esAdmin = this.session.esAdmin;
   protected readonly nivelSeccion = computed(() => (this.encabezado() === 'h1' ? 2 : 3));
 
@@ -332,7 +322,6 @@ export class ClienteHistorial {
 
   protected readonly noExiste = computed(() => this.historial.error() instanceof NoEncontrado);
 
-  /** Vuelve a la primera página al cambiar de cliente. */
   protected readonly pagina = linkedSignal({ source: this.idCliente, computation: () => 1 });
   protected readonly porPagina = signal(15);
 

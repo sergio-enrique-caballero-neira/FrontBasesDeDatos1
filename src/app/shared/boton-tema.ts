@@ -3,7 +3,6 @@ import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faMoon, faSun } from '@fortawesome/free-solid-svg-icons';
 import { TemaService } from '../core/tema';
 
-/** Interruptor de modo claro / oscuro. El icono muestra el modo al que se cambia. */
 @Component({
   selector: 'app-boton-tema',
   imports: [FaIconComponent],

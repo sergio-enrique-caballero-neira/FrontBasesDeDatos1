@@ -1,7 +1,3 @@
-// Modelos del front. Cada interfaz corresponde a una tabla de la transformación
-// del MER (con los cambios acordados en docs/specs). Los atributos multivaluados
-// (teléfonos y correos) viajan como arreglos; en la base de datos son tablas aparte.
-
 export type Rol = 'ADMINISTRADOR' | 'VENDEDOR';
 
 export interface Sucursal {
@@ -24,7 +20,6 @@ export interface Categoria {
   idCategoria: number;
   nombre: string;
   descripcion: string;
-  /** Categoría padre; null cuando es una categoría principal. */
   idCategoriaPrincipal: number | null;
 }
 
@@ -35,13 +30,11 @@ export interface Producto {
   descripcion: string;
   costoCompra: number;
   precioBaseVenta: number;
-  /** Suma de la cantidad disponible en todas las sucursales. */
   stock: number;
   idCategoria: number;
   idMarca: number;
 }
 
-/** Relación Registrar entre PRODUCTO y SUCURSAL. */
 export interface Inventario {
   idProducto: number;
   idSucursal: number;
@@ -57,7 +50,6 @@ export interface Proveedor {
   correos: string[];
 }
 
-/** Relación ternaria Suministrar entre PROVEEDOR, PRODUCTO y SUCURSAL. */
 export interface Suministro {
   nit: string;
   idProducto: number;
@@ -66,7 +58,6 @@ export interface Suministro {
   precioSuministro: number;
 }
 
-/** Prueba de calidad que un administrador hace sobre un suministro. */
 export interface Evaluacion {
   idEvaluacion: number;
   nit: string;
@@ -74,7 +65,6 @@ export interface Evaluacion {
   idSucursal: number;
   idEmpleado: number;
   fechaEvaluacion: string;
-  /** De 1 a 5. */
   calificacion: number;
   cumplimientoTiempo: boolean;
   observaciones: string;
@@ -89,11 +79,8 @@ export interface Cliente {
   direccion: string;
   telefonos: string[];
   correos: string[];
-  /** Solo cliente NATURAL. */
   nombre?: string;
-  /** Solo cliente NATURAL. */
   apellido?: string;
-  /** Solo cliente JURIDICO. */
   razonSocial?: string;
 }
 
@@ -106,9 +93,7 @@ export interface Empleado {
   correo: string;
   telefonos: string[];
   rol: Rol;
-  /** Solo ADMINISTRADOR. */
   nivelAcceso?: number;
-  /** Solo VENDEDOR, como fracción (0.1 = 10 %). */
   comisionVenta?: number;
   idSucursal?: number;
   nombreSucursal?: string;
@@ -122,9 +107,7 @@ export interface MetodoPago {
 export interface Venta {
   idVenta: number;
   numeroFactura: string;
-  /** AAAA-MM-DD */
   fecha: string;
-  /** HH:mm */
   hora: string;
   montoTotal: number;
   idMetodoPago: number;
@@ -142,19 +125,12 @@ export interface DetalleVenta {
 
 export const COMISION_VENDEDOR = 0.1;
 
-/** Cantidad a partir de la cual el inventario de una sucursal se marca como bajo. */
 export const UMBRAL_STOCK_BAJO = 5;
 
-/**
- * Documento con el que la DIAN identifica al consumidor final: la venta a quien
- * no da sus datos. El cliente con este documento es un registro del sistema.
- */
 export const DOCUMENTO_CONSUMIDOR_FINAL = '222222222222';
 
-/** Días sin evaluar a partir de los cuales un suministro debe volver a evaluarse. */
 export const DIAS_REEVALUACION = 30;
 
-/** Ventana de días con la que se mide el ritmo de ventas (unidades por día). */
 export const DIAS_RITMO_VENTAS = 30;
 
 export function esConsumidorFinal(c: Cliente): boolean {

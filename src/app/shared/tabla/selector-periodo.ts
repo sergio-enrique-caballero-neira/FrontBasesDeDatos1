@@ -8,7 +8,6 @@ export interface Periodo {
 
 type Atajo = 'hoy' | '7' | '30' | 'mes' | 'personalizado';
 
-/** Periodo de los últimos N días, contando hoy. */
 export function ultimosDias(dias: number): Periodo {
   const hoy = new Date();
   return { desde: fechaISO(sumarDias(hoy, -(dias - 1))), hasta: fechaISO(hoy) };
@@ -19,11 +18,6 @@ function esteMes(): Periodo {
   return { desde: fechaISO(new Date(hoy.getFullYear(), hoy.getMonth(), 1)), hasta: fechaISO(hoy) };
 }
 
-/**
- * Rango de fechas con atajos (hoy, 7 días, 30 días, este mes) y un rango
- * personalizado detrás. Los atajos van primero porque son lo que se usa casi
- * siempre; el calendario solo aparece si se pide.
- */
 @Component({
   selector: 'app-selector-periodo',
   styles: `
@@ -87,7 +81,6 @@ export class SelectorPeriodo {
 
   private readonly elegido = signal<Atajo | null>(null);
 
-  /** El atajo que coincide con el periodo actual, o "personalizado" si ninguno. */
   protected readonly atajo = computed<Atajo>(() => {
     const elegido = this.elegido();
     if (elegido === 'personalizado') return 'personalizado';

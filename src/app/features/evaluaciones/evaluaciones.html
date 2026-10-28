@@ -124,7 +124,6 @@
                               [texto]="r.aTiempo + ' de ' + r.cantidad"
                               [etiqueta]="'Entregas a tiempo de ' + r.nombre"
                             />
-                            <!-- Con muestras chicas el porcentaje engaña (1 de 1 sería 100 %): solo se muestra desde el mínimo. -->
                             @if (r.cantidad >= minimoEvaluaciones) {
                               <span class="small text-body-secondary num">{{ porcentaje(r.aTiempo, r.cantidad) }}</span>
                             }
@@ -393,7 +392,6 @@
                       </td>
                       <td class="text-nowrap">
                         <span class="visually-hidden">{{ fila.evaluacion.calificacion }} de 5</span>
-                        <!-- En celular, una estrella y la cifra: las cinco no caben junto a las demás columnas. -->
                         <span class="d-none d-md-inline" aria-hidden="true">
                           @for (n of estrellas; track n) {
                             @if (n <= fila.evaluacion.calificacion) {

@@ -9,8 +9,6 @@
     align-items: start;
   }
 
-  /* El resumen acompaña la lista; si crece más que la ventana, se desplaza por dentro
-     para que Confirmar siga alcanzable sin bajar hasta el final del catálogo. */
   .resumen {
     position: sticky;
     top: 5rem;
@@ -33,7 +31,6 @@
   overflow: hidden;
 }
 
-/* En un teléfono: nombre arriba, precio y existencias debajo, botón a la derecha. */
 .producto {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -153,7 +150,6 @@
   border-bottom: 1px solid var(--hairline);
 }
 
-/* Línea con un problema: un filete a la izquierda además del texto y el icono. */
 .linea.marcada {
   padding-left: 0.75rem;
   border-left: 2px solid var(--danger);
@@ -232,10 +228,8 @@
   padding-left: 1.25rem;
 }
 
-/* En móvil el resumen queda debajo de la lista; esta barra lleva hasta él. */
 .barra-movil {
   position: sticky;
-  /* En teléfonos con barra de gestos la píldora no queda bajo el indicador de inicio. */
   bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
   display: flex;
   justify-content: space-between;

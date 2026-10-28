@@ -6,26 +6,11 @@ import { faCheck } from '@fortawesome/free-solid-svg-icons';
 export interface BarraDato {
   etiqueta: string;
   valor: number;
-  /** Texto secundario bajo la etiqueta (por ejemplo, "12 ventas"). */
   detalle?: string;
-  /** Destino al hacer clic en la etiqueta. Se ignora si el gráfico es seleccionable. */
   enlace?: string | unknown[];
-  /** Forma de énfasis: la barra destacada va en tinta y el resto en gris. */
   destacado?: boolean;
 }
 
-/**
- * Barras horizontales de una sola serie, para comparar magnitudes entre
- * categorías (sucursales, productos, proveedores). Sigue la guía de dataviz:
- * barras delgadas con el extremo redondeado y la base recta, el valor en la
- * punta, una sola tinta (o énfasis: una en tinta y el resto en gris) y una vista
- * de tabla equivalente. Cada barra lleva su valor escrito, así que no hace falta
- * tooltip: nada queda escondido detrás del puntero.
- *
- * Si es seleccionable, cada fila es un botón que elige su etiqueta (y la suelta
- * al pulsarlo de nuevo); la elegida queda en tinta, con marca y en negrita, y el
- * resto en gris. El orden de las filas lo da el padre.
- */
 @Component({
   selector: 'app-grafico-barras',
   imports: [RouterLink, FaIconComponent],
@@ -131,7 +116,6 @@ export class GraficoBarras {
   private static siguiente = 0;
   protected readonly id = `grafico-barras-${++GraficoBarras.siguiente}`;
 
-  /** La pregunta que responde el gráfico, por ejemplo "¿Qué sucursal vende más?". */
   readonly titulo = input.required<string>();
   readonly descripcion = input<string>();
   readonly datos = input.required<BarraDato[]>();
@@ -139,15 +123,12 @@ export class GraficoBarras {
   readonly nombreEtiqueta = input('Categoría');
   readonly nombreValor = input('Valor');
   readonly textoVacio = input('No hay datos para este periodo.');
-  /** Si es true, cada fila es un botón que elige su etiqueta. */
   readonly seleccionable = input(false);
-  /** Etiqueta elegida. */
   readonly seleccion = model<string | null>(null);
 
   protected readonly comoTabla = signal(false);
   protected readonly iconoElegida = faCheck;
 
-  /** La selección solo cuenta si el gráfico es seleccionable y la etiqueta está entre los datos. */
   private readonly elegida = computed(() => {
     const etiqueta = this.seleccion();
     return this.seleccionable() && etiqueta !== null && this.datos().some((d) => d.etiqueta === etiqueta) ? etiqueta : null;
@@ -162,7 +143,6 @@ export class GraficoBarras {
       ...d,
       proporcion: maximo > 0 ? Math.max(0, d.valor) / maximo : 0,
       elegida: d.etiqueta === elegida,
-      // Con una elección, ella manda sobre el énfasis que traigan los datos.
       enTinta: elegida !== null ? d.etiqueta === elegida : !!d.destacado,
     }));
   });

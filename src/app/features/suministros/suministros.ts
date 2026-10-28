@@ -26,25 +26,18 @@ import { paginar, PieTabla } from '../../shared/tabla/pie-tabla';
 import { ErrorCarga, PageHeader, Vacio } from '../../shared/ui';
 import { abrirDialogoEvaluacion, suministrosElegibles } from '../evaluaciones/evaluacion-dialogo';
 
-/** Catálogos que necesita el formulario de suministro para sus listas. */
 export interface CatalogosSuministro {
   proveedores: Proveedor[];
   productos: Producto[];
   sucursales: Sucursal[];
 }
 
-/** Valores con los que se abre un suministro nuevo. */
 export interface PrecargaSuministro {
   nit?: string;
   idSucursal?: number | null;
-  /** Desde la ficha del proveedor el NIT queda fijo: el suministro es de ese proveedor. */
   nitFijo?: boolean;
 }
 
-/**
- * Formulario de crear o editar un suministro. Lo usan la lista de suministros y
- * la ficha del proveedor. Resuelve con el suministro guardado o undefined si se cancela.
- */
 export function abrirDialogoSuministro(
   modal: NgbModal,
   repo: SuministrosRepository,
@@ -140,7 +133,6 @@ export class Suministros {
   private readonly confirmar = inject(Confirmar);
   private readonly avisos = inject(Avisos);
 
-  /** NIT que llega en ?proveedor= desde la lista o la ficha de proveedores. */
   readonly proveedor = input<string>();
 
   protected readonly iconos = { faClipboardCheck, faPen, faPlus, faStar, faTrashCan, faTruckRampBox };
@@ -164,7 +156,6 @@ export class Suministros {
         .filter((s) => params.idSucursal === null || s.idSucursal === params.idSucursal)
         .map((suministro) => {
           const clave = claveSuministro(suministro);
-          // Llegan de la más reciente a la más antigua: la primera es la última evaluación.
           const propias = evaluaciones.filter((e) => claveSuministro(e) === clave);
           const producto = productos.find((p) => p.idProducto === suministro.idProducto);
           return {
@@ -185,16 +176,13 @@ export class Suministros {
     },
   });
 
-  /** Los datos solo cuando hay valor: `value()` lanza si el último intento falló. */
   private readonly cargados = computed(() => (this.datos.hasValue() ? this.datos.value() : undefined));
 
-  /** Proveedores que tienen suministros en la sucursal de trabajo: las opciones del filtro. */
   protected readonly proveedoresEnVista = computed(() => {
     const filas = this.cargados()?.filas ?? [];
     return (this.cargados()?.proveedores ?? []).filter((p) => p.nit === this.nit() || filas.some((f) => f.suministro.nit === p.nit));
   });
 
-  /** Filtra por proveedor y texto; el interruptor de "sin evaluar" va aparte para poder contar. */
   private readonly porProveedorYTexto = computed(() => {
     const texto = normalizar(this.busqueda());
     const nit = this.nit();
@@ -211,7 +199,6 @@ export class Suministros {
     this.soloSinEvaluar() ? this.porProveedorYTexto().filter((f) => f.evaluaciones === 0) : this.porProveedorYTexto(),
   );
 
-  /** Por qué la tabla quedó vacía: todo evaluado o nada coincide con la búsqueda. */
   protected readonly sinResultados = computed(() =>
     this.soloSinEvaluar() && this.porProveedorYTexto().length > 0
       ? {
@@ -235,12 +222,10 @@ export class Suministros {
       sucursal: (f) => f.sucursal,
       precio: (f) => f.suministro.precioSuministro,
       entrega: (f) => f.suministro.tiempoEntregaDias,
-      // Los suministros sin evaluar quedan al final en cualquier dirección.
       calidad: (f) => (f.evaluaciones ? f.promedio : null),
     }),
   );
 
-  /** Cualquier cambio de filtro, orden o sucursal vuelve a la primera página. */
   protected readonly pagina = linkedSignal({
     source: () => [this.nit(), this.busqueda(), this.soloSinEvaluar(), this.orden.estado(), this.session.idSucursalFiltro()],
     computation: () => 1,
@@ -252,7 +237,6 @@ export class Suministros {
     return numero(valor);
   }
 
-  /** Cambia el proveedor y lo deja en la URL para que el enlace se pueda compartir. */
   protected elegirProveedor(nit: string): void {
     this.nit.set(nit);
     void this.router.navigate([], {

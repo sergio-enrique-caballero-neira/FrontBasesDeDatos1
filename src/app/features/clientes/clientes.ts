@@ -24,7 +24,6 @@ type ColumnaCliente = 'cliente' | 'compras' | 'ultima';
 interface FilaCliente {
   cliente: Cliente;
   nombre: string;
-  /** Compras en toda la cadena, no solo en la sucursal de trabajo. */
   compras: number;
   ultimaCompra: string | null;
 }
@@ -51,12 +50,10 @@ const TIPOS: { valor: TipoCliente | null; texto: string }[] = [
     FechaPipe,
   ],
   styles: `
-    /* Eliminar sigue enfocable cuando no se puede, para que el tooltip diga por qué. */
     .btn[aria-disabled='true'] {
       opacity: 0.45;
       cursor: not-allowed;
     }
-    /* El consumidor final, fijo arriba, se distingue de los clientes registrados. */
     .fila-sistema {
       --bs-table-bg: var(--soft-bg);
     }
@@ -81,10 +78,8 @@ export class Clientes {
 
   protected readonly clientes = resource({
     loader: async () => {
-      // Las compras se cuentan en toda la cadena: un cliente es el mismo en cualquier sede.
       const [clientes, ventas] = await Promise.all([this.repo.listar(), this.ventasRepo.listar({ idSucursal: null })]);
       const porCliente = new Map<number, { compras: number; ultima: string }>();
-      // Las ventas llegan de la más reciente a la más antigua: la primera de cada cliente es su última compra.
       for (const venta of ventas) {
         const actual = porCliente.get(venta.idCliente);
         if (actual) {
@@ -113,7 +108,6 @@ export class Clientes {
 
   private readonly coincide = computed(() => {
     const texto = normalizar(this.busqueda());
-    // Los teléfonos se comparan sin espacios ni guiones: "3104" encuentra "310 456 7890".
     const digitos = texto.replace(/\D/g, '');
     const tipo = this.tipo();
     return ({ cliente, nombre }: FilaCliente) =>
@@ -125,7 +119,6 @@ export class Clientes {
         cliente.correos.some((c) => normalizar(c).includes(texto)));
   });
 
-  /** El consumidor final va fijo arriba, fuera del orden y de la paginación, si coincide con los filtros. */
   protected readonly consumidorFinal = computed(() => {
     const fila = this.clientes.value()?.consumidorFinal;
     return fila && this.coincide()(fila) ? fila : null;
@@ -141,11 +134,6 @@ export class Clientes {
     });
   });
 
-  /**
-   * Cambiar filtros u orden vuelve a la primera página; también crear o eliminar un
-   * cliente, para no quedar en una página que ya no existe. La fuente es un texto para
-   * que editar un cliente (misma cantidad de filas) no saque al usuario de su página.
-   */
   protected readonly pagina = linkedSignal({
     source: () => {
       const orden = this.orden.estado();
@@ -156,7 +144,6 @@ export class Clientes {
   protected readonly porPagina = signal(15);
   protected readonly visibles = computed(() => paginar(this.filtrados(), this.pagina(), this.porPagina()));
 
-  /** Con filtros, cuántos registrados coinciden (el consumidor final, fijo arriba, no cuenta). */
   protected readonly anuncio = computed(() => {
     if (!this.clientes.hasValue() || this.filtrosActivos() === 0) {
       return '';
@@ -197,7 +184,6 @@ export class Clientes {
     }
   }
 
-  /** Desde el vacío de la búsqueda: lo escrito pasa al documento (si son números) o al nombre. */
   protected async crearDesdeBusqueda(): Promise<void> {
     const guardado = await abrirDialogoCliente(this.modal, null, this.busqueda());
     if (guardado) {

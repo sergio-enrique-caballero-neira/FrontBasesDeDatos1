@@ -215,12 +215,10 @@ export class Proveedores {
 
   protected readonly orden = new Orden<'proveedor' | 'suministros' | 'calidad'>();
 
-  /** Sin orden elegido, por nombre (como los entrega el repositorio). */
   protected readonly ordenados = computed(() =>
     this.orden.aplicar(this.proveedores.hasValue() ? this.proveedores.value() : [], {
       proveedor: (f) => f.proveedor.nombre,
       suministros: (f) => f.suministros,
-      // Sin evaluar queda al final en cualquier dirección.
       calidad: (f) => (f.evaluaciones ? f.promedio : null),
     }),
   );

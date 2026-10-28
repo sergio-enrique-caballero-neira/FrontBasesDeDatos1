@@ -2,7 +2,6 @@
   display: block;
 }
 
-/* Contacto del proveedor: pares etiqueta/valor en texto, sin tarjetas. */
 .contacto {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
@@ -26,7 +25,6 @@
   max-width: 46rem;
 }
 
-/* Nombres de proveedor largos: que se partan en líneas y no ensanchen la tabla. */
 .alternativa {
   min-width: 13rem;
   max-width: 18rem;

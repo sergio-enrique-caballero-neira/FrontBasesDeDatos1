@@ -1,11 +1,5 @@
 import { Component, computed, input } from '@angular/core';
 
-/**
- * Medidor de avance de una cantidad contra su máximo ("4 de 6"). Es un
- * `role="meter"`: el lector de pantalla recibe la etiqueta y el texto, y en
- * pantalla la cifra va escrita al lado de la pista, así el relleno nunca es la
- * única forma de leer el valor.
- */
 @Component({
   selector: 'app-medidor',
   host: {
@@ -23,7 +17,6 @@ import { Component, computed, input } from '@angular/core';
       gap: 0.5rem;
       min-width: 7rem;
     }
-    /* Pista y relleno con la base recta a la izquierda y el extremo redondeado. */
     .pista {
       flex: 1 1 auto;
       min-width: 3rem;
@@ -54,9 +47,7 @@ import { Component, computed, input } from '@angular/core';
 export class Medidor {
   readonly valor = input.required<number>();
   readonly maximo = input.required<number>();
-  /** Lo que se lee en pantalla y en el lector, por ejemplo "4 de 6". */
   readonly texto = input.required<string>();
-  /** Qué se mide, para el lector de pantalla: "Evaluaciones completadas". */
   readonly etiqueta = input.required<string>();
 
   protected readonly tope = computed(() => Math.max(0, this.maximo()));

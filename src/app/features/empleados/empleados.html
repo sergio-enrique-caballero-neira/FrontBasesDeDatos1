@@ -5,8 +5,6 @@
       Nuevo empleado
     </button>
   </app-page-header>
-
-  <!-- Comisiones del periodo: lo que se paga a cada vendedor y el soporte para entregarlo. -->
   <section class="card mb-4" aria-labelledby="comisiones-titulo">
     <div class="card-body">
       <div class="solo-impresion mb-3">
@@ -199,8 +197,6 @@
       <app-esqueleto-tabla [columnas]="['texto', 'numero', 'numero', 'numero']" [filas]="4" texto="Cargando comisiones" />
     }
   </section>
-
-  <!-- Personal: directorio de contacto, rol y acceso. Sin cifras de ventas: esas están arriba. -->
   <section class="card no-print" aria-labelledby="personal-titulo">
     <div class="card-body">
       <h2 class="card-title" id="personal-titulo">Personal</h2>
@@ -284,7 +280,6 @@
                       <fa-icon [icon]="iconos.faPen" />
                     </button>
                     @if (empleado.idEmpleado === idUsuario()) {
-                      <!-- Sigue enfocable (aria-disabled) para que el tooltip diga por qué no se puede. -->
                       <button
                         type="button"
                         class="btn btn-soft btn-icon btn-sm ms-1 opacity-50"

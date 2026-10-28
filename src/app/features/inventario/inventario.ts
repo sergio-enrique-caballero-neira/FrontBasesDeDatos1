@@ -40,7 +40,6 @@ import { paginar, PieTabla } from '../../shared/tabla/pie-tabla';
 import { ErrorCarga, PageHeader, Vacio } from '../../shared/ui';
 import { DatosInventarioDialogo, dialogoInventario, ModoInventario } from './inventario-dialogo';
 
-/** Con "Todas", el admin ve una fila por registro producto-sucursal o una por producto. */
 type Vista = 'registro' | 'producto';
 
 interface FilaRegistro {
@@ -50,7 +49,6 @@ interface FilaRegistro {
   sucursal: Sucursal;
 }
 
-/** Una sede en la vista por producto; `fila` es null si la sede no maneja el producto. */
 interface CeldaMatriz {
   sucursal: Sucursal;
   fila: Inventario | null;
@@ -64,10 +62,8 @@ interface FilaMatriz {
   bajo: boolean;
 }
 
-/** Existencias de un producto en las sedes distintas a la de trabajo. */
 interface OtrasSedes {
   total: number;
-  /** Cuántas de las otras sedes manejan el producto. */
   manejan: number;
   sedes: { sucursal: Sucursal; cantidad: number | null }[];
 }
@@ -96,11 +92,9 @@ const CLAVE_VISTA = 'ferreteria.inventario.vista';
   ],
   templateUrl: './inventario.html',
   styles: `
-    /* La flecha de Bootstrap sobra en un botón de solo icono. */
     .sin-flecha::after {
       display: none;
     }
-    /* Celda de la vista por producto: toda la celda es el botón que abre esa sede. */
     .celda-sede {
       display: inline-flex;
       align-items: center;
@@ -124,7 +118,6 @@ const CLAVE_VISTA = 'ferreteria.inventario.vista';
       color: var(--muted);
       font-size: 0.8125rem;
     }
-    /* Vista por producto bajo 576 px: un bloque por producto con una línea por sede. */
     .bloques {
       list-style: none;
       margin: 0;
@@ -156,7 +149,6 @@ const CLAVE_VISTA = 'ferreteria.inventario.vista';
       color: var(--muted);
       font-size: 0.8125rem;
     }
-    /* Botón de "Otras sedes": cifra subrayada con puntos, como un término con definición. */
     .otras-sedes {
       padding: 0;
       border: 0;
@@ -209,7 +201,6 @@ export class InventarioPage {
   protected readonly orden = new Orden<'producto' | 'categoria' | 'sucursal' | 'ubicacion' | 'precio' | 'disponible' | 'otras'>();
   protected readonly ordenMatriz = new Orden<'producto' | 'total'>();
 
-  /** Preferencia de cada usuario: se recuerda en este navegador. */
   protected readonly vista = linkedSignal<Vista>(() => leerVista(this.session.usuario()?.idEmpleado));
   protected readonly puedeVerMatriz = computed(() => this.porTodas() && this.esAdmin());
   protected readonly vistaActiva = computed<Vista>(() => (this.puedeVerMatriz() ? this.vista() : 'registro'));
@@ -236,7 +227,6 @@ export class InventarioPage {
         );
       const sucursal = sucursales.find((s) => s.idSucursal === params.idSucursal) ?? null;
       const faltantes = sucursal ? productos.filter((p) => !filas.some((f) => f.idProducto === p.idProducto)) : [];
-      // Una fila por producto del catálogo, también los que ninguna sede maneja.
       const matriz: FilaMatriz[] =
         params.idSucursal !== null
           ? []
@@ -259,10 +249,6 @@ export class InventarioPage {
     },
   });
 
-  /**
-   * Existencias en las demás sedes, solo con una sucursal elegida. Va aparte del
-   * inventario para que, si falla, la tabla siga y la columna diga "No disponible".
-   */
   protected readonly otrasSedes = resource({
     params: () => {
       const idSucursal = this.session.idSucursalFiltro();
@@ -302,8 +288,6 @@ export class InventarioPage {
       ? 'Cuánto hay de cada producto en cada sucursal, para decidir dónde reabastecer.'
       : 'Existencias de cada producto en todas las sucursales.';
   });
-
-  // Filtros
 
   private readonly texto = computed(() => normalizar(this.busqueda()));
   protected readonly filtrosActivos = computed(() => (this.busqueda().trim() ? 1 : 0) + (this.soloBajo() ? 1 : 0));
@@ -351,14 +335,12 @@ export class InventarioPage {
     }),
   );
 
-  /** Cuántos quedan con "Solo stock bajo": registros en la lista, productos en la vista por producto. */
   protected readonly cantidadBajo = computed(() =>
     this.vistaActiva() === 'producto'
       ? (this.datos()?.matriz ?? []).filter((f) => f.bajo).length
       : (this.datos()?.items ?? []).filter((i) => i.fila.cantidadDisponible <= UMBRAL_STOCK_BAJO).length,
   );
 
-  /** Lo que hay antes de filtrar en la vista activa: decide entre "vacío" y "sin resultados". */
   protected readonly hayDatos = computed(() =>
     this.vistaActiva() === 'producto' ? (this.datos()?.matriz.length ?? 0) > 0 : (this.datos()?.items.length ?? 0) > 0,
   );
@@ -370,8 +352,6 @@ export class InventarioPage {
   protected readonly nombreConteo = computed(() =>
     this.vistaActiva() === 'registro' && this.porTodas() ? 'registros' : 'productos',
   );
-
-  // Paginación: vuelve a la primera página cuando cambia lo que se ve.
 
   protected readonly porPagina = signal(15);
   protected readonly pagina = linkedSignal({
@@ -385,7 +365,6 @@ export class InventarioPage {
     }),
     computation: () => 1,
   });
-  /** Si al retirar un registro la última página queda vacía, se muestra la anterior. */
   protected readonly paginaActual = computed(() =>
     Math.min(this.pagina(), Math.max(1, Math.ceil(this.totalVisible() / this.porPagina()))),
   );
@@ -402,8 +381,6 @@ export class InventarioPage {
     this.soloBajo.set(false);
   }
 
-  // Otras sedes
-
   protected otrasDe(idProducto: number): OtrasSedes | null {
     const cadena = this.cadena();
     if (!cadena) {
@@ -418,7 +395,6 @@ export class InventarioPage {
     );
   }
 
-  /** Todo el detalle del popover en el nombre del botón: se oye sin abrirlo. */
   protected etiquetaOtras(nombre: string, otras: OtrasSedes): string {
     if (otras.manejan === 0) {
       return `${nombre}: ninguna otra sede lo maneja`;
@@ -436,8 +412,6 @@ export class InventarioPage {
     const bajo = celda.fila.cantidadDisponible <= UMBRAL_STOCK_BAJO ? ', stock bajo' : '';
     return `${producto.nombre} en ${celda.sucursal.nombre}: ${unidades(celda.fila.cantidadDisponible)}${bajo}. Registrar entrada o corregir conteo`;
   }
-
-  // Acciones
 
   protected async agregar(): Promise<void> {
     const datos = this.datos();
@@ -482,7 +456,6 @@ export class InventarioPage {
   protected async retirar(item: FilaRegistro): Promise<void> {
     const { fila, producto, sucursal } = item;
     if (fila.cantidadDisponible > 0) {
-      // La regla del repositorio lo impediría: se ofrece el paso que sí sirve.
       const corregir = await this.confirmar.preguntar({
         titulo: 'Aún hay unidades en la sucursal',
         mensaje: `Quedan ${unidades(fila.cantidadDisponible)} de ${producto.nombre} en ${sucursal.nombre}. Para retirarlo, primero corrige el conteo a 0.`,
@@ -576,6 +549,5 @@ function guardarVista(idEmpleado: number | undefined, vista: Vista): void {
   try {
     localStorage.setItem(`${CLAVE_VISTA}.${idEmpleado ?? 'anonimo'}`, vista);
   } catch {
-    // Sin almacenamiento la preferencia dura lo que dure la pantalla.
   }
 }

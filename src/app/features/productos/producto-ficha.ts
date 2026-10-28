@@ -40,14 +40,11 @@ import { abrirDialogoEvaluacion, SuministroElegible, suministrosElegibles } from
 import { dialogoInventario } from '../inventario/inventario-dialogo';
 import { DialogoProducto } from './producto-dialogo';
 
-/** Ventana de ventas de la ficha: la misma de la columna "Vendidas (30 días)" de la lista. */
 const DIAS_VENTAS = 30;
-/** Líneas de venta que se listan cuando no hay un día elegido en el gráfico. */
 const LINEAS_RECIENTES = 10;
 
 interface FilaExistencia {
   sucursal: Sucursal;
-  /** null cuando la sucursal no maneja el producto. */
   registro: Inventario | null;
   vendidas: number;
 }
@@ -57,10 +54,8 @@ interface FilaSuministro {
   suministro: Suministro;
   proveedor: string;
   sucursal: string;
-  /** (precio base de venta − precio de suministro) / precio base de venta. */
   margen: number;
   evaluaciones: number;
-  /** null si nadie lo ha evaluado. */
   promedio: number | null;
   elegible: SuministroElegible | undefined;
 }
@@ -69,12 +64,6 @@ interface LineaFicha extends LineaVendida {
   sucursal: string;
 }
 
-/**
- * Ficha de un producto (ruta /productos/:id), ordenada por las decisiones que se
- * toman con ella: si hay que reponer y dónde (existencias por sucursal), a quién
- * comprárselo (proveedores con precio, días y calidad) y si se vende (ventas de
- * los últimos 30 días).
- */
 @Component({
   selector: 'app-producto-ficha',
   imports: [
@@ -110,7 +99,6 @@ export class ProductoFicha {
   private readonly avisos = inject(Avisos);
   private readonly router = inject(Router);
 
-  /** Viene de la ruta /productos/:id. */
   readonly id = input.required<string>();
 
   protected readonly iconos = {
@@ -223,10 +211,8 @@ export class ProductoFicha {
 
   protected readonly migas = computed(() => [{ texto: 'Productos', enlace: '/productos' }, { texto: this.nombre() }]);
 
-  /** Día elegido en el gráfico de ventas; se limpia al cambiar de producto. */
   protected readonly diaElegido = linkedSignal<number, string | null>({ source: () => Number(this.id()), computation: () => null });
 
-  /** "25 sep al 24 oct": el periodo de ventas nombrado con fechas. */
   protected readonly rangoPeriodo = computed(() => {
     const periodo = this.ficha.value()?.periodo;
     return periodo ? `${diaMes(periodo.desde)} al ${diaMes(periodo.hasta)}` : '';
@@ -234,7 +220,6 @@ export class ProductoFicha {
 
   protected readonly textoPeriodo = computed(() => `del ${this.rangoPeriodo()}`);
 
-  /** Las líneas del día elegido, o las más recientes si no hay día. */
   protected readonly lineasVisibles = computed(() => {
     const lineas = this.ficha.value()?.ventas.lineas ?? [];
     const dia = this.diaElegido();
@@ -247,7 +232,6 @@ export class ProductoFicha {
       sucursal: (f) => f.sucursal,
       precio: (f) => f.suministro.precioSuministro,
       entrega: (f) => f.suministro.tiempoEntregaDias,
-      // Los que nadie ha evaluado quedan al final en cualquier dirección.
       calidad: (f) => f.promedio,
     }),
   );
@@ -310,7 +294,6 @@ export class ProductoFicha {
     }
   }
 
-  /** Entrada de mercancía en una sucursal; si aún no lo maneja, la primera entrada crea el registro. */
   protected async registrarEntrada(fila: FilaExistencia): Promise<void> {
     if (!this.ficha.hasValue()) return;
     const producto: Producto = this.ficha.value().producto;
@@ -321,7 +304,6 @@ export class ProductoFicha {
       modo: 'entrada',
     });
     if (resultado) {
-      // En el diálogo se puede cambiar a "Corregir conteo"; el aviso dice lo que de verdad se guardó.
       const queda = `${fila.sucursal.nombre} queda con ${this.formatoUnidades(resultado.registro.cantidadDisponible)} de ${producto.nombre}.`;
       this.avisos.exito(`${resultado.modo === 'entrada' ? 'Entrada registrada' : 'Conteo guardado'}. ${queda}`);
       this.ficha.reload();

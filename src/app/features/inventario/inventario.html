@@ -13,7 +13,6 @@
           Agregar producto a la sucursal
         </button>
       } @else {
-        <!-- Deshabilitado con la razón a la vista del teclado: el contenedor recibe el foco. -->
         <span
           class="d-inline-block"
           tabindex="0"
@@ -109,7 +108,6 @@
           <button type="button" class="btn btn-soft" (click)="quitarFiltros()">Ver todo el inventario</button>
         </app-vacio>
       } @else if (vistaActiva() === 'producto') {
-        <!-- Por producto, desde 576 px: una columna por sede. -->
         <div class="table-responsive d-none d-sm-block" [attr.aria-busy]="inventario.isLoading()" [class.actualizando]="inventario.isLoading()">
           <table class="table align-middle">
             <caption class="visually-hidden">Existencias de cada producto por sucursal. Cada cifra abre el inventario de esa sede.</caption>
@@ -154,8 +152,6 @@
             </tbody>
           </table>
         </div>
-
-        <!-- Por producto, bajo 576 px: un bloque por producto con una línea por sede. -->
         <ul class="bloques d-sm-none" [attr.aria-busy]="inventario.isLoading()" [class.actualizando]="inventario.isLoading()" aria-label="Existencias por producto">
           @for (fila of paginaMatriz(); track fila.producto.idProducto) {
             <li>

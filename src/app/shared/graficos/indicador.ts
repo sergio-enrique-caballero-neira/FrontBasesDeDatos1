@@ -3,19 +3,11 @@ import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faArrowDown, faArrowRight, faArrowUp } from '@fortawesome/free-solid-svg-icons';
 
 export interface Variacion {
-  /** Cambio relativo: 0.12 = +12 %. null cuando el periodo anterior fue cero. */
   relativa: number | null;
-  /** El periodo contra el que se compara, con nombre: "vs. los 7 días anteriores". */
   periodo: string;
 }
 
-/**
- * Cifra con su etiqueta, una variación opcional contra un periodo con nombre y
- * una línea mínima de tendencia. La variación lleva flecha y texto, nunca solo
- * color; la tendencia es decorativa porque la cifra y la variación ya la dicen.
- */
 @Component({
-  // Va como <div app-indicador> dentro de un <dl>, que solo admite dt, dd o div.
   selector: 'div[app-indicador]',
   imports: [FaIconComponent],
   styles: `
@@ -88,11 +80,9 @@ export interface Variacion {
 })
 export class Indicador {
   readonly etiqueta = input.required<string>();
-  /** Ya formateado: "$ 2.556.800", "14". */
   readonly valor = input.required<string>();
   readonly variacion = input<Variacion | null>(null);
   readonly ayuda = input<string>();
-  /** Valores en orden cronológico para la línea de tendencia. */
   readonly tendencia = input<number[]>([]);
 
   protected readonly icono = computed(() => {
@@ -119,7 +109,6 @@ export class Indicador {
   });
 }
 
-/** Cambio relativo entre dos periodos; null si el anterior fue cero (no hay base). */
 export function variacionRelativa(actual: number, anterior: number): number | null {
   return anterior === 0 ? null : (actual - anterior) / anterior;
 }

@@ -48,9 +48,7 @@ import { paginar, PieTabla } from '../../shared/tabla/pie-tabla';
 import { ErrorCarga, PageHeader, Vacio } from '../../shared/ui';
 import { dialogoInventario } from '../inventario/inventario-dialogo';
 
-/** Lo que muestra la columna "Alcanza para" y su veredicto frente a la entrega. */
 interface Veredicto {
-  /** true si el producto se queda sin unidades antes de que llegue un pedido. */
   alerta: boolean;
   texto: string;
 }
@@ -60,32 +58,25 @@ interface FilaReabastecer {
   fila: Inventario;
   producto: Producto;
   sucursal: Sucursal;
-  /** Unidades vendidas en esa sucursal en los últimos DIAS_RITMO_VENTAS días. */
   vendidas: number;
-  /** Días que alcanzan las unidades al ritmo reciente; null si no hubo ventas. */
   cobertura: number | null;
-  /** Días de entrega del proveedor sugerido; null si no hay proveedor. */
   entrega: number | null;
   alcanza: string;
   veredicto: Veredicto | null;
   sugerido: {
     suministro: Suministro;
     proveedor: string;
-    /** Promedio de las evaluaciones de ese suministro; null si no se ha evaluado. */
     calidad: number | null;
   } | null;
-  /** Proveedores que también surten el producto a esa sucursal, además del sugerido. */
   otrasOpciones: number;
 }
 
-/** Panel pequeño de una sucursal en la vista de toda la cadena. */
 interface PanelSucursal {
   idSucursal: number;
   nombre: string;
   puntos: PuntoTiempo[];
   total: number;
   cantidad: number;
-  /** Cambio frente a los 7 días anteriores; null si entonces no hubo ventas. */
   relativa: number | null;
 }
 
@@ -148,12 +139,6 @@ export class Inicio {
   protected readonly pesos = pesos;
   protected readonly pesosCompactos = pesosCompactos;
 
-  // ---------------------------------------------------------------- Vendedor
-
-  /**
-   * Vendedor: sus ventas de hoy en la sucursal de trabajo (lo que cuadra la caja)
-   * y su comisión del mes en todas las sedes donde vendió.
-   */
   protected readonly vendedor = resource({
     params: () => {
       const usuario = this.usuario();
@@ -185,7 +170,6 @@ export class Inicio {
       const cantidadMes = suya?.cantidad ?? 0;
       const sedes = suya?.sucursales ?? [];
 
-      // Solo hay variación si el mismo tramo del mes anterior tuvo ventas.
       const variacionMes: Variacion | null =
         anterior && anterior.cantidad > 0
           ? {
@@ -206,7 +190,6 @@ export class Inicio {
         }),
         hoy: { cantidad: ventas.length, total: totalHoy, comision: totalHoy * tasa },
         tasa,
-        // Orden fijo por método (no por monto) para que cada medio esté siempre en su sitio.
         porMetodo: [...porMetodo]
           .sort((a, b) => a.id - b.id)
           .map<BarraDato>((m) => ({
@@ -241,9 +224,6 @@ export class Inicio {
     return paginar(filas, this.paginaVentasHoy(), this.porPaginaVentasHoy());
   });
 
-  // ----------------------------------------------------------- Administrador
-
-  /** Administrador: qué reabastecer primero, por cobertura frente al tiempo de entrega. */
   protected readonly reabastecer = resource({
     params: () => (this.esAdmin() ? { idSucursal: this.session.idSucursalFiltro() } : undefined),
     loader: async ({ params }) => {
@@ -259,7 +239,6 @@ export class Inicio {
         this.estadisticas.unidadesPorInventario({ idSucursal: params.idSucursal, desde, hasta: hoy }),
       ]);
 
-      // Promedio de calidad por suministro (proveedor + producto + sucursal).
       const notas = new Map<string, number[]>();
       for (const e of evaluaciones) {
         const clave = claveSuministro(e);
@@ -277,8 +256,6 @@ export class Inicio {
         const sucursal = sucursales.find((s) => s.idSucursal === fila.idSucursal);
         if (!producto || !sucursal) continue;
 
-        // Sugerido: menor tiempo de entrega; si empatan, mejor calidad (sin evaluar va
-        // después de cualquier evaluado); si siguen empatados, menor precio.
         const opciones = suministros
           .filter((s) => s.idProducto === fila.idProducto && s.idSucursal === fila.idSucursal)
           .map((s) => ({ suministro: s, calidad: calidadDe(s) }))
@@ -325,17 +302,14 @@ export class Inicio {
     },
   });
 
-  /** Al cambiar de sucursal se vuelve a la primera página. */
   protected readonly paginaReabastecer = linkedSignal({ source: () => this.session.idSucursalFiltro(), computation: () => 1 });
   protected readonly porPaginaReabastecer = signal(15);
   protected readonly filasReabastecer = computed(() => {
     const filas = this.reabastecer.hasValue() ? this.reabastecer.value().filas : [];
-    // Si una entrada saca filas de la lista, la página no queda fuera de rango.
     const ultima = Math.max(1, Math.ceil(filas.length / this.porPaginaReabastecer()));
     return paginar(filas, Math.min(this.paginaReabastecer(), ultima), this.porPaginaReabastecer());
   });
 
-  /** Administrador: las ventas de los últimos 7 días frente a los 7 anteriores. */
   protected readonly ventas = resource({
     params: () => (this.esAdmin() ? { idSucursal: this.session.idSucursalFiltro() } : undefined),
     loader: async ({ params }) => {
@@ -383,8 +357,6 @@ export class Inicio {
         };
       }
 
-      // Toda la cadena: un panel por sucursal, en orden fijo por nombre para que la
-      // posición identifique la sede, y con la misma escala para poder compararlos.
       const sucursales = await this.sucursalesRepo.listar();
       const series = await Promise.all(
         sucursales.map((s) => this.estadisticas.ventasPorDia({ ...catorce, idSucursal: s.idSucursal })),
@@ -434,12 +406,9 @@ export class Inicio {
     return `${momento}, ${this.usuario()?.nombre ?? ''}`;
   });
 
-  /** Botón que se enfoca después de registrar una entrada y recargar la lista. */
   private readonly focoPendiente = signal<string | null>(null);
 
   constructor() {
-    // El diálogo devuelve el foco a su botón, pero la recarga puede quitar esa fila:
-    // entonces el foco pasa al título de la tarjeta para no perderse en la página.
     afterRenderEffect(() => {
       const clave = this.focoPendiente();
       if (clave === null || this.reabastecer.isLoading() || !this.reabastecer.hasValue()) return;
@@ -459,7 +428,6 @@ export class Inicio {
       modo: 'entrada',
     });
     if (!resultado) return;
-    // En el diálogo se puede cambiar a "Corregir conteo": el aviso dice lo que de verdad se guardó.
     const queda = `${item.producto.nombre} queda con ${cuentaUnidades(resultado.registro.cantidadDisponible)} en ${item.sucursal.nombre}.`;
     this.avisos.exito(resultado.modo === 'entrada' ? `Entrada registrada: ${queda}` : `Conteo corregido: ${queda}`);
     this.focoPendiente.set(item.clave);
@@ -500,8 +468,6 @@ export class Inicio {
   }
 }
 
-// ------------------------------------------------------------------ Ayudas
-
 function restarDias(iso: string, dias: number): string {
   const [anio, mes, dia] = iso.split('-').map(Number);
   return fechaISO(sumarDias(new Date(anio, mes - 1, dia), -dias));
@@ -519,7 +485,6 @@ function cuentaDias(n: number): string {
   return n === 1 ? '1 día' : `${numero(n)} días`;
 }
 
-/** "11 al 17 de oct", o "28 de sep al 4 de oct" si cruza de mes. */
 function rangoDias(desde: string, hasta: string): string {
   if (desde === hasta) return diaMes(desde);
   return desde.slice(0, 7) === hasta.slice(0, 7)
@@ -534,16 +499,11 @@ function nombreMes(iso: string): string {
   return formatoMes.format(new Date(anio, mes - 1, 1));
 }
 
-/** "1 al 24 de septiembre", o "1 de octubre" si es un solo día. Ambos días del mismo mes. */
 function tramoMesTexto(desde: string, hasta: string): string {
   const mes = nombreMes(desde);
   return desde === hasta ? `${Number(desde.slice(8))} de ${mes}` : `${Number(desde.slice(8))} al ${Number(hasta.slice(8))} de ${mes}`;
 }
 
-/**
- * Del día 1 a hoy, y el mismo tramo del mes anterior (recortado a su último día si
- * ese mes es más corto: el 31 de marzo se compara con el 1 al 28 de febrero).
- */
 function tramoDelMes(hoy: string): { desde: string; anteriorDesde: string; anteriorHasta: string } {
   const [anio, mes, dia] = hoy.split('-').map(Number);
   const ultimoDiaAnterior = new Date(anio, mes - 1, 0).getDate();
@@ -554,12 +514,10 @@ function tramoDelMes(hoy: string): { desde: string; anteriorDesde: string; anter
   };
 }
 
-/** "Centro", "Centro y Norte", "Centro, Norte y Sur". */
 function listaNatural(nombres: string[]): string {
   return nombres.length <= 1 ? (nombres[0] ?? '') : `${nombres.slice(0, -1).join(', ')} y ${nombres.at(-1)}`;
 }
 
-/** Cobertura en texto: estimada, sin decimales y con tope legible. */
 function textoAlcanza(cantidad: number, cobertura: number | null): string {
   if (cantidad === 0) return 'Agotado';
   if (cobertura === null) return `Sin ventas en ${DIAS_RITMO_VENTAS} días`;
@@ -580,10 +538,6 @@ function veredicto(cantidad: number, cobertura: number | null, entrega: number |
   return { alerta: false, texto: 'Alcanza hasta que llegue el pedido' };
 }
 
-/**
- * Primero lo agotado (lo que más se vendía arriba), luego lo que se acaba antes de
- * la entrega (lo más justo arriba) y al final lo que solo tiene pocas unidades.
- */
 function ordenReabastecer(a: FilaReabastecer, b: FilaReabastecer): number {
   const grupo = (f: FilaReabastecer) =>
     f.fila.cantidadDisponible === 0 ? 0 : f.cobertura !== null && f.entrega !== null && f.cobertura < f.entrega ? 1 : 2;

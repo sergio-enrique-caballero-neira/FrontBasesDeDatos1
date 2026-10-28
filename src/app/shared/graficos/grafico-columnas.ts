@@ -6,24 +6,16 @@ import { diaLargo, diaMes } from '../formato';
 import { anchoTexto, topeRedondo } from './escala';
 import { PuntoTiempo } from './grafico-tiempo';
 
-/** Un tramo del periodo, nombrado bajo el eje a partir de su primer día. */
 export interface TramoColumnas {
-  /** AAAA-MM-DD del primer día del tramo. */
   desde: string;
-  /** Nombre del tramo, por ejemplo "Últimos 7 días". */
   texto: string;
 }
 
 const MARGEN = { arriba: 12, derecha: 4, abajo: 26 };
-/** Columnas delgadas: nunca más de 24 px; el resto de la banda queda como aire. */
 const ANCHO_MAXIMO = 24;
-/** Superficie entre columnas vecinas cuando la banda es angosta. */
 const SEPARACION = 2;
-/** Punta redondeada; la base queda recta sobre la línea de cero. */
 const RADIO = 4;
-/** Espacio que necesita una fecha del eje ("24 oct") con su aire. */
 const ANCHO_FECHA = 56;
-/** Saltos entre fechas del eje: días seguidos, semanas o meses aproximados. */
 const SALTOS_EJE = [1, 2, 3, 7, 14, 28, 56, 91];
 
 interface TramoContiguo {
@@ -32,14 +24,6 @@ interface TramoContiguo {
   fin: number;
 }
 
-/**
- * Columnas verticales por día, de una sola serie. Las ventas son pocas y
- * discretas por día, así que cada día es una marca propia y no un punto de una
- * línea continua. Una sola tinta; el énfasis deja en tinta un tramo reciente (o el
- * día elegido) y el resto en gris. Toda la banda de cada día responde al puntero
- * y al teclado con un tooltip, y la vista de tabla muestra lo mismo sin depender
- * de él. Con `maximo` varios paneles pequeños comparten la escala.
- */
 @Component({
   selector: 'app-grafico-columnas',
   imports: [FaIconComponent],
@@ -47,7 +31,6 @@ interface TramoContiguo {
   template: `
     <figure class="grafico mb-0" [attr.aria-labelledby]="id + '-titulo'">
       <figcaption class="grafico-encabezado" [class.compacto]="!mostrarEncabezado()">
-        <!-- En paneles pequeños el padre pone el título visible; aquí queda solo para lectores. -->
         <div [class.visually-hidden]="!mostrarEncabezado()">
           @if (mostrarEncabezado()) {
             <h2 class="card-title" [id]="id + '-titulo'">{{ titulo() }}</h2>
@@ -185,29 +168,19 @@ export class GraficoColumnas {
   protected readonly id = `grafico-columnas-${++GraficoColumnas.siguiente}`;
   private readonly lienzo = viewChild<ElementRef<HTMLElement>>('lienzo');
 
-  /** La pregunta que responde el gráfico, por ejemplo "¿Qué días se vendió más?". */
   readonly titulo = input.required<string>();
   readonly descripcion = input<string>();
-  /** Un punto por día, en orden cronológico (también los días en cero). */
   readonly puntos = input.required<PuntoTiempo[]>();
   readonly formato = input<(valor: number) => string>((v) => String(v));
-  /** Formato corto para el eje Y. */
   readonly formatoEje = input<(valor: number) => string>((v) => String(v));
   readonly nombreValor = input('Valor');
   readonly textoVacio = input('No hay datos para este periodo.');
-  /** Escala compartida entre paneles pequeños; se redondea a un tope limpio. Sin él, el tope sale de los datos. */
   readonly maximo = input<number>();
-  /** AAAA-MM-DD: desde ese día las columnas van en tinta y las anteriores en gris. Sin él, todas en tinta. */
   readonly enfasisDesde = input<string>();
-  /** Nombres de tramos bajo el eje, cada uno desde su primer día. */
   readonly tramos = input<TramoColumnas[]>([]);
-  /** Alto del área de dibujo en píxeles, sin contar el eje de fechas. */
   readonly alto = input(180);
-  /** En paneles pequeños el padre pone el encabezado; el cambio Gráfico | Tabla queda en la esquina. */
   readonly mostrarEncabezado = input(true);
-  /** Si es true, clic, Enter o Espacio eligen un día y Escape quita la elección. */
   readonly seleccionable = input(false);
-  /** Día elegido (AAAA-MM-DD). */
   readonly seleccion = model<string | null>(null);
 
   protected readonly comoTabla = signal(false);
@@ -217,24 +190,20 @@ export class GraficoColumnas {
   protected readonly iconoElegido = faCheck;
   private readonly hoy = hoyISO();
 
-  /** Sin puntos o con todo en cero no hay nada que comparar: se muestra el texto de vacío. */
   protected readonly vacio = computed(() => this.puntos().every((p) => p.valor <= 0));
   protected readonly hayDetalle = computed(() => this.puntos().some((p) => p.detalle));
 
-  /** La selección solo cuenta si el día está entre los puntos y el gráfico es seleccionable. */
   protected readonly fechaElegida = computed(() => {
     const fecha = this.seleccion();
     return this.seleccionable() && fecha !== null && this.puntos().some((p) => p.fecha === fecha) ? fecha : null;
   });
 
-  /** Gris para lo que no es el foco: todo menos el día elegido, o lo anterior a `enfasisDesde`. */
   protected readonly atenuadas = computed(() => {
     const elegida = this.fechaElegida();
     const desde = this.enfasisDesde();
     return this.puntos().map((p) => (elegida !== null ? p.fecha !== elegida : desde ? p.fecha < desde : false));
   });
 
-  /** Tramos como rangos de índices seguidos; los días anteriores al primer tramo quedan sin nombre. */
   private readonly tramosContiguos = computed<TramoContiguo[]>(() => {
     const tramos = [...this.tramos()].sort((a, b) => a.desde.localeCompare(b.desde));
     const contiguos: TramoContiguo[] = [];
@@ -259,7 +228,6 @@ export class GraficoColumnas {
     const enteros = puntos.every((p) => Number.isInteger(p.valor));
     const tope = topeRedondo(Math.max(this.maximo() ?? 0, ...puntos.map((p) => p.valor)), enteros);
     const marcas = [0, tope / 2, tope].map((valor) => ({ valor, texto: this.formatoEje()(valor) }));
-    // El margen izquierdo se ajusta a la etiqueta más larga del eje: ni se corta ni sobra.
     const izquierda = Math.ceil(Math.max(...marcas.map((m) => anchoTexto(m.texto)))) + 10;
     const derecha = ancho - MARGEN.derecha;
     const arriba = MARGEN.arriba;
@@ -269,7 +237,6 @@ export class GraficoColumnas {
 
     const columnas = puntos.map((p, i) => {
       const centro = izquierda + (i + 0.5) * banda;
-      // Un día con algo, por poco que sea, se ve: al menos 1 px.
       const altoColumna = p.valor > 0 ? Math.max(1, (p.valor / tope) * altoDibujo) : 0;
       return {
         fecha: p.fecha,
@@ -280,8 +247,6 @@ export class GraficoColumnas {
 
     const ticksY = marcas.map((m) => ({ ...m, y: base - (m.valor / tope) * altoDibujo }));
 
-    // Unas cinco fechas contadas hacia atrás desde el último día, así el salto cae en
-    // el mismo día de la semana. El último día siempre lleva fecha (o "Hoy").
     const caben = Math.max(1, Math.min(5, Math.floor((derecha - izquierda) / ANCHO_FECHA)));
     const cada = SALTOS_EJE.find((s) => Math.ceil(puntos.length / s) <= caben) ?? Math.ceil(puntos.length / caben);
     const ticksX: { indice: number; x: number; ancla: string; texto: string }[] = [];
@@ -289,7 +254,6 @@ export class GraficoColumnas {
       const texto = i === puntos.length - 1 && puntos[i].fecha === this.hoy ? 'Hoy' : diaMes(puntos[i].fecha);
       const centro = columnas[i].centro;
       const mitad = anchoTexto(texto) / 2;
-      // Centrada bajo su columna, salvo en los bordes, donde se ancla para no salirse.
       let x = centro;
       let ancla = 'middle';
       if (centro + mitad > ancho) {
@@ -314,7 +278,6 @@ export class GraficoColumnas {
       arriba,
       base,
       banda,
-      // El resalte del día activo abraza la columna; el área que responde es toda la banda.
       resalte: Math.min(banda, anchoColumna + 12),
       columnas,
       ticksY,
@@ -323,7 +286,6 @@ export class GraficoColumnas {
     };
   });
 
-  /** Día bajo el puntero o el foco, con su columna para ubicar el tooltip. */
   protected readonly activa = computed(() => {
     const g = this.geometria();
     const i = this.activo();
@@ -355,7 +317,6 @@ export class GraficoColumnas {
       .join(' ');
   });
 
-  /** Lo que dice el lector de pantalla al moverse por los días. */
   protected readonly anuncio = computed(() => {
     const a = this.activa();
     if (!a) return '';
@@ -368,7 +329,6 @@ export class GraficoColumnas {
   });
 
   constructor() {
-    // El lienzo aparece y desaparece al cambiar entre gráfico y tabla: se observa cada vez que existe.
     effect((alLimpiar) => {
       const elemento = this.lienzo()?.nativeElement;
       if (!elemento) return;
@@ -434,7 +394,6 @@ export class GraficoColumnas {
         return;
       case 'Escape':
         if (this.seleccionable() && this.seleccion() !== null) {
-          // Quitar la elección no debe cerrar además el diálogo que contenga el gráfico.
           evento.preventDefault();
           evento.stopPropagation();
           this.seleccion.set(null);
@@ -449,14 +408,12 @@ export class GraficoColumnas {
     this.activo.set(Math.min(ultimo, Math.max(0, destino)));
   }
 
-  /** Al llegar con el teclado se empieza por el día elegido o, si no hay, por el último. */
   private indiceInicial(): number {
     const elegida = this.fechaElegida();
     const i = elegida === null ? -1 : this.puntos().findIndex((p) => p.fecha === elegida);
     return i >= 0 ? i : this.puntos().length - 1;
   }
 
-  /** Día cuya banda completa está bajo el puntero; null fuera del área de dibujo. */
   private indiceEn(evento: MouseEvent): number | null {
     const g = this.geometria();
     if (!g) return null;
@@ -466,7 +423,6 @@ export class GraficoColumnas {
   }
 }
 
-/** Columna con la punta redondeada y la base recta sobre la línea de cero. */
 function trazoColumna(x: number, base: number, ancho: number, alto: number): string {
   const r = Math.min(RADIO, ancho / 2, alto);
   const arriba = base - alto;

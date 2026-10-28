@@ -16,7 +16,6 @@ export interface SuministroElegible {
   nit: string;
   idProducto: number;
   idSucursal: number;
-  /** "Proveedor · Producto · Sucursal" */
   descripcion: string;
 }
 
@@ -47,14 +46,12 @@ const MAXIMO_OBSERVACIONES = 400;
 @Component({
   selector: 'app-evaluacion-dialogo',
   imports: [ReactiveFormsModule, ACCESIBILIDAD_FORMULARIOS, CampoError, FaIconComponent],
-  // Lee el estado del formulario reactivo (no son signals) en la plantilla.
   changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .estrellas {
       display: flex;
       gap: 0.25rem;
     }
-    /* Área de toque de 44 px por estrella; la llena es tinta y la vacía, contorno gris (AA en ambos temas). */
     .estrellas label {
       display: inline-grid;
       place-items: center;
@@ -203,7 +200,6 @@ export class EvaluacionDialogo {
   protected readonly enviado = signal(false);
   protected readonly guardando = signal(false);
   protected readonly error = signal<string | null>(null);
-  /** Estrella bajo el puntero: anticipa la calificación antes de elegirla. */
   protected readonly resaltada = signal(0);
 
   protected readonly form = this.fb.group({
