@@ -16,11 +16,9 @@ import { ErrorCarga, PageHeader, Vacio } from '../../shared/ui';
 
 interface NodoHija {
   categoria: Categoria;
-  /** Productos clasificados en esta subcategoría. */
   productos: number;
 }
 
-/** Por qué no se puede eliminar y qué hacer antes. */
 interface Motivo {
   texto: string;
   solucion: string;
@@ -29,13 +27,10 @@ interface Motivo {
 interface NodoPrincipal {
   categoria: Categoria;
   hijas: NodoHija[];
-  /** Productos clasificados directamente en la principal, sin contar sus subcategorías. */
   propios: number;
-  /** Propios más los de todas sus subcategorías: lo que lista /productos?categoria=ID. */
   productos: number;
 }
 
-/** Lista de productos filtrada por la categoría (la de una principal incluye sus subcategorías). */
 const RUTA_PRODUCTOS = '/productos';
 
 function textoProductos(n: number): string {
@@ -245,7 +240,6 @@ export class Categorias {
     },
   });
 
-  /** El repositorio no deja borrar una categoría con subcategorías o productos; se avisa antes de intentarlo. */
   protected motivoPrincipal(nodo: NodoPrincipal): Motivo | null {
     const { nombre } = nodo.categoria;
     if (nodo.hijas.length) {
@@ -269,12 +263,10 @@ export class Categorias {
     };
   }
 
-  /** `categoria` = la que se edita; `padre` = la principal bajo la que se crea una subcategoría. */
   protected async editar(categoria: Categoria | null, padre: Categoria | null): Promise<void> {
     const nodos = this.arbol.hasValue() ? this.arbol.value() : [];
     const principales = nodos.map((n) => n.categoria).filter((c) => c.idCategoria !== categoria?.idCategoria);
     const idPadre = categoria ? categoria.idCategoriaPrincipal : (padre?.idCategoria ?? null);
-    // Solo hay dos niveles: una principal con subcategorías no puede colgar de otra.
     const tieneHijas = !!categoria && nodos.some((n) => n.categoria.idCategoria === categoria.idCategoria && n.hijas.length > 0);
     const guardada = await abrirFormulario(this.modal, {
       titulo: categoria ? 'Editar categoría' : padre ? `Nueva subcategoría de ${padre.nombre}` : 'Nueva categoría principal',
@@ -316,7 +308,6 @@ export class Categorias {
 
   protected async eliminar(categoria: Categoria, motivo: Motivo | null): Promise<void> {
     if (motivo) {
-      // En pantallas táctiles el tooltip no aparece: el toque explica por qué no se puede.
       this.avisos.error(`${motivo.texto}. ${motivo.solucion}`);
       return;
     }

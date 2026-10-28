@@ -13,9 +13,10 @@ import {
 import { NgbModal, NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
 import { Avisos } from '../../core/avisos';
 import { mensajeDeError } from '../../core/domain-error';
-import { Sucursal, UMBRAL_STOCK_BAJO } from '../../core/models';
+import { Empleado, nombreEmpleado, Sucursal, UMBRAL_STOCK_BAJO } from '../../core/models';
 import { Session } from '../../core/session';
 import { SucursalesRepository } from '../../data/catalogos.repository';
+import { EmpleadosRepository } from '../../data/empleados.repository';
 import { EstadisticasRepository, SucursalDetallada } from '../../data/estadisticas.repository';
 import { InventarioRepository } from '../../data/productos.repository';
 import { Confirmar } from '../../shared/confirmar';
@@ -33,16 +34,9 @@ type Columna = 'nombre' | 'ventas' | 'total' | 'ticket' | 'utilidad' | 'stock' |
 
 interface FilaSucursal extends SucursalDetallada {
   sucursal: Sucursal;
-  /** Registros de inventario de la sede (productos que maneja). */
   productos: number;
 }
 
-/**
- * Comparativo de sedes en un mismo periodo: cuánto vende cada una, con qué ticket
- * y qué utilidad estimada deja, y cuánto capital tiene hoy en bodega. Sirve para
- * ver qué sede vende menos o deja menos margen y dónde hay inventario parado.
- * Desde aquí también se crean, editan y eliminan las sedes.
- */
 @Component({
   selector: 'app-sucursales',
   imports: [FaIconComponent, NgbTooltip, PageHeader, ErrorCarga, Vacio, EsqueletoTabla, SelectorPeriodo, EncabezadoOrden, BarraCelda, PesosPipe],
@@ -71,6 +65,7 @@ export class Sucursales {
   private readonly repo = inject(SucursalesRepository);
   private readonly estadisticas = inject(EstadisticasRepository);
   private readonly inventarioRepo = inject(InventarioRepository);
+  private readonly empleadosRepo = inject(EmpleadosRepository);
   private readonly session = inject(Session);
   private readonly router = inject(Router);
   private readonly modal = inject(NgbModal);
@@ -112,7 +107,6 @@ export class Sucursales {
     }),
   );
 
-  /** Sumas de toda la cadena; el ticket es el de todas las ventas juntas, no la suma de tickets. */
   protected readonly cadena = computed(() => {
     const filas = this.datos.value() ?? [];
     const cantidad = filas.reduce((s, f) => s + f.cantidad, 0);
@@ -129,7 +123,6 @@ export class Sucursales {
     };
   });
 
-  /** "25 sept al 24 oct 2026", con las fechas exactas del periodo elegido. */
   protected readonly rango = computed(() => {
     const { desde, hasta } = this.periodo();
     if (desde === hasta) return fechaCorta(hasta);
@@ -151,7 +144,6 @@ export class Sucursales {
     return desde === porDefecto.desde && hasta === porDefecto.hasta ? 0 : 1;
   });
 
-  /** Lo que oye un lector de pantalla cuando cambia el periodo y llegan los datos. */
   protected readonly anuncio = computed(() => {
     if (!this.datos.hasValue() || this.datos.isLoading()) return '';
     const sedes = this.datos.value().length;
@@ -161,7 +153,6 @@ export class Sucursales {
   });
 
   constructor() {
-    // Orden inicial explícito para que la flecha de "Total vendido" lo muestre.
     this.orden.estado.set({ columna: 'total', direccion: 'desc' });
   }
 
@@ -189,6 +180,20 @@ export class Sucursales {
   }
 
   protected async editar(sucursal: Sucursal | null): Promise<void> {
+    let encargados: Empleado[];
+    let sucursales: Sucursal[];
+    try {
+      [encargados, sucursales] = await Promise.all([this.empleadosRepo.listar(), this.repo.listar()]);
+    } catch (error) {
+      this.avisos.error(mensajeDeError(error));
+      return;
+    }
+    const ocupados = new Set(sucursales.filter((s) => s.idSucursal !== sucursal?.idSucursal).map((s) => s.idAdministrador));
+    const libres = encargados.filter((e) => e.rol === 'ADMINISTRADOR' && !ocupados.has(e.idEmpleado));
+    if (!libres.length) {
+      this.avisos.error('Todos los administradores ya dirigen una sucursal. Registra otro administrador en Empleados para encargarle esta sede.');
+      return;
+    }
     const guardada = await abrirFormulario(this.modal, {
       titulo: sucursal ? 'Editar sucursal' : 'Nueva sucursal',
       textoGuardar: sucursal ? 'Guardar cambios' : 'Crear sucursal',
@@ -197,8 +202,26 @@ export class Sucursales {
         { clave: 'ciudad', etiqueta: 'Ciudad', requerido: true, mitad: true },
         { clave: 'direccion', etiqueta: 'Dirección', requerido: true },
         { clave: 'telefono', etiqueta: 'Teléfono', tipo: 'tel', requerido: true, patron: /^[0-9 +()-]{7,20}$/, mitad: true },
+        {
+          clave: 'idAdministrador',
+          etiqueta: 'Administrador encargado',
+          tipo: 'select',
+          requerido: true,
+          mitad: true,
+          placeholder: 'Elige quién la dirige',
+          ayuda: 'Cada administrador dirige una sola sede.',
+          opciones: libres.map((e) => ({ valor: String(e.idEmpleado), texto: nombreEmpleado(e) })),
+        },
       ],
-      valores: sucursal ? ({ ...sucursal } as unknown as Record<string, string>) : undefined,
+      valores: sucursal
+        ? {
+            nombre: sucursal.nombre,
+            ciudad: sucursal.ciudad,
+            direccion: sucursal.direccion,
+            telefono: sucursal.telefono,
+            idAdministrador: String(sucursal.idAdministrador),
+          }
+        : undefined,
       guardar: (v) =>
         this.repo.guardar({
           idSucursal: sucursal?.idSucursal ?? 0,
@@ -206,6 +229,7 @@ export class Sucursales {
           ciudad: v['ciudad'],
           direccion: v['direccion'],
           telefono: v['telefono'],
+          idAdministrador: Number(v['idAdministrador']),
         }),
     });
     if (guardada) {

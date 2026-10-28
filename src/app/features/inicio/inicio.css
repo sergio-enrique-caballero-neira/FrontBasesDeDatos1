@@ -1,4 +1,3 @@
-/* Las cifras van sin tarjeta: la escala tipográfica marca la jerarquía. */
 .resumen {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
@@ -7,12 +6,10 @@
   margin: 0 0 2rem;
 }
 
-/* Dentro de la tarjeta de ventas, los dos indicadores quedan sobre el gráfico que explican. */
 .resumen-ventas {
   margin-bottom: 1.5rem;
 }
 
-/* Lugar quieto de una cifra mientras carga (sin animación, como los esqueletos). */
 .marcador {
   display: block;
   border-radius: 50rem;
@@ -36,7 +33,6 @@
   border-radius: 14px;
 }
 
-/* Paneles pequeños por sucursal: misma escala, orden fijo por nombre. */
 .paneles {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -83,7 +79,6 @@
   font-weight: 600;
 }
 
-/* Reabastecer: el veredicto lleva icono y texto, nunca solo color. */
 .celda-alcanza {
   min-width: 9.5rem;
 }
@@ -112,7 +107,6 @@
   white-space: nowrap;
 }
 
-/* Bajo lg el botón queda solo con el icono (con aria-label y tooltip). */
 @media (max-width: 991.98px) {
   .boton-entrada {
     justify-content: center;

@@ -4,23 +4,16 @@ import { Categoria, Marca, Producto } from '../../core/models';
 import { ProductosRepository } from '../../data/productos.repository';
 import { abrirFormulario, OpcionCampo } from '../../shared/formulario-dialogo';
 
-/** Marcas y categorías que ya cargó la pantalla que abre el diálogo. */
 export interface CatalogosProducto {
   marcas: Marca[];
   categorias: Categoria[];
 }
 
-/**
- * Formulario para crear o editar un producto del catálogo. Lo usan la lista de
- * productos y la ficha. El aviso de éxito lo da quien lo abre, porque el texto
- * depende de dónde se está (en la lista se recuerda agregarlo al inventario).
- */
 @Injectable({ providedIn: 'root' })
 export class DialogoProducto {
   private readonly modal = inject(NgbModal);
   private readonly repo = inject(ProductosRepository);
 
-  /** Resuelve con el producto guardado, o undefined si se cancela. */
   abrir(producto: Producto | null, catalogos: CatalogosProducto): Promise<Producto | undefined> {
     return abrirFormulario(this.modal, {
       titulo: producto ? 'Editar producto' : 'Nuevo producto',
@@ -80,7 +73,6 @@ function opcionesMarca(marcas: Marca[]): OpcionCampo[] {
   return marcas.map((m) => ({ valor: String(m.idMarca), texto: m.nombre }));
 }
 
-/** Subcategorías agrupadas por su principal; las principales sin hijas se eligen directo. */
 function opcionesCategoria(categorias: Categoria[]): OpcionCampo[] {
   const principales = categorias.filter((c) => c.idCategoriaPrincipal === null);
   return principales.flatMap((principal) => {

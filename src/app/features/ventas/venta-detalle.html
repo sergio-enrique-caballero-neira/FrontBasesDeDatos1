@@ -14,7 +14,6 @@
           Volver a ventas
         </a>
       }
-      <!-- Recién registrada, estas acciones están en el aviso de abajo: no se repiten. -->
       @if (factura.hasValue() && !recienRegistrada()) {
         <div class="d-flex flex-wrap gap-2">
           @if (session.esVendedor()) {
@@ -30,8 +29,6 @@
         </div>
       }
     </div>
-
-    <!-- La región existe desde el principio para que el aviso se anuncie al aparecer. -->
     <div role="status">
       @if (factura.hasValue()) {
         @if (recienRegistrada(); as registro) {
@@ -213,7 +210,6 @@
       }
     </div>
   } @else {
-    <!-- Mismo contorno que la factura: encabezado, datos del cliente y líneas. -->
     <div class="card factura" role="status">
       <span class="visually-hidden">Cargando la factura…</span>
       <div class="card-body" aria-hidden="true">

@@ -21,7 +21,7 @@ import { mensajeDeError, NoEncontrado } from '../../core/domain-error';
 import { nombreEmpleado, Suministro } from '../../core/models';
 import { Session } from '../../core/session';
 import { SucursalesRepository } from '../../data/catalogos.repository';
-import { EmpleadosRepository } from '../../data/personas.repository';
+import { EmpleadosRepository } from '../../data/empleados.repository';
 import { ProductosRepository } from '../../data/productos.repository';
 import {
   claveSuministro,
@@ -44,12 +44,6 @@ function promedio(valores: number[]): number {
   return valores.length ? valores.reduce((suma, v) => suma + v, 0) / valores.length : 0;
 }
 
-/**
- * Ficha de un proveedor (ruta /proveedores/:nit): contacto, cómo ha cumplido,
- * qué suministra en cada sucursal con su calidad y, si existe, otro proveedor que
- * ya surte el mismo producto. Sirve para decidir si conviene mover un producto
- * a otro proveedor.
- */
 @Component({
   selector: 'app-proveedor-ficha',
   imports: [
@@ -83,7 +77,6 @@ export class ProveedorFicha {
   private readonly avisos = inject(Avisos);
   private readonly title = inject(Title);
 
-  /** Viene de la ruta /proveedores/:nit. */
   readonly nit = input.required<string>();
 
   protected readonly iconos = {
@@ -118,7 +111,6 @@ export class ProveedorFicha {
       const nombreProveedor = (nitOtro: string) => proveedores.find((p) => p.nit === nitOtro)?.nombre ?? 'Proveedor eliminado';
 
       const propios = suministros.filter((s) => s.nit === proveedor.nit);
-      // El repositorio las entrega de la más reciente a la más antigua.
       const evaluacionesPropias = evaluaciones.filter((e) => e.nit === proveedor.nit);
 
       const filas = propios
@@ -126,8 +118,6 @@ export class ProveedorFicha {
           const clave = claveSuministro(suministro);
           const propias = evaluacionesPropias.filter((e) => claveSuministro(e) === clave);
           const p = producto(suministro.idProducto);
-          // Otra opción: el proveedor más rápido que ya surte este producto en cualquier sede;
-          // a igual tiempo, el más barato.
           const otra = suministros
             .filter((o) => o.idProducto === suministro.idProducto && o.nit !== proveedor.nit)
             .sort((a, b) => a.tiempoEntregaDias - b.tiempoEntregaDias || a.precioSuministro - b.precioSuministro)[0];
@@ -166,7 +156,6 @@ export class ProveedorFicha {
         };
       });
 
-      // Calidad por sucursal: separa una sede que rinde mal del promedio general.
       const porSucursal = [...new Set(evaluacionesPropias.map((e) => e.idSucursal))]
         .map((idSucursal) => {
           const enSede = evaluacionesPropias.filter((e) => e.idSucursal === idSucursal);
@@ -196,7 +185,6 @@ export class ProveedorFicha {
               aTiempo: evaluacionesPropias.filter((e) => e.cumplimientoTiempo).length,
               primera: evaluacionesPropias[evaluacionesPropias.length - 1].fechaEvaluacion,
               ultima: evaluacionesPropias[0].fechaEvaluacion,
-              // Solo tiene sentido nombrar la más baja si hay con qué compararla.
               masBaja: evaluados.length > 1 && peor.promedio < mejor.promedio ? peor : null,
             }
           : null,
@@ -220,7 +208,6 @@ export class ProveedorFicha {
     },
   ]);
 
-  // Qué suministra
   protected readonly soloSinEvaluar = linkedSignal({ source: this.nit, computation: () => false });
   protected readonly orden = new Orden<'producto' | 'sucursal' | 'precio' | 'entrega' | 'calidad' | 'ultima'>();
 
@@ -236,7 +223,6 @@ export class ProveedorFicha {
       sucursal: (f) => f.sucursal,
       precio: (f) => f.suministro.precioSuministro,
       entrega: (f) => f.suministro.tiempoEntregaDias,
-      // Sin evaluar queda al final en cualquier dirección.
       calidad: (f) => (f.evaluaciones ? f.promedio : null),
       ultima: (f) => f.ultima || null,
     });
@@ -251,7 +237,6 @@ export class ProveedorFicha {
     paginar(this.suministrosVisibles(), this.paginaSuministros(), this.porPaginaSuministros()),
   );
 
-  // Historial de evaluaciones
   protected readonly paginaHistorial = linkedSignal({ source: this.nit, computation: () => 1 });
   protected readonly porPaginaHistorial = signal(15);
   protected readonly historialEnPagina = computed(() =>
@@ -259,7 +244,6 @@ export class ProveedorFicha {
   );
 
   constructor() {
-    // La pestaña nombra al proveedor, no solo "Proveedor".
     effect(() => {
       if (this.datos.hasValue()) {
         this.title.setTitle(`${this.datos.value().proveedor.nombre} · Proveedores · ${NOMBRE_APP}`);
@@ -307,7 +291,6 @@ export class ProveedorFicha {
       this.avisos.exito(`Proveedor ${proveedor.nombre} eliminado.`);
       void this.router.navigateByUrl('/proveedores');
     } catch (error) {
-      // Si tiene suministros, el repositorio explica cuántos y por qué no se puede.
       this.avisos.error(mensajeDeError(error));
     }
   }
@@ -326,14 +309,12 @@ export class ProveedorFicha {
     }
   }
 
-  /** Sin clave elige el suministro en el diálogo; con clave lo deja fijo. */
   protected async evaluar(clave: string | null): Promise<void> {
-    const idEvaluador = this.session.usuario()?.idEmpleado;
-    if (!this.datos.hasValue() || !idEvaluador) return;
+    if (!this.datos.hasValue()) return;
     const { elegibles } = this.datos.value();
     const fijo = clave ? (elegibles.find((e) => e.clave === clave) ?? null) : elegibles.length === 1 ? elegibles[0] : null;
     if (clave && !fijo) return;
-    if (await abrirDialogoEvaluacion(this.modal, elegibles, fijo, idEvaluador)) {
+    if (await abrirDialogoEvaluacion(this.modal, elegibles, fijo)) {
       this.avisos.exito('Evaluación registrada.');
       this.datos.reload();
     }

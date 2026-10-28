@@ -4,14 +4,6 @@ export type Tema = 'claro' | 'oscuro';
 
 const CLAVE_TEMA = 'ferreteria.tema';
 
-/**
- * Tema de color de la aplicación. Es una preferencia del navegador, no del
- * usuario: no se borra al cerrar sesión, así que es el mismo para administradores
- * y vendedores. Si hay otra pestaña abierta, se sincroniza al instante.
- *
- * Al imprimir (con el botón de la app o con Ctrl+P) la página pasa a claro, tinta
- * oscura sobre papel blanco, y al terminar vuelve al tema elegido.
- */
 @Injectable({ providedIn: 'root' })
 export class TemaService {
   private readonly documento = inject(DOCUMENT);
@@ -24,7 +16,6 @@ export class TemaService {
       try {
         localStorage.setItem(CLAVE_TEMA, tema);
       } catch {
-        // Sin almacenamiento el tema dura hasta recargar la página.
       }
     });
     window.addEventListener('storage', (evento) => {

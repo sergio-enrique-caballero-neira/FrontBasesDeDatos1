@@ -1,120 +1,153 @@
 import { inject, Injectable } from '@angular/core';
-import { DomainError, NoEncontrado } from '../core/domain-error';
+import { Api } from '../core/api';
 import { Evaluacion, Proveedor, Suministro } from '../core/models';
-import { MockDb, siguienteId } from './mock-db';
-import { asegurarSinReferencias, normalizar, porNombre } from './reglas';
+import { porNombre } from './reglas';
 
 export function claveSuministro(s: Pick<Suministro, 'nit' | 'idProducto' | 'idSucursal'>): string {
   return `${s.nit}|${s.idProducto}|${s.idSucursal}`;
 }
 
+interface ProveedorApi {
+  nit: string;
+  nombreProveedor: string;
+  direccionProveedor: string;
+  telefonos: string[];
+  correos: string[];
+}
+
+interface SuministroApi {
+  nit: string;
+  idProducto: number;
+  idSucursal: number;
+  precioSuministro: number;
+  tiempoEntregaDias: number;
+}
+
+interface EvaluacionApi {
+  idEvaluacion: number;
+  nit: string;
+  idProducto: number;
+  idSucursal: number;
+  idEmpleado: number;
+  fechaEvaluacion: string;
+  calificacion: number;
+  cumplimientoTiempo: boolean;
+  observaciones: string | null;
+}
+
+function aProveedor(p: ProveedorApi): Proveedor {
+  return { nit: p.nit, nombre: p.nombreProveedor, direccion: p.direccionProveedor, telefonos: p.telefonos, correos: p.correos };
+}
+
+function aSuministro(s: SuministroApi): Suministro {
+  return {
+    nit: s.nit,
+    idProducto: s.idProducto,
+    idSucursal: s.idSucursal,
+    tiempoEntregaDias: s.tiempoEntregaDias,
+    precioSuministro: s.precioSuministro,
+  };
+}
+
+function aEvaluacion(e: EvaluacionApi): Evaluacion {
+  return {
+    idEvaluacion: e.idEvaluacion,
+    nit: e.nit,
+    idProducto: e.idProducto,
+    idSucursal: e.idSucursal,
+    idEmpleado: e.idEmpleado,
+    fechaEvaluacion: e.fechaEvaluacion,
+    calificacion: e.calificacion,
+    cumplimientoTiempo: e.cumplimientoTiempo,
+    observaciones: e.observaciones ?? '',
+  };
+}
+
+function rutaSuministro(s: Pick<Suministro, 'nit' | 'idProducto' | 'idSucursal'>): string {
+  return `/suministros/${encodeURIComponent(s.nit)}/${s.idProducto}/${s.idSucursal}`;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProveedoresRepository {
-  private readonly db = inject(MockDb);
+  private readonly api = inject(Api);
 
   async listar(): Promise<Proveedor[]> {
-    return (await this.db.leer('proveedores')).sort(porNombre((p) => p.nombre));
+    return (await this.api.get<ProveedorApi[]>('/proveedores')).map(aProveedor).sort(porNombre((p) => p.nombre));
   }
 
-  /** Ignora mayúsculas y espacios de más, igual que la regla de NIT único. */
   async obtener(nit: string): Promise<Proveedor> {
-    const buscado = normalizar(nit);
-    const proveedor = (await this.db.leer('proveedores')).find((p) => normalizar(p.nit) === buscado);
-    if (!proveedor) {
-      throw new NoEncontrado('Este proveedor no existe o fue eliminado.');
-    }
-    return proveedor;
+    return aProveedor(await this.api.get<ProveedorApi>(`/proveedores/${encodeURIComponent(nit.trim())}`));
   }
 
-  /** `esNuevo` distingue crear de editar porque la llave (NIT) la escribe el usuario. */
-  guardar(proveedor: Proveedor, esNuevo: boolean): Promise<Proveedor> {
-    return this.db.transaccion((t) => {
-      const nit = normalizar(proveedor.nit);
-      if (esNuevo && t.proveedores.some((p) => normalizar(p.nit) === nit)) {
-        throw new DomainError(`Ya hay un proveedor con el NIT ${proveedor.nit}.`);
-      }
-      t.proveedores = esNuevo
-        ? [...t.proveedores, proveedor]
-        : t.proveedores.map((p) => (normalizar(p.nit) === nit ? proveedor : p));
-      return proveedor;
-    });
+  async guardar(proveedor: Proveedor, esNuevo: boolean): Promise<Proveedor> {
+    const cuerpo = {
+      nit: proveedor.nit,
+      nombreProveedor: proveedor.nombre,
+      direccionProveedor: proveedor.direccion,
+      telefonos: proveedor.telefonos,
+      correos: proveedor.correos,
+    };
+    const guardado = esNuevo
+      ? await this.api.post<ProveedorApi>('/proveedores', cuerpo)
+      : await this.api.put<ProveedorApi>(`/proveedores/${encodeURIComponent(proveedor.nit)}`, cuerpo);
+    return aProveedor(guardado);
   }
 
   eliminar(nit: string): Promise<void> {
-    return this.db.transaccion((t) => {
-      asegurarSinReferencias('el proveedor', [['suministros', t.suministros.filter((s) => s.nit === nit).length]]);
-      t.proveedores = t.proveedores.filter((p) => p.nit !== nit);
-    });
+    return this.api.delete(`/proveedores/${encodeURIComponent(nit)}`);
   }
 }
 
 @Injectable({ providedIn: 'root' })
 export class SuministrosRepository {
-  private readonly db = inject(MockDb);
+  private readonly api = inject(Api);
 
-  listar(): Promise<Suministro[]> {
-    return this.db.leer('suministros');
+  async listar(): Promise<Suministro[]> {
+    return (await this.api.get<SuministroApi[]>('/suministros')).map(aSuministro);
   }
 
-  guardar(suministro: Suministro, esNuevo: boolean): Promise<Suministro> {
-    return this.db.transaccion((t) => {
-      if (suministro.tiempoEntregaDias < 0 || suministro.precioSuministro <= 0) {
-        throw new DomainError('El precio debe ser mayor que cero y los días de entrega no pueden ser negativos.');
-      }
-      const clave = claveSuministro(suministro);
-      const existe = t.suministros.some((s) => claveSuministro(s) === clave);
-      if (esNuevo && existe) {
-        throw new DomainError('Este proveedor ya suministra ese producto a esa sucursal. Edita el registro existente.');
-      }
-      t.suministros = esNuevo
-        ? [...t.suministros, suministro]
-        : t.suministros.map((s) => (claveSuministro(s) === clave ? suministro : s));
-      return suministro;
-    });
+  async guardar(suministro: Suministro, esNuevo: boolean): Promise<Suministro> {
+    const condiciones = { precioSuministro: suministro.precioSuministro, tiempoEntregaDias: suministro.tiempoEntregaDias };
+    const guardado = esNuevo
+      ? await this.api.post<SuministroApi>('/suministros', {
+          nit: suministro.nit,
+          idProducto: suministro.idProducto,
+          idSucursal: suministro.idSucursal,
+          ...condiciones,
+        })
+      : await this.api.put<SuministroApi>(rutaSuministro(suministro), condiciones);
+    return aSuministro(guardado);
   }
 
   eliminar(suministro: Suministro): Promise<void> {
-    return this.db.transaccion((t) => {
-      const clave = claveSuministro(suministro);
-      asegurarSinReferencias('el suministro', [
-        ['evaluaciones de calidad', t.evaluaciones.filter((e) => claveSuministro(e) === clave).length],
-      ]);
-      t.suministros = t.suministros.filter((s) => claveSuministro(s) !== clave);
-    });
+    return this.api.delete(rutaSuministro(suministro));
   }
 }
 
 @Injectable({ providedIn: 'root' })
 export class EvaluacionesRepository {
-  private readonly db = inject(MockDb);
+  private readonly api = inject(Api);
 
   async listar(): Promise<Evaluacion[]> {
-    return (await this.db.leer('evaluaciones')).sort(
-      (a, b) => b.fechaEvaluacion.localeCompare(a.fechaEvaluacion) || b.idEvaluacion - a.idEvaluacion,
-    );
+    return (await this.api.get<EvaluacionApi[]>('/evaluaciones'))
+      .map(aEvaluacion)
+      .sort((a, b) => b.fechaEvaluacion.localeCompare(a.fechaEvaluacion) || b.idEvaluacion - a.idEvaluacion);
   }
 
-  registrar(evaluacion: Omit<Evaluacion, 'idEvaluacion'>): Promise<Evaluacion> {
-    return this.db.transaccion((t) => {
-      if (!t.suministros.some((s) => claveSuministro(s) === claveSuministro(evaluacion))) {
-        throw new DomainError('Solo se pueden evaluar suministros registrados.');
-      }
-      const evaluador = t.empleados.find((e) => e.idEmpleado === evaluacion.idEmpleado);
-      if (evaluador?.rol !== 'ADMINISTRADOR') {
-        throw new DomainError('Solo un administrador puede registrar evaluaciones de calidad.');
-      }
-      if (evaluacion.calificacion < 1 || evaluacion.calificacion > 5) {
-        throw new DomainError('La calificación debe estar entre 1 y 5.');
-      }
-      const nueva = { ...evaluacion, idEvaluacion: siguienteId(t.evaluaciones, (e) => e.idEvaluacion) };
-      t.evaluaciones.push(nueva);
-      return nueva;
-    });
+  async registrar(evaluacion: Omit<Evaluacion, 'idEvaluacion' | 'idEmpleado'>): Promise<Evaluacion> {
+    const cuerpo = {
+      nit: evaluacion.nit,
+      idProducto: evaluacion.idProducto,
+      idSucursal: evaluacion.idSucursal,
+      fechaEvaluacion: evaluacion.fechaEvaluacion,
+      calificacion: evaluacion.calificacion,
+      cumplimientoTiempo: evaluacion.cumplimientoTiempo,
+      observaciones: evaluacion.observaciones || null,
+    };
+    return aEvaluacion(await this.api.post<EvaluacionApi>('/evaluaciones', cuerpo));
   }
 
   eliminar(idEvaluacion: number): Promise<void> {
-    return this.db.transaccion((t) => {
-      t.evaluaciones = t.evaluaciones.filter((e) => e.idEvaluacion !== idEvaluacion);
-    });
+    return this.api.delete(`/evaluaciones/${idEvaluacion}`);
   }
 }

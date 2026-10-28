@@ -31,7 +31,6 @@ interface Enlace {
   ruta: string;
   texto: string;
   icono: IconDefinition;
-  /** Subruta que no marca este enlace porque tiene su propio acceso en el menú. */
   excepto?: string;
 }
 
@@ -42,7 +41,6 @@ interface Grupo {
 
 let instancias = 0;
 
-/** Ruta sin query ni fragmento: /ventas/12?x=1 → /ventas/12. */
 function soloRuta(url: string): string {
   return url.split(/[?#]/)[0];
 }
@@ -61,7 +59,6 @@ export class NavMenu {
   private readonly session = inject(Session);
   private readonly router = inject(Router);
   private readonly venta = inject(VentaEnCurso);
-  /** Avisa que se eligió un destino, para cerrar el menú en móvil. */
   readonly navego = output();
 
   protected readonly nombreApp = NOMBRE_APP;
@@ -69,7 +66,6 @@ export class NavMenu {
   protected readonly rutaNuevaVenta = RUTA_NUEVA_VENTA;
   protected readonly esVendedor = this.session.esVendedor;
 
-  /** Con una venta sin registrar, el botón de vender vuelve a ella en vez de prometer una nueva. */
   protected readonly ventaEnCurso = computed(() => {
     if (!this.venta.hayVenta()) {
       return null;
@@ -79,7 +75,6 @@ export class NavMenu {
     return { productos: cantidad, unidad: cantidad === 1 ? 'producto' : 'productos', total: total > 0 ? total : null };
   });
 
-  /** El menú existe dos veces (lateral y móvil); los ids no pueden repetirse. */
   protected readonly prefijo = `nav-${++instancias}`;
 
   private readonly rutaActual = toSignal(
@@ -97,7 +92,6 @@ export class NavMenu {
       titulo: 'Mostrador',
       enlaces: [
         { ruta: '/inicio', texto: 'Inicio', icono: faHouse },
-        // Una factura (/ventas/12) sigue marcando Ventas; la venta nueva tiene su propio botón.
         { ruta: '/ventas', texto: 'Ventas', icono: faReceipt, excepto: RUTA_NUEVA_VENTA },
         { ruta: '/clientes', texto: 'Clientes', icono: faUsers },
         { ruta: '/inventario', texto: 'Inventario', icono: faBoxesStacked },
@@ -130,7 +124,6 @@ export class NavMenu {
     ];
   });
 
-  /** La página actual y sus fichas (/productos/5 marca Productos). */
   protected activo(enlace: Enlace): boolean {
     const ruta = this.rutaActual();
     return dentroDe(ruta, enlace.ruta) && !(enlace.excepto && dentroDe(ruta, enlace.excepto));

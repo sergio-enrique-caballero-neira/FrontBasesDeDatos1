@@ -209,7 +209,6 @@ $theme-colors: map-merge($theme-colors, $custom-colors);
 // (ver @media print al final): el papel siempre sale en claro.
 @mixin tokens-claros {
   --ink: #{$black};
-  /** Texto sobre una superficie de color --ink (avatar, botón primario). */
   --on-ink: #{$white};
   --muted: #6b6b6b;
   --hairline: #{$gray-200};
@@ -217,7 +216,6 @@ $theme-colors: map-merge($theme-colors, $custom-colors);
   --paper: #{$white};
   --surface-alt: #fafafa;
   --surface-input: #{$gray-100};
-  /** 3.2:1 sobre blanco y 2.9:1 sobre #f5f5f5 (el relleno del campo también lo distingue). */
   --input-border: #8f8f8f;
   // Gráficos: una sola tinta para la serie; el gris de énfasis (las barras que no se
   // destacan) da 3.2:1 sobre blanco, así que también es legible como marca.
@@ -227,9 +225,7 @@ $theme-colors: map-merge($theme-colors, $custom-colors);
   --soft-bg: #{$gray-100};
   --soft-hover: #{$gray-200};
   --soft-active: #{$gray-300};
-  /** Fondo de los botones de vender; el texto encima siempre es blanco (4.8:1). */
   --accent: #e7000b;
-  /** Rojo de marca usado como texto (el nombre de la app). */
   --accent-text: #e7000b;
   --danger: #{$danger};
   --shadow-card:
@@ -254,7 +250,6 @@ $theme-colors: map-merge($theme-colors, $custom-colors);
   --paper: #{$gray-900};
   --surface-alt: #111111;
   --surface-input: #212121;
-  /** 3.4:1 sobre las tarjetas #171717. */
   --input-border: #6b6b6b;
   --chart-mark: var(--ink);
   --chart-muted: #6b6b6b;

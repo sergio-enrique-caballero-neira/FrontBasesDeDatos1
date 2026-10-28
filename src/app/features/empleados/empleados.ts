@@ -17,7 +17,7 @@ import { fechaISO, hoyISO } from '../../core/fechas';
 import { COMISION_VENDEDOR, Empleado, nombreEmpleado, Rol } from '../../core/models';
 import { Session } from '../../core/session';
 import { ComisionVendedor, EstadisticasRepository } from '../../data/estadisticas.repository';
-import { EmpleadosRepository } from '../../data/personas.repository';
+import { EmpleadosRepository } from '../../data/empleados.repository';
 import { normalizar } from '../../data/reglas';
 import { VentasRepository } from '../../data/ventas.repository';
 import { Confirmar } from '../../shared/confirmar';
@@ -76,7 +76,6 @@ function modoDe(periodo: Periodo): ModoPeriodo {
   return 'rango';
 }
 
-/** "24 de octubre de 2026", "1 al 24 de octubre de 2026", "15 de septiembre al 24 de octubre de 2026". */
 function textoPeriodo({ desde, hasta }: Periodo): string {
   const a = desdeISO(desde);
   const b = desdeISO(hasta);
@@ -89,7 +88,6 @@ function textoPeriodo({ desde, hasta }: Periodo): string {
   return `${a.getDate()} al ${fin}`;
 }
 
-/** El periodo dentro de una frase: "del 1 al 30 de septiembre de 2026" o "el 24 de octubre de 2026". */
 function periodoEnFrase(periodo: Periodo): string {
   return `${periodo.desde === periodo.hasta ? 'el' : 'del'} ${textoPeriodo(periodo)}`;
 }
@@ -131,7 +129,6 @@ export class Empleados {
   private readonly confirmar = inject(Confirmar);
   private readonly avisos = inject(Avisos);
 
-  /** Periodo de la liquidación desde la URL (?desde=&hasta=); sin ellos, el mes en curso. */
   readonly desde = input<string>();
   readonly hasta = input<string>();
 
@@ -146,8 +143,6 @@ export class Empleados {
     return usuario ? nombreEmpleado(usuario) : '';
   });
 
-  // ---------- Comisiones del periodo ----------
-
   protected readonly periodo = computed<Periodo>(() => {
     const desde = this.desde();
     const hasta = this.hasta();
@@ -155,14 +150,12 @@ export class Empleados {
     return validas ? { desde, hasta } : esteMes();
   });
 
-  /** "Rango" se queda elegido aunque las fechas coincidan con un mes, para no esconder los campos al escribir. */
   protected readonly modo = linkedSignal<Periodo, ModoPeriodo>({
     source: this.periodo,
     computation: (periodo, anterior) => (anterior?.value === 'rango' ? 'rango' : modoDe(periodo)),
   });
 
   protected readonly textoPeriodo = computed(() => textoPeriodo(this.periodo()));
-  /** "Del 1 al 24 de octubre de 2026, hasta hoy", para el subtítulo de la sección. */
   protected readonly frasePeriodo = computed(() => {
     const frase = periodoEnFrase(this.periodo());
     const enCurso = this.periodo().hasta === this.hoy;
@@ -191,7 +184,6 @@ export class Empleados {
       ]);
       const documento = new Map(empleados.map((e) => [e.idEmpleado, e.documento]));
       const conDocumento: FilaComision[] = filas.map((f) => ({ ...f, documento: documento.get(f.idEmpleado) ?? '' }));
-      // Solo cuando el periodo no tiene ventas: decir en qué fechas sí hay, para elegir bien el siguiente.
       let registradas: Periodo | null = null;
       if (!filas.some((f) => f.cantidad > 0)) {
         const todas = await this.ventasRepo.listar({ idSucursal: null });
@@ -265,7 +257,6 @@ export class Empleados {
     if (!ISO.test(valor)) return;
     const actual = this.periodo();
     let siguiente: Periodo = { ...actual, [campo]: valor > this.hoy ? this.hoy : valor };
-    // Si las fechas quedan cruzadas, la otra se mueve con la que se acaba de escribir.
     if (siguiente.desde > siguiente.hasta) {
       siguiente = campo === 'desde' ? { ...siguiente, hasta: siguiente.desde } : { ...siguiente, desde: siguiente.hasta };
     }
@@ -314,8 +305,6 @@ export class Empleados {
     return maximo ? total / maximo : 0;
   }
 
-  // ---------- Personal ----------
-
   protected readonly personal = resource({ loader: () => this.repo.listar() });
 
   protected readonly busqueda = signal('');
@@ -342,7 +331,8 @@ export class Empleados {
       const nivel = empleado.nivelAcceso ?? 1;
       return `Nivel ${nivel} · ${NIVELES[nivel] ?? 'Sin definir'}`;
     }
-    return `Comisión ${porcentaje(empleado.comisionVenta ?? COMISION_VENDEDOR)}`;
+    const comision = `Comisión ${porcentaje(empleado.comisionVenta ?? COMISION_VENDEDOR)}`;
+    return empleado.nombreSucursal ? `${empleado.nombreSucursal} · ${comision}` : comision;
   }
 
   protected quitarFiltros(): void {
@@ -350,21 +340,19 @@ export class Empleados {
     this.rol.set(null);
   }
 
-  /** Encabezado de la hoja impresa: qué periodo liquida, cuándo y quién la generó. */
   protected readonly pieImpresion = computed(() => {
     const quien = this.nombreUsuario();
     return `Periodo: ${this.textoPeriodo()}. Generada el ${fechaCorta(this.hoy)}${quien ? ` por ${quien}` : ''}.`;
   });
 
   protected async editar(empleado: Empleado | null): Promise<void> {
-    const guardado = await abrirDialogoEmpleado(this.modal, empleado, this.idUsuario() ?? 0);
+    const guardado = await abrirDialogoEmpleado(this.modal, empleado);
     if (!guardado) return;
     this.avisos.exito(empleado ? 'Cambios guardados.' : `Empleado ${nombreEmpleado(guardado)} creado.`);
     if (guardado.idEmpleado === this.idUsuario()) {
       this.session.usuario.set(guardado);
     }
     this.personal.reload();
-    // El nombre, el documento y la tasa salen también en la liquidación.
     this.comisiones.reload();
   }
 

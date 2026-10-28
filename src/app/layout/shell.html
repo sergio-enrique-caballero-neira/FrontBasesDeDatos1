@@ -102,28 +102,6 @@
 
       <app-boton-tema class="d-none d-lg-block" />
 
-      <div ngbDropdown placement="bottom-end" class="d-none d-lg-block">
-        <button type="button" class="btn btn-soft" ngbDropdownToggle>
-          <fa-icon [icon]="iconos.faDatabase" />
-          Datos de demostración
-        </button>
-        <div ngbDropdownMenu class="menu-ancho">
-          <p class="px-2 pt-1 mb-2 small text-body-secondary" id="demo-explicacion">
-            Mientras no exista el back, los datos viven en este navegador. Las marcas son reales; personas, empresas y
-            cifras son de prueba.
-          </p>
-          <button
-            ngbDropdownItem
-            type="button"
-            class="text-danger"
-            aria-describedby="demo-explicacion"
-            (click)="restaurarDatos()"
-          >
-            Restaurar datos de demostración
-          </button>
-        </div>
-      </div>
-
       <div ngbDropdown placement="bottom-end">
         <button type="button" class="btn btn-soft usuario" ngbDropdownToggle [attr.aria-label]="'Menú de ' + nombreUsuario()">
           <span class="avatar" aria-hidden="true">{{ iniciales() }}</span>
@@ -157,24 +135,6 @@
             <fa-icon [icon]="iconos.faRightFromBracket" [fixedWidth]="true" />
             Cerrar sesión
           </button>
-          @if (!pantallaAncha()) {
-            <div class="dropdown-divider" role="separator"></div>
-            <p class="px-2 pt-1 mb-2 small text-body-secondary" id="demo-explicacion-menu" aria-hidden="true">
-              Los datos viven en este navegador mientras no exista el back. Las marcas son reales; personas, empresas y
-              cifras son de prueba.
-            </p>
-            <button
-              ngbDropdownItem
-              type="button"
-              role="menuitem"
-              class="item-con-icono text-danger"
-              aria-describedby="demo-explicacion-menu"
-              (click)="restaurarDatos()"
-            >
-              <fa-icon [icon]="iconos.faDatabase" [fixedWidth]="true" />
-              Restaurar datos de demostración
-            </button>
-          }
         </div>
       </div>
     </header>

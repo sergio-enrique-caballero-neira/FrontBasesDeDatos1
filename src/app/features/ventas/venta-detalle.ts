@@ -24,16 +24,15 @@ import { VENTA_REGISTRADA } from '../../core/guards';
 import { esConsumidorFinal, nombreCliente, nombreEmpleado } from '../../core/models';
 import { Session } from '../../core/session';
 import { MetodosPagoRepository, SucursalesRepository } from '../../data/catalogos.repository';
-import { ClientesRepository, EmpleadosRepository } from '../../data/personas.repository';
+import { EmpleadosRepository } from '../../data/empleados.repository';
+import { ClientesRepository } from '../../data/personas.repository';
 import { ProductosRepository } from '../../data/productos.repository';
 import { VentasRepository } from '../../data/ventas.repository';
 import { Migas } from '../../shared/migas';
 import { FechaPipe, PesosPipe } from '../../shared/formato';
 import { ErrorCarga, Vacio } from '../../shared/ui';
 
-/** Lo que la página de venta deja en el estado de navegación al registrar. */
 interface VentaRecienRegistrada {
-  /** Lo que el vendedor entrega de vuelta cuando el pago fue en efectivo. */
   cambio: number | null;
 }
 
@@ -64,7 +63,6 @@ export class VentaDetalle {
   private readonly cdr = inject(ChangeDetectorRef);
   protected readonly session = inject(Session);
 
-  /** Viene de la ruta /ventas/:id. */
   readonly id = input.required<string>();
 
   protected readonly nombreApp = NOMBRE_APP;
@@ -73,17 +71,10 @@ export class VentaDetalle {
   protected readonly nombreEmpleado = nombreEmpleado;
   protected readonly esConsumidorFinal = esConsumidorFinal;
 
-  /**
-   * Si la página anterior fue el listado de ventas (con sus filtros en la URL),
-   * "Volver a ventas" regresa en el historial y conserva filtros y scroll; si se
-   * llegó de otra parte o se abrió el enlace directo, va al listado.
-   */
   protected readonly vieneDelListado: boolean;
 
-  /** Presente solo al llegar justo después de registrar la venta. */
   protected readonly recienRegistrada = signal<VentaRecienRegistrada | null>(null);
 
-  /** Fecha y hora reales de impresión para el pie de la hoja. */
   protected readonly impresaEl = signal(formatoImpresion.format(new Date()));
 
   private readonly botonNuevaVenta = viewChild<ElementRef<HTMLElement>>('botonNuevaVenta');
@@ -115,7 +106,6 @@ export class VentaDetalle {
     },
   });
 
-  /** La venta no existe: no tiene sentido reintentar, se ofrece ir al listado. */
   protected readonly noExiste = computed(() => this.factura.error() instanceof NoEncontrado);
 
   protected readonly migas = computed(() => [
@@ -130,7 +120,6 @@ export class VentaDetalle {
   ]);
 
   constructor() {
-    // La página se crea durante la navegación que la abre: ahí están su estado y la anterior.
     const navegacion = this.router.currentNavigation();
     this.vieneDelListado = esListadoDeVentas(navegacion?.previousNavigation?.finalUrl ?? null);
     const estado = (navegacion?.extras.state ?? leerEstadoHistorial()) as Record<string, unknown> | null;
@@ -139,10 +128,8 @@ export class VentaDetalle {
       this.recienRegistrada.set({ cambio: typeof cambio === 'number' && Number.isFinite(cambio) ? cambio : null });
     }
 
-    // El aviso es de este momento: se quita del historial para que no vuelva al recargar ni al regresar.
     afterNextRender(() => limpiarEstadoHistorial());
 
-    // Al llegar de registrar, el foco queda en "Nueva venta": Enter arranca la siguiente.
     afterRenderEffect(() => {
       const boton = this.botonNuevaVenta();
       if (boton && !this.focoInicialHecho) {
@@ -159,8 +146,6 @@ export class VentaDetalle {
       }
     });
 
-    // Ctrl+P o el menú del navegador también imprimen: el pie toma la hora de ese momento.
-    // La vista se actualiza en el acto porque el navegador maqueta la hoja justo después del evento.
     const alImprimir = () => {
       this.impresaEl.set(formatoImpresion.format(new Date()));
       this.cdr.detectChanges();
@@ -173,7 +158,6 @@ export class VentaDetalle {
     this.location.back();
   }
 
-  /** El tema pasa a claro solo al imprimir (core/tema.ts escucha beforeprint y afterprint). */
   protected imprimir(): void {
     window.print();
   }
@@ -192,7 +176,6 @@ function leerEstadoHistorial(): unknown {
   }
 }
 
-/** Quita las marcas de venta registrada y conserva las claves que el router guarda ahí. */
 function limpiarEstadoHistorial(): void {
   const estado = leerEstadoHistorial();
   if (!estado || typeof estado !== 'object') {
@@ -205,6 +188,5 @@ function limpiarEstadoHistorial(): void {
   try {
     history.replaceState(resto, '');
   } catch {
-    // Sin acceso al historial el aviso solo reaparecería al recargar.
   }
 }

@@ -8,7 +8,6 @@
   padding: 0.25rem 0.5rem 1.25rem;
 }
 
-/* Única aparición del rojo de marca fuera de las acciones de vender. */
 .marca-nombre {
   color: var(--accent-text);
   font-size: 1.125rem;
@@ -31,7 +30,6 @@
   text-align: left;
 }
 
-/* Sobre el rojo de vender solo el blanco pleno da 4.8:1; la jerarquía la marcan tamaño y peso. */
 .vender-detalle {
   font-size: 0.75rem;
   font-weight: 400;
@@ -65,7 +63,6 @@
   background: var(--soft-bg);
 }
 
-/* La página actual se marca con superficie elevada y peso, no con color. */
 .enlace.activo {
   background: var(--paper);
   box-shadow: var(--shadow-card);

@@ -11,7 +11,6 @@ import { PuntoTiempo } from './grafico-tiempo';
 import { Medidor } from './medidor';
 import { TiraCalificaciones } from './tira-calificaciones';
 
-/** Siete días que terminan hoy, con un día en cero. */
 function semana(): PuntoTiempo[] {
   const valores = [3, 0, 5, 2, 7, 1, 4];
   return valores.map((valor, i) => ({
@@ -75,7 +74,6 @@ describe('gráficos compartidos', () => {
   const observadorOriginal = globalThis.ResizeObserver;
 
   beforeAll(() => {
-    // jsdom no mide: se fija un ancho y un ResizeObserver inerte.
     Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, get: () => 600 });
     globalThis.ResizeObserver = class {
       observe(): void {}
@@ -123,7 +121,6 @@ describe('gráficos compartidos', () => {
       const { fixture, el } = await crear();
       fixture.componentInstance.enfasisDesde.set(semana()[4].fecha);
       await fixture.whenStable();
-      // Días 0, 2 y 3 tienen valor y son anteriores (el 1 está en cero y no se dibuja).
       expect(el.querySelectorAll('path.columna.atenuada').length).toBe(3);
     });
 
@@ -185,7 +182,6 @@ describe('gráficos compartidos', () => {
       expect(fixture.componentInstance.seleccion()).toBe('Norte');
       expect(botones[1].getAttribute('aria-pressed')).toBe('true');
       expect(el.querySelectorAll('li.destacada').length).toBe(1);
-      // El orden lo da el padre.
       expect([...el.querySelectorAll('.barra-etiqueta > span:first-child')].map((s) => s.textContent?.trim())).toEqual([
         'Centro',
         'Norte',

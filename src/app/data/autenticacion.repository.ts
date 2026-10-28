@@ -1,21 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { Api } from '../core/api';
-import { Empleado, Rol } from '../core/models';
-
-export interface EmpleadoApi {
-  idEmpleado: number;
-  documento: string;
-  nombre: string;
-  apellido: string;
-  cargo: string;
-  correo: string;
-  telefonos: string[];
-  rol: Rol | null;
-  nivelAcceso: number | null;
-  comisionVenta: number | null;
-  idSucursal: number | null;
-  nombreSucursal: string | null;
-}
+import { Empleado } from '../core/models';
+import { aEmpleado, EmpleadoApi } from './empleados.repository';
 
 interface SesionApi {
   token: string;
@@ -27,23 +13,6 @@ interface SesionApi {
 export interface SesionIniciada {
   token: string;
   empleado: Empleado;
-}
-
-export function aEmpleado(e: EmpleadoApi): Empleado {
-  return {
-    idEmpleado: e.idEmpleado,
-    documento: e.documento,
-    nombre: e.nombre,
-    apellido: e.apellido,
-    cargo: e.cargo,
-    correo: e.correo,
-    telefonos: e.telefonos ?? [],
-    rol: e.rol ?? 'VENDEDOR',
-    nivelAcceso: e.nivelAcceso ?? undefined,
-    comisionVenta: e.comisionVenta ?? undefined,
-    idSucursal: e.idSucursal ?? undefined,
-    nombreSucursal: e.nombreSucursal ?? undefined,
-  };
 }
 
 @Injectable({ providedIn: 'root' })

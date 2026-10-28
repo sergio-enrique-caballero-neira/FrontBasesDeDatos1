@@ -12,6 +12,5 @@ import { AvisosHost } from './shared/avisos-host';
   `,
 })
 export class App {
-  // Se inyecta aquí para que el tema se aplique y se sincronice desde el arranque.
   protected readonly tema = inject(TemaService);
 }

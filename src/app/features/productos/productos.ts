@@ -22,7 +22,6 @@ import { ultimosDias } from '../../shared/tabla/selector-periodo';
 import { ErrorCarga, PageHeader, Vacio } from '../../shared/ui';
 import { DialogoProducto } from './producto-dialogo';
 
-/** Ventana con la que se mide qué rota: un mes corrido, en todas las sucursales. */
 const DIAS_VENTAS = 30;
 
 type Columna = 'nombre' | 'marca' | 'categoria' | 'precio' | 'margen' | 'stock' | 'vendidas' | 'utilidad';
@@ -39,11 +38,6 @@ interface FilaProducto {
   utilidad: number;
 }
 
-/**
- * Catálogo de la cadena con lo que rotó cada producto en los últimos 30 días.
- * Sirve para decidir qué empujar, qué revisar de precio y qué dejar de surtir:
- * el orden por columna responde cuál vende más o deja más utilidad.
- */
 @Component({
   selector: 'app-productos',
   imports: [
@@ -72,11 +66,8 @@ export class Productos {
   private readonly avisos = inject(Avisos);
   private readonly router = inject(Router);
 
-  /** ?marca=ID, para llegar filtrado desde el catálogo de marcas. */
   readonly marca = input<string>();
-  /** ?categoria=ID (principal o subcategoría), desde el catálogo de categorías. */
   readonly categoria = input<string>();
-  /** ?q=texto, búsqueda inicial. */
   readonly q = input<string>();
 
   protected readonly iconos = { faFileArrowDown, faPen, faPlus, faScrewdriverWrench, faTrashCan };
@@ -124,14 +115,12 @@ export class Productos {
     (this.catalogo.value()?.categorias ?? []).filter((c) => c.idCategoriaPrincipal === null),
   );
 
-  /** La categoría elegida si es una subcategoría (llega así desde el catálogo de categorías). */
   protected readonly subcategoriaElegida = computed<Categoria | null>(() => {
     const id = this.idCategoria();
     const categoria = (this.catalogo.value()?.categorias ?? []).find((c) => c.idCategoria === id);
     return categoria && categoria.idCategoriaPrincipal !== null ? categoria : null;
   });
 
-  /** Filas que pasan búsqueda, marca y categoría; el interruptor se aplica después para poder contarlo. */
   private readonly sinInterruptor = computed(() => {
     const texto = normalizar(this.busqueda());
     const idMarca = this.idMarca();
@@ -166,7 +155,6 @@ export class Productos {
     }),
   );
 
-  /** Vuelve a la primera página cuando cambian los filtros o el orden. */
   protected readonly pagina = linkedSignal(() => {
     this.filtrados();
     this.orden.estado();
@@ -175,7 +163,6 @@ export class Productos {
 
   protected readonly paginaActual = computed(() => paginar(this.ordenados(), this.pagina(), this.porPagina()));
 
-  /** Topes de las barras: el mayor de las filas filtradas, para comparar lo que se ve. */
   protected readonly maxUnidades = computed(() => Math.max(0, ...this.filtrados().map((f) => f.unidades)));
   protected readonly maxUtilidad = computed(() => Math.max(0, ...this.filtrados().map((f) => f.utilidad)));
 
@@ -250,7 +237,6 @@ export class Productos {
       this.catalogo.reload();
       return;
     }
-    // Un producto nuevo no está en ninguna sucursal: su ficha tiene "Agregar a esta sucursal" en cada una.
     this.avisos.exito(`Producto ${guardado.nombre} creado. Agrégalo a cada sucursal que lo maneje.`);
     void this.router.navigate(['/productos', guardado.idProducto]);
   }
@@ -272,7 +258,6 @@ export class Productos {
     }
   }
 
-  /** Marca y categoría quedan en la dirección para poder compartir o recargar la vista filtrada. */
   private reflejarEnUrl(): void {
     void this.router.navigate([], {
       queryParams: { marca: this.idMarca() ?? null, categoria: this.idCategoria() ?? null },

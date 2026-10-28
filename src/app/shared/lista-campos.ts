@@ -5,14 +5,9 @@ import { faPlus, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { CampoError } from './campo-error';
 import { ACCESIBILIDAD_FORMULARIOS } from './accesibilidad-formularios';
 
-/**
- * Campos de un atributo multivaluado (teléfonos, correos): en la base de datos
- * son una tabla aparte; en el formulario, una lista que crece y se recorta.
- */
 @Component({
   selector: 'app-lista-campos',
   imports: [ReactiveFormsModule, ACCESIBILIDAD_FORMULARIOS, FaIconComponent, CampoError],
-  // Lee el estado del FormArray (no son signals), así que se revisa en cada ciclo.
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <fieldset>
@@ -88,7 +83,6 @@ export function controlesLista(tipo: 'tel' | 'email', valores: string[], minimo:
   return new FormArray(iniciales.map((valor) => nuevoControlLista(tipo, valor)));
 }
 
-/** Valores limpios de la lista, sin repetidos. */
 export function valoresLista(arreglo: FormArray<FormControl<string>>): string[] {
   return [...new Set(arreglo.getRawValue().map((v) => v.trim()).filter(Boolean))];
 }

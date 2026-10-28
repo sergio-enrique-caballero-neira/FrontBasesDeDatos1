@@ -10,7 +10,6 @@
   stroke-linecap: round;
 }
 
-/* Lavado de ~8 % de la tinta: marca el volumen sin volverse un bloque. */
 .area {
   fill: var(--chart-mark);
   opacity: 0.08;
@@ -21,7 +20,6 @@
   stroke-width: 1;
 }
 
-/* Punto con anillo del color de la superficie para que se lea sobre la línea. */
 .punto {
   fill: var(--chart-mark);
   stroke: var(--paper);

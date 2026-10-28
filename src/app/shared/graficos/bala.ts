@@ -2,16 +2,9 @@ import { Component, computed, input } from '@angular/core';
 
 const ANCHO = 120;
 const ALTO = 12;
-/** La barra ocupa la franja central; la marca sobresale arriba y abajo. */
 const BARRA_Y = 3;
 const BARRA_ALTO = 6;
 
-/**
- * Gráfico de bala mínimo para tablas de inventario: la barra son los días de
- * cobertura (hasta `tope`) y la marca vertical son los días que tarda la entrega.
- * Si la barra no llega a la marca, el producto se acaba antes de que llegue el
- * pedido. Es decorativo (`aria-hidden`): la tabla escribe las cifras al lado.
- */
 @Component({
   selector: 'app-bala',
   styles: `
@@ -30,7 +23,6 @@ const BARRA_ALTO = 6;
     .barra {
       fill: var(--chart-mark);
     }
-    /* La marca lleva un borde del color de la superficie para leerse también sobre la barra. */
     .marca-fondo {
       stroke: var(--grafico-superficie, var(--paper));
       stroke-width: 4;
@@ -54,11 +46,8 @@ const BARRA_ALTO = 6;
   `,
 })
 export class Bala {
-  /** Días de cobertura; null si no se puede calcular (sin ventas recientes). */
   readonly valor = input.required<number | null>();
-  /** Días de entrega del proveedor; null si no se conoce. */
   readonly marca = input.required<number | null>();
-  /** Días que representa el ancho completo. */
   readonly tope = input(30);
 
   protected readonly ancho = ANCHO;
@@ -71,7 +60,6 @@ export class Bala {
     return (dias: number) => (tope > 0 ? (Math.min(Math.max(dias, 0), tope) / tope) * ANCHO : 0);
   });
 
-  /** Barra hasta min(valor, tope) con el extremo redondeado y la base recta. */
   protected readonly trazoBarra = computed(() => {
     const valor = this.valor();
     if (valor === null || !Number.isFinite(valor) || valor <= 0) return null;
@@ -82,7 +70,6 @@ export class Bala {
     return `M0,${y0} H${w - r} A${r},${r} 0 0 1 ${w},${y0 + r} V${y1 - r} A${r},${r} 0 0 1 ${w - r},${y1} H0 Z`;
   });
 
-  /** Posición de la marca, dentro del lienzo aunque supere el tope. */
   protected readonly xMarca = computed(() => {
     const marca = this.marca();
     if (marca === null || !Number.isFinite(marca)) return null;

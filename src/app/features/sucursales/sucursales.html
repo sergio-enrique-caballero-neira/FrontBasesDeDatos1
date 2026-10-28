@@ -87,6 +87,7 @@
                         {{ fila.sucursal.ciudad }} · {{ fila.sucursal.direccion }} ·
                         <span class="num">{{ fila.sucursal.telefono }}</span>
                       </span>
+                      <span class="d-block small text-body-secondary">Encargado: {{ fila.sucursal.nombreAdministrador }}</span>
                       <span class="d-block solo-movil small text-body-secondary mt-1">
                         @if (fila.cantidad) {
                           <span class="num">{{ fila.cantidad }}</span> {{ fila.cantidad === 1 ? 'venta' : 'ventas' }} · ticket

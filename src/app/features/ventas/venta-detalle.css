@@ -6,8 +6,6 @@
   margin-bottom: 1.5rem;
 }
 
-/* Aviso de venta recién registrada: texto a la izquierda, acciones a la derecha; en
-   pantallas angostas las acciones bajan a su propia línea. */
 .franja-registro {
   flex-wrap: wrap;
   align-items: center;
@@ -27,7 +25,6 @@
   margin-bottom: 0;
 }
 
-/* Lo que el vendedor tiene que hacer ahora: la cifra del cambio se lee de un vistazo. */
 .cambio strong {
   font-size: 1.25rem;
   font-weight: 600;
@@ -73,7 +70,6 @@
   overflow-wrap: anywhere;
 }
 
-/* Nombres que llevan a su ficha: en tinta, con el subrayado tenue de las migas. */
 .enlace-dato {
   color: var(--ink);
   text-decoration-color: var(--input-border);
@@ -84,9 +80,6 @@
   text-decoration-color: currentColor;
 }
 
-/* La tabla vive dentro de .card-body (la regla global alinea solo tablas hijas directas
-   de .card): sin el relleno lateral de la primera y la última celda, los productos
-   quedan alineados con el encabezado y los datos del cliente. */
 .factura .table > :not(caption) > tr > :first-child {
   padding-left: 0;
 }
@@ -109,7 +102,6 @@ tfoot td {
   color: var(--muted);
 }
 
-/* Esqueleto con la forma de la factura: barras quietas en --soft-bg (sin animación). */
 .esq {
   display: block;
   max-width: 100%;

@@ -6,7 +6,6 @@ import {
   faBars,
   faCartShopping,
   faCheck,
-  faDatabase,
   faMoon,
   faRightFromBracket,
   faStore,
@@ -20,18 +19,17 @@ import {
   NgbTooltip,
 } from '@ng-bootstrap/ng-bootstrap';
 import { filter, map } from 'rxjs';
+import { Api } from '../core/api';
 import { nombreEmpleado, Sucursal } from '../core/models';
 import { SeleccionSucursal, Session } from '../core/session';
 import { TemaService } from '../core/tema';
 import { VentaEnCurso } from '../core/venta-en-curso';
-import { MockDb } from '../data/mock-db';
 import { SucursalesRepository } from '../data/catalogos.repository';
 import { BotonTema } from '../shared/boton-tema';
 import { Confirmar } from '../shared/confirmar';
 import { pesos, PesosPipe } from '../shared/formato';
 import { NavMenu } from './nav-menu';
 
-/** Desde lg la barra tiene sitio para el tema y los datos de demostración; debajo pasan al menú del usuario. */
 const CONSULTA_ANCHA = '(min-width: 992px)';
 
 const RUTA_NUEVA_VENTA = '/ventas/nueva';
@@ -59,35 +57,26 @@ export class Shell {
   private readonly router = inject(Router);
   private readonly offcanvas = inject(NgbOffcanvas);
   private readonly confirmar = inject(Confirmar);
-  private readonly db = inject(MockDb);
+  private readonly api = inject(Api);
   private readonly sucursalesRepo = inject(SucursalesRepository);
   private readonly venta = inject(VentaEnCurso);
   protected readonly tema = inject(TemaService);
 
-  protected readonly iconos = { faBars, faCartShopping, faCheck, faDatabase, faMoon, faRightFromBracket, faStore };
+  protected readonly iconos = { faBars, faCartShopping, faCheck, faMoon, faRightFromBracket, faStore };
   protected readonly usuario = this.session.usuario;
   protected readonly esAdmin = this.session.esAdmin;
   protected readonly esVendedor = this.session.esVendedor;
   protected readonly oscuro = computed(() => this.tema.tema() === 'oscuro');
 
   protected readonly sucursales = resource({
-    params: () => this.db.version(),
+    params: () => this.api.cambios(),
     loader: () => this.sucursalesRepo.listar(),
   });
-  /**
-   * Conserva la lista anterior mientras se recarga, para que la barra no parpadee. Se lee con
-   * hasValue(): value() lanza si la carga falló y tumbaría la barra entera.
-   */
   protected readonly listaSucursales = linkedSignal<Sucursal[] | undefined, Sucursal[]>({
     source: () => (this.sucursales.hasValue() ? this.sucursales.value() : undefined),
     computation: (nueva, previa) => nueva ?? previa?.value ?? [],
   });
 
-  /**
-   * El menú del usuario muestra el tema y los datos de demostración solo cuando la barra
-   * no los tiene. Se renderizan con @if y no con clases d-*: el teclado de ngbDropdown
-   * recorre todos los ngbDropdownItem y se atascaría en uno oculto con display: none.
-   */
   protected readonly pantallaAncha = signal(false);
 
   private readonly url = toSignal(
@@ -100,7 +89,6 @@ export class Shell {
 
   protected readonly enNuevaVenta = computed(() => this.url().split(/[?#]/)[0] === RUTA_NUEVA_VENTA);
 
-  /** Venta sin registrar, con las cifras que la página de venta dejó en el servicio. */
   protected readonly ventaEnCurso = computed(() => {
     if (!this.venta.hayVenta()) {
       return null;
@@ -110,7 +98,6 @@ export class Shell {
     return { productos: cantidad, unidad: cantidad === 1 ? 'producto' : 'productos', total: total > 0 ? total : null };
   });
 
-  /** En la página de venta el indicador sobra: el carrito ya está a la vista. */
   protected readonly mostrarVentaEnCurso = computed(() => this.ventaEnCurso() !== null && !this.enNuevaVenta());
 
   protected readonly nombreUsuario = computed(() => {
@@ -148,11 +135,6 @@ export class Shell {
     return this.session.sucursal() === seleccion;
   }
 
-  /**
-   * La venta en curso se guarda por sucursal: al cambiar, la de la sede actual queda en
-   * esta pestaña y vuelve al regresar. Se pregunta para que el vendedor no crea que se perdió
-   * ni registre en la sede equivocada.
-   */
   protected async cambiarSucursal(seleccion: SeleccionSucursal): Promise<void> {
     if (this.esSeleccionada(seleccion)) {
       return;
@@ -185,21 +167,6 @@ export class Shell {
     this.offcanvas.dismiss();
   }
 
-  protected async restaurarDatos(): Promise<void> {
-    const confirmado = await this.confirmar.preguntar({
-      titulo: 'Restaurar datos de demostración',
-      mensaje:
-        'Se borran las ventas, clientes y cambios que hayas hecho en este navegador y se cargan de nuevo los datos iniciales. La sesión se mantiene.',
-      confirmar: 'Restaurar datos',
-      peligro: true,
-    });
-    if (confirmado) {
-      this.db.restaurar();
-      location.reload();
-    }
-  }
-
-  /** Cerrar sesión descarta la venta sin registrar (VentaEnCurso la borra), así que se pregunta antes. */
   protected async cerrarSesion(): Promise<void> {
     const venta = this.ventaEnCurso();
     if (venta) {

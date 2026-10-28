@@ -1,152 +1,140 @@
 import { inject, Injectable } from '@angular/core';
-import { DomainError } from '../core/domain-error';
+import { Api } from '../core/api';
 import { Categoria, Marca, MetodoPago, Sucursal } from '../core/models';
-import { MockDb, siguienteId } from './mock-db';
-import { asegurarSinReferencias, normalizar, porNombre } from './reglas';
+import { porNombre } from './reglas';
+
+interface SucursalApi {
+  idSucursal: number;
+  nombreSucursal: string;
+  ciudad: string;
+  direccion: string;
+  telefono: string;
+  idAdministrador: number;
+  nombreAdministrador: string;
+}
+
+interface MarcaApi {
+  idMarca: number;
+  nombreMarca: string;
+  paisOrigen: string;
+}
+
+interface CategoriaApi {
+  idCategoria: number;
+  nombre: string;
+  descripcion: string | null;
+  idCategoriaPrincipal: number | null;
+}
+
+function aSucursal(s: SucursalApi): Sucursal {
+  return {
+    idSucursal: s.idSucursal,
+    nombre: s.nombreSucursal,
+    ciudad: s.ciudad,
+    direccion: s.direccion,
+    telefono: s.telefono,
+    idAdministrador: s.idAdministrador,
+    nombreAdministrador: s.nombreAdministrador,
+  };
+}
+
+function aMarca(m: MarcaApi): Marca {
+  return { idMarca: m.idMarca, nombre: m.nombreMarca, paisOrigen: m.paisOrigen };
+}
+
+function aCategoria(c: CategoriaApi): Categoria {
+  return { idCategoria: c.idCategoria, nombre: c.nombre, descripcion: c.descripcion ?? '', idCategoriaPrincipal: c.idCategoriaPrincipal };
+}
 
 @Injectable({ providedIn: 'root' })
 export class SucursalesRepository {
-  private readonly db = inject(MockDb);
+  private readonly api = inject(Api);
 
   async listar(): Promise<Sucursal[]> {
-    return (await this.db.leer('sucursales')).sort(porNombre((s) => s.nombre));
+    return (await this.api.get<SucursalApi[]>('/sucursales')).map(aSucursal).sort(porNombre((s) => s.nombre));
   }
 
-  guardar(sucursal: Sucursal): Promise<Sucursal> {
-    return this.db.transaccion((t) => {
-      if (t.sucursales.some((s) => s.idSucursal !== sucursal.idSucursal && normalizar(s.nombre) === normalizar(sucursal.nombre))) {
-        throw new DomainError(`Ya existe una sucursal llamada "${sucursal.nombre}".`);
-      }
-      if (!sucursal.idSucursal) {
-        const nueva = { ...sucursal, idSucursal: siguienteId(t.sucursales, (s) => s.idSucursal) };
-        t.sucursales.push(nueva);
-        return nueva;
-      }
-      t.sucursales = t.sucursales.map((s) => (s.idSucursal === sucursal.idSucursal ? sucursal : s));
-      return sucursal;
-    });
+  async guardar(sucursal: Omit<Sucursal, 'nombreAdministrador'>): Promise<Sucursal> {
+    const cuerpo = {
+      nombreSucursal: sucursal.nombre,
+      ciudad: sucursal.ciudad,
+      direccion: sucursal.direccion,
+      telefono: sucursal.telefono,
+      idAdministrador: sucursal.idAdministrador,
+    };
+    const guardada = sucursal.idSucursal
+      ? await this.api.put<SucursalApi>(`/sucursales/${sucursal.idSucursal}`, cuerpo)
+      : await this.api.post<SucursalApi>('/sucursales', cuerpo);
+    return aSucursal(guardada);
   }
 
   eliminar(idSucursal: number): Promise<void> {
-    return this.db.transaccion((t) => {
-      asegurarSinReferencias('la sucursal', [
-        ['ventas', t.ventas.filter((v) => v.idSucursal === idSucursal).length],
-        ['productos en inventario', t.inventario.filter((i) => i.idSucursal === idSucursal).length],
-        ['suministros', t.suministros.filter((s) => s.idSucursal === idSucursal).length],
-      ]);
-      t.sucursales = t.sucursales.filter((s) => s.idSucursal !== idSucursal);
-    });
+    return this.api.delete(`/sucursales/${idSucursal}`);
   }
 }
 
 @Injectable({ providedIn: 'root' })
 export class MarcasRepository {
-  private readonly db = inject(MockDb);
+  private readonly api = inject(Api);
 
   async listar(): Promise<Marca[]> {
-    return (await this.db.leer('marcas')).sort(porNombre((m) => m.nombre));
+    return (await this.api.get<MarcaApi[]>('/marcas')).map(aMarca);
   }
 
-  guardar(marca: Marca): Promise<Marca> {
-    return this.db.transaccion((t) => {
-      if (t.marcas.some((m) => m.idMarca !== marca.idMarca && normalizar(m.nombre) === normalizar(marca.nombre))) {
-        throw new DomainError(`La marca "${marca.nombre}" ya está registrada.`);
-      }
-      if (!marca.idMarca) {
-        const nueva = { ...marca, idMarca: siguienteId(t.marcas, (m) => m.idMarca) };
-        t.marcas.push(nueva);
-        return nueva;
-      }
-      t.marcas = t.marcas.map((m) => (m.idMarca === marca.idMarca ? marca : m));
-      return marca;
-    });
+  async guardar(marca: Marca): Promise<Marca> {
+    const cuerpo = { nombreMarca: marca.nombre, paisOrigen: marca.paisOrigen };
+    const guardada = marca.idMarca
+      ? await this.api.put<MarcaApi>(`/marcas/${marca.idMarca}`, cuerpo)
+      : await this.api.post<MarcaApi>('/marcas', cuerpo);
+    return aMarca(guardada);
   }
 
   eliminar(idMarca: number): Promise<void> {
-    return this.db.transaccion((t) => {
-      asegurarSinReferencias('la marca', [['productos', t.productos.filter((p) => p.idMarca === idMarca).length]]);
-      t.marcas = t.marcas.filter((m) => m.idMarca !== idMarca);
-    });
+    return this.api.delete(`/marcas/${idMarca}`);
   }
 }
 
 @Injectable({ providedIn: 'root' })
 export class CategoriasRepository {
-  private readonly db = inject(MockDb);
+  private readonly api = inject(Api);
 
   async listar(): Promise<Categoria[]> {
-    return (await this.db.leer('categorias')).sort(porNombre((c) => c.nombre));
+    return (await this.api.get<CategoriaApi[]>('/categorias')).map(aCategoria).sort(porNombre((c) => c.nombre));
   }
 
-  guardar(categoria: Categoria): Promise<Categoria> {
-    return this.db.transaccion((t) => {
-      if (
-        t.categorias.some(
-          (c) =>
-            c.idCategoria !== categoria.idCategoria &&
-            c.idCategoriaPrincipal === categoria.idCategoriaPrincipal &&
-            normalizar(c.nombre) === normalizar(categoria.nombre),
-        )
-      ) {
-        throw new DomainError(`Ya existe la categoría "${categoria.nombre}" en ese nivel.`);
-      }
-      if (categoria.idCategoriaPrincipal !== null) {
-        const padre = t.categorias.find((c) => c.idCategoria === categoria.idCategoriaPrincipal);
-        if (!padre || padre.idCategoriaPrincipal !== null) {
-          throw new DomainError('Una subcategoría debe colgar de una categoría principal.');
-        }
-        if (categoria.idCategoria && t.categorias.some((c) => c.idCategoriaPrincipal === categoria.idCategoria)) {
-          throw new DomainError('Esta categoría tiene subcategorías, así que no puede volverse subcategoría.');
-        }
-      }
-      if (!categoria.idCategoria) {
-        const nueva = { ...categoria, idCategoria: siguienteId(t.categorias, (c) => c.idCategoria) };
-        t.categorias.push(nueva);
-        return nueva;
-      }
-      t.categorias = t.categorias.map((c) => (c.idCategoria === categoria.idCategoria ? categoria : c));
-      return categoria;
-    });
+  async guardar(categoria: Categoria): Promise<Categoria> {
+    const cuerpo = {
+      nombre: categoria.nombre,
+      descripcion: categoria.descripcion,
+      idCategoriaPrincipal: categoria.idCategoriaPrincipal,
+    };
+    const guardada = categoria.idCategoria
+      ? await this.api.put<CategoriaApi>(`/categorias/${categoria.idCategoria}`, cuerpo)
+      : await this.api.post<CategoriaApi>('/categorias', cuerpo);
+    return aCategoria(guardada);
   }
 
   eliminar(idCategoria: number): Promise<void> {
-    return this.db.transaccion((t) => {
-      asegurarSinReferencias('la categoría', [
-        ['subcategorías', t.categorias.filter((c) => c.idCategoriaPrincipal === idCategoria).length],
-        ['productos', t.productos.filter((p) => p.idCategoria === idCategoria).length],
-      ]);
-      t.categorias = t.categorias.filter((c) => c.idCategoria !== idCategoria);
-    });
+    return this.api.delete(`/categorias/${idCategoria}`);
   }
 }
 
 @Injectable({ providedIn: 'root' })
 export class MetodosPagoRepository {
-  private readonly db = inject(MockDb);
+  private readonly api = inject(Api);
 
-  async listar(): Promise<MetodoPago[]> {
-    return (await this.db.leer('metodosPago')).sort((a, b) => a.idMetodoPago - b.idMetodoPago);
+  listar(): Promise<MetodoPago[]> {
+    return this.api.get<MetodoPago[]>('/metodos-pago');
   }
 
   guardar(metodo: MetodoPago): Promise<MetodoPago> {
-    return this.db.transaccion((t) => {
-      if (t.metodosPago.some((m) => m.idMetodoPago !== metodo.idMetodoPago && normalizar(m.tipo) === normalizar(metodo.tipo))) {
-        throw new DomainError(`El método de pago "${metodo.tipo}" ya existe.`);
-      }
-      if (!metodo.idMetodoPago) {
-        const nuevo = { ...metodo, idMetodoPago: siguienteId(t.metodosPago, (m) => m.idMetodoPago) };
-        t.metodosPago.push(nuevo);
-        return nuevo;
-      }
-      t.metodosPago = t.metodosPago.map((m) => (m.idMetodoPago === metodo.idMetodoPago ? metodo : m));
-      return metodo;
-    });
+    const cuerpo = { tipo: metodo.tipo };
+    return metodo.idMetodoPago
+      ? this.api.put<MetodoPago>(`/metodos-pago/${metodo.idMetodoPago}`, cuerpo)
+      : this.api.post<MetodoPago>('/metodos-pago', cuerpo);
   }
 
   eliminar(idMetodoPago: number): Promise<void> {
-    return this.db.transaccion((t) => {
-      asegurarSinReferencias('el método de pago', [['ventas', t.ventas.filter((v) => v.idMetodoPago === idMetodoPago).length]]);
-      t.metodosPago = t.metodosPago.filter((m) => m.idMetodoPago !== idMetodoPago);
-    });
+    return this.api.delete(`/metodos-pago/${idMetodoPago}`);
   }
 }

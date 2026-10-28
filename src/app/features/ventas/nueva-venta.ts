@@ -65,17 +65,12 @@ interface ProductoVendible {
   ubicacion: string;
 }
 
-/**
- * ok: se puede vender. excede: pide más de lo que hay en la sucursal (o se agotó).
- * no-disponible: la sucursal no maneja el producto o salió del catálogo.
- */
 type EstadoLinea = 'ok' | 'excede' | 'no-disponible';
 
 interface LineaCarrito {
   idProducto: number;
   cantidad: number;
   nombre: string;
-  /** False si el producto ya no está en el catálogo. */
   existe: boolean;
   precio: number;
   disponible: number;
@@ -94,14 +89,11 @@ interface Anuncio {
   problema: boolean;
 }
 
-/** Ventana con la que se eligen los clientes frecuentes de la sede. */
 const DIAS_FRECUENTES = 30;
 const MAX_FRECUENTES = 4;
 
-/** Billetes colombianos en circulación, para sugerir con cuánto paga el cliente. */
 const BILLETES = [2000, 5000, 10000, 20000, 50000, 100000];
 
-/** "20*PL-0201": las primeras cifras antes del asterisco son la cantidad. */
 function interpretarBusqueda(texto: string): { cantidad: number | null; termino: string } {
   const partes = /^\s*(\d{1,4})\s*\*\s*(.*)$/.exec(texto);
   return partes ? { cantidad: Number(partes[1]), termino: partes[2].trim() } : { cantidad: null, termino: texto.trim() };
@@ -157,7 +149,6 @@ export class NuevaVentaPage {
   private readonly metodosRepo = inject(MetodosPagoRepository);
   private readonly sucursalesRepo = inject(SucursalesRepository);
 
-  /** Query param `?cliente=ID`: llega desde la ficha del cliente con "Nueva venta para este cliente". */
   readonly cliente = input<string>();
 
   protected readonly iconos = {
@@ -181,7 +172,6 @@ export class NuevaVentaPage {
   protected readonly teclaModificadora =
     typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent) ? 'Cmd' : 'Ctrl';
 
-  // La venta vive en VentaEnCurso para sobrevivir a la navegación y a una recarga.
   protected readonly lineas = this.venta.lineas;
   protected readonly idCliente = this.venta.idCliente;
   protected readonly idMetodoPago = this.venta.idMetodoPago;
@@ -220,7 +210,6 @@ export class NuevaVentaPage {
               ]
             : [];
         })
-        // Los agotados van al final: lo primero que se ve es lo que se puede vender.
         .sort(
           (a, b) =>
             Number(a.disponible === 0) - Number(b.disponible === 0) ||
@@ -234,10 +223,6 @@ export class NuevaVentaPage {
     },
   });
 
-  /**
-   * Existencias en las otras sedes y compras recientes de la sede. Va aparte de `datos`:
-   * si falla, se sigue vendiendo y solo faltan las sugerencias.
-   */
   protected readonly cadena = resource({
     params: () => this.idSucursal() ?? undefined,
     loader: async ({ params: idSucursal }) => {
@@ -260,7 +245,6 @@ export class NuevaVentaPage {
       for (const lista of otrasSedes.values()) {
         lista.sort((a, b) => b.cantidad - a.cantidad);
       }
-      // Ventas ya vienen de la más reciente a la más antigua: la primera de cada cliente es su última.
       const comprasPorCliente = new Map<number, { compras: number; ultima: string }>();
       for (const v of ventas) {
         const actual = comprasPorCliente.get(v.idCliente);
@@ -270,7 +254,6 @@ export class NuevaVentaPage {
     },
   });
 
-  /** Datos de la sucursal vigente; mientras llegan los de otra sucursal, nada (se ve el esqueleto). */
   protected readonly d = computed(() => {
     const valor = this.datos.hasValue() ? this.datos.value() : undefined;
     return valor && valor.idSucursal === this.idSucursal() ? valor : undefined;
@@ -281,7 +264,6 @@ export class NuevaVentaPage {
     return valor && valor.idSucursal === this.idSucursal() ? valor : undefined;
   });
 
-  /** Clientes conocidos; crece cuando se crea uno desde esta pantalla. */
   protected readonly clientes = linkedSignal(() => this.d()?.clientes ?? []);
 
   protected readonly busqueda = signal('');
@@ -290,9 +272,7 @@ export class NuevaVentaPage {
   protected readonly intentoConfirmar = signal(false);
   protected readonly registrando = signal(false);
   protected readonly error = signal<string | null>(null);
-  /** Lo último que pasó al escanear o agregar: se ve bajo el buscador y lo leen los lectores de pantalla. */
   protected readonly anuncio = signal<Anuncio | null>(null);
-  /** Venta que ya estaba en curso al abrir la pantalla, con los productos cuya cantidad se recortó. */
   protected readonly recuperada = signal<{ recortados: string[] } | null>(null);
 
   private readonly enfocarTrasRecarga = signal(false);
@@ -356,23 +336,16 @@ export class NuevaVentaPage {
   protected readonly total = computed(() => this.carrito().reduce((suma, l) => suma + l.subtotal, 0));
   protected readonly totalUnidades = computed(() => this.lineas().reduce((suma, l) => suma + l.cantidad, 0));
 
-  /**
-   * Cambio a devolver. Solo existe en pantalla: la tabla VENTA no tiene columna de monto
-   * recibido, así que no se guarda con la factura; se pasa a la confirmación y ahí termina.
-   */
   protected readonly cambio = computed(() => {
     const recibido = this.recibido();
     return this.esEfectivo() && recibido !== null ? recibido - this.total() : null;
   });
 
-  /** Exacto aparte: hasta 3 montos redondeados hacia arriba a un billete, mayores que el total. */
   protected readonly montosSugeridos = computed(() => {
     const total = this.total();
     if (total <= 0) {
       return [];
     }
-    // Desde $10.000 el billete de $2.000 solo daría montos casi iguales al de $5.000
-    // (285.000 y 286.000): se sugiere lo que un cliente suele entregar.
     const billetes = total >= 10000 ? BILLETES.filter((b) => b >= 5000) : BILLETES;
     const montos = new Set(billetes.map((b) => Math.ceil(total / b) * b).filter((m) => m > total));
     return [...montos].sort((a, b) => a - b).slice(0, 3);
@@ -404,7 +377,6 @@ export class NuevaVentaPage {
       .slice(0, MAX_FRECUENTES);
   });
 
-  /** Lo que el vendedor escribió en el buscador de clientes no coincide con nadie. */
   protected readonly sinCoincidenciasCliente = computed(() => {
     const buscado = normalizar(this.textoCliente());
     return buscado.length >= 2 && !this.clientes().some((c) => coincideCliente(c, buscado));
@@ -412,7 +384,6 @@ export class NuevaVentaPage {
 
   protected readonly textoEsDocumento = computed(() => esTextoDocumento(this.textoCliente()));
 
-  /** Compras del cliente elegido en toda la cadena, para la línea bajo su nombre. */
   protected readonly comprasCliente = resource({
     params: () => {
       const c = this.clienteElegido();
@@ -424,7 +395,6 @@ export class NuevaVentaPage {
     },
   });
 
-  /** Las compras del cliente que está elegido ahora (no las del anterior mientras llegan). */
   protected readonly comprasActuales = computed(() => {
     const valor = this.comprasCliente.hasValue() ? this.comprasCliente.value() : undefined;
     return valor && valor.idCliente === this.idCliente() ? valor : null;
@@ -443,15 +413,12 @@ export class NuevaVentaPage {
   protected readonly formatoCliente = (cliente: Cliente) => `${nombreCliente(cliente)} · ${cliente.numeroDocumento}`;
 
   constructor() {
-    // Los precios vigentes salen de aquí; el aviso al salir y la barra superior los leen del servicio.
     effect(() => {
       if (this.d()) {
         this.venta.resumen.set({ productos: this.lineas().length, total: this.total() });
       }
     });
 
-    // Al llegar el inventario de una sucursal, una venta que ya estaba en curso se revisa
-    // contra lo que hay de verdad: las cantidades se recortan al disponible.
     effect(() => {
       const d = this.d();
       if (!d || this.sucursalRevisada === d.idSucursal) {
@@ -461,7 +428,6 @@ export class NuevaVentaPage {
       untracked(() => this.revisarVentaRecuperada(d.vendibles));
     });
 
-    // ?cliente=ID desde la ficha del cliente: lo deja elegido una vez por enlace.
     effect(() => {
       const param = this.cliente();
       const d = this.d();
@@ -479,12 +445,6 @@ export class NuevaVentaPage {
       });
     });
 
-    // Cambiar de sucursal con productos lo confirma la barra superior (la venta queda
-    // guardada con la sucursal en VentaEnCurso); aquí no se repite el aviso.
-
-    // Foco inicial en el buscador para escanear de una vez. En pantallas táctiles no, porque
-    // abriría el teclado sobre la lista. El campo se vuelve a crear al cambiar de sucursal:
-    // el foco solo se da la primera vez.
     effect(() => {
       const campo = this.campoBusqueda();
       if (!campo) {
@@ -503,7 +463,6 @@ export class NuevaVentaPage {
       );
     });
 
-    // Tras un fallo al registrar, el inventario se recarga; al llegar, el foco va a la primera línea marcada.
     effect(() => {
       if (!this.enfocarTrasRecarga() || !this.d() || this.datos.isLoading()) {
         return;
@@ -521,12 +480,10 @@ export class NuevaVentaPage {
     return Math.max(0, v.disponible - (this.enCarrito().get(v.producto.idProducto) ?? 0));
   }
 
-  /** La sede con más unidades de un producto, fuera de esta. */
   protected otraSede(idProducto: number): OtraSede | null {
     return this.cadenaActual()?.otrasSedes.get(idProducto)?.[0] ?? null;
   }
 
-  /** True si ya se sabe que ninguna otra sede lo tiene (la consulta de la cadena respondió). */
   protected agotadoEnCadena(idProducto: number): boolean {
     const cadena = this.cadenaActual();
     return cadena !== undefined && !cadena.otrasSedes.has(idProducto);
@@ -562,10 +519,6 @@ export class NuevaVentaPage {
     }
   }
 
-  /**
-   * Enter en el buscador: un código exacto (lo que teclea un lector de barras) o un único
-   * resultado se agregan de una vez; con varios, el foco pasa al primero de la lista.
-   */
   protected alPulsarEnter(): void {
     const d = this.d();
     const { cantidad, termino } = this.consulta();
@@ -583,8 +536,6 @@ export class NuevaVentaPage {
     const elegido = exacto ?? (resultados.length === 1 ? resultados[0] : undefined);
     if (elegido) {
       this.agregar(elegido, pedidas);
-      // Se vacía el campo mismo y no solo `busqueda`: un lector de barras teclea el código y
-      // el Enter antes de que la vista se repinte, y el enlace no notaría el cambio.
       this.buscador()?.valor.set('');
       this.busqueda.set('');
       const entrada = this.entradaBusqueda();
@@ -620,11 +571,9 @@ export class NuevaVentaPage {
 
   protected cambiarCantidadDesdeCampo(linea: LineaCarrito, campo: HTMLInputElement): void {
     this.cambiarCantidad(linea, campo.valueAsNumber);
-    // Si el valor ajustado es el mismo que había, la vinculación no repinta el campo.
     campo.value = String(this.lineas().find((l) => l.idProducto === linea.idProducto)?.cantidad ?? '');
   }
 
-  /** "Dejar M": ajusta la línea a lo que hay en la sucursal. */
   protected dejarDisponible(linea: LineaCarrito): void {
     this.fijarCantidad(linea.idProducto, linea.disponible);
     this.anunciar(`${linea.nombre} quedó en ${unidades(linea.disponible)}. Total ${pesos(this.total())}.`, false);
@@ -634,7 +583,6 @@ export class NuevaVentaPage {
   protected quitar(linea: LineaCarrito): void {
     this.lineas.update((lineas) => lineas.filter((l) => l.idProducto !== linea.idProducto));
     this.anunciar(`Quitaste ${linea.nombre}. Total ${pesos(this.total())}.`, false);
-    // El botón pulsado desaparece con la línea: el foco no se pierde, vuelve al título de productos.
     if (linea.estado !== 'ok' && this.lineasMarcadas().length) {
       this.enfocarSiguienteMarcada();
     } else {
@@ -680,7 +628,6 @@ export class NuevaVentaPage {
     this.idMetodoPago.set(idMetodoPago);
   }
 
-  // Campo "Recibido": mientras se escribe muestra las cifras tal cual; al salir, en pesos.
   protected readonly editandoRecibido = signal(false);
   private readonly textoRecibido = signal('');
   protected readonly valorRecibido = computed(() => {
@@ -708,7 +655,6 @@ export class NuevaVentaPage {
     this.editandoRecibido.set(false);
   }
 
-  /** "Exacto" o un billete sugerido. */
   protected fijarRecibido(monto: number): void {
     this.editandoRecibido.set(false);
     this.recibido.set(monto);
@@ -733,12 +679,10 @@ export class NuevaVentaPage {
         return;
       }
     }
-    // Se limpia antes de navegar: así el guard de salida no vuelve a preguntar.
     this.venta.limpiar();
     await this.router.navigate(['/inicio']);
   }
 
-  /** "Empezar de nuevo" desde la franja de venta recuperada: se queda en la pantalla. */
   protected async empezarDeNuevo(): Promise<void> {
     const { productos, total } = this.venta.resumen();
     const descartar = await this.confirmarDialogo.preguntar({
@@ -762,10 +706,9 @@ export class NuevaVentaPage {
     }
     this.intentoConfirmar.set(true);
     const idSucursal = this.idSucursal();
-    const idEmpleado = this.session.usuario()?.idEmpleado;
     const cliente = this.clienteElegido();
     const metodo = this.metodoElegido();
-    if (this.faltantes().length > 0 || idSucursal === null || !idEmpleado || !cliente || !metodo) {
+    if (this.faltantes().length > 0 || idSucursal === null || !cliente || !metodo) {
       this.enfocarPrimerFaltante();
       return;
     }
@@ -776,18 +719,14 @@ export class NuevaVentaPage {
       const { venta } = await this.ventasRepo.registrar({
         idCliente: cliente.idCliente,
         idMetodoPago: metodo.idMetodoPago,
-        idSucursal,
-        idEmpleado,
         lineas: this.lineas(),
       });
-      // La factura muestra la confirmación con el cambio; la venta en curso ya no existe.
       this.venta.limpiar();
       await this.router.navigate(['/ventas', venta.idVenta], {
         state: { registrada: true, cambio, [VENTA_REGISTRADA]: true },
       });
     } catch (error) {
       this.error.set(mensajeDeError(error));
-      // El inventario pudo cambiar: se recarga para marcar las líneas con lo que hay de verdad.
       this.enfocarTrasRecarga.set(true);
       this.datos.reload();
       this.cadena.reload();
@@ -796,7 +735,6 @@ export class NuevaVentaPage {
     }
   }
 
-  /** Ctrl/Cmd + Enter confirma desde cualquier parte de la pantalla, salvo con un diálogo abierto. */
   protected alPulsarTecla(evento: KeyboardEvent): void {
     if (evento.key !== 'Enter' || !(evento.ctrlKey || evento.metaKey) || evento.defaultPrevented) {
       return;
@@ -808,14 +746,12 @@ export class NuevaVentaPage {
       return;
     }
     evento.preventDefault();
-    // Una cantidad recién tecleada solo se aplica en "change" (al salir del campo): se aplica ya.
     if (evento.target instanceof HTMLInputElement && evento.target.type === 'number') {
       evento.target.dispatchEvent(new Event('change'));
     }
     void this.confirmar();
   }
 
-  /** Cerrar o recargar la pestaña con productos en el carrito pide confirmación al navegador. */
   protected antesDeCerrar(evento: BeforeUnloadEvent): void {
     if (this.venta.hayVenta()) {
       evento.preventDefault();
@@ -836,7 +772,6 @@ export class NuevaVentaPage {
     );
   }
 
-  /** Un código escaneado que existe en el catálogo pero no en el inventario de esta sede. */
   private productoFueraDeSede(codigo: string): Producto | undefined {
     const d = this.d();
     return d?.productos.find(
@@ -857,7 +792,6 @@ export class NuevaVentaPage {
     const recortados: string[] = [];
     const ajustadas = lineas.map((linea) => {
       const vendible = vendibles.find((v) => v.producto.idProducto === linea.idProducto);
-      // Sin unidades o sin el producto en la sede, la línea queda marcada para que el vendedor decida.
       if (vendible && vendible.disponible > 0 && linea.cantidad > vendible.disponible) {
         recortados.push(`${vendible.producto.nombre} (quedan ${vendible.disponible})`);
         return { ...linea, cantidad: vendible.disponible };
@@ -890,7 +824,6 @@ export class NuevaVentaPage {
     }
   }
 
-  /** Mueve el foco después de que la vista refleje el cambio de estado. */
   private enfocar(selector: string): void {
     afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>(selector)?.focus(), {
       injector: this.injector,
@@ -901,10 +834,6 @@ export class NuevaVentaPage {
     return (this.campoBusqueda()?.nativeElement as HTMLElement | undefined)?.querySelector('input') ?? null;
   }
 
-  /**
-   * Se vacía y se vuelve a escribir para que un lector de pantalla repita un mensaje
-   * idéntico (por ejemplo, dos veces "no hay más unidades").
-   */
   private anunciar(texto: string, problema: boolean): void {
     clearTimeout(this.temporizadorAnuncio);
     this.anuncio.set(null);

@@ -3,10 +3,6 @@ export interface ColumnaCsv<T> {
   valor: (fila: T) => string | number | null | undefined;
 }
 
-/**
- * Descarga las filas como CSV. Usa punto y coma y BOM UTF-8 para que Excel en
- * español lo abra con columnas y tildes correctas sin pasos extra.
- */
 export function descargarCsv<T>(nombreArchivo: string, columnas: ColumnaCsv<T>[], filas: T[]): void {
   const celda = (valor: string | number | null | undefined) => {
     const texto = valor === null || valor === undefined ? '' : String(valor);

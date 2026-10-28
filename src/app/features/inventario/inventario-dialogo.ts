@@ -10,23 +10,15 @@ import { CampoError } from '../../shared/campo-error';
 import { numero } from '../../shared/formato';
 import { ACCESIBILIDAD_FORMULARIOS } from '../../shared/accesibilidad-formularios';
 
-/**
- * Entrada: llegó mercancía y se SUMA a lo que hay (no se pisa una venta hecha
- * mientras tanto). Conteo: se contó físicamente y se REEMPLAZA la cantidad.
- */
 export type ModoInventario = 'entrada' | 'conteo';
 
 export interface DatosInventarioDialogo {
   sucursal: Sucursal;
-  /** Registro a editar; null para agregar un producto a la sucursal. */
   registro: Inventario | null;
-  /** Producto del registro, o productos que la sucursal aún no maneja. */
   productos: Producto[];
-  /** Modo con el que abre el diálogo; por defecto, corregir conteo. */
   modo?: ModoInventario;
 }
 
-/** Lo que quedó guardado y cómo: quien abre el diálogo arma el aviso con esto. */
 export interface ResultadoInventario {
   registro: Inventario;
   modo: ModoInventario;
@@ -35,7 +27,6 @@ export interface ResultadoInventario {
 @Component({
   selector: 'app-inventario-dialogo',
   imports: [ReactiveFormsModule, ACCESIBILIDAD_FORMULARIOS, CampoError, FaIconComponent],
-  // Lee el estado del formulario reactivo (no son signals) en la plantilla.
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
@@ -156,7 +147,6 @@ export class InventarioDialogo {
   protected readonly enviado = signal(false);
   protected readonly guardando = signal(false);
   protected readonly error = signal<string | null>(null);
-  /** Cantidad leída al abrir el diálogo; la lista pudo quedar atrás por una venta. */
   private readonly vigente = signal<number | null>(null);
 
   protected readonly form = this.fb.group({
@@ -169,7 +159,6 @@ export class InventarioDialogo {
   protected readonly esNuevo = computed(() => this.datos().registro === null);
   private readonly actual = computed(() => this.vigente() ?? this.datos().registro?.cantidadDisponible ?? 0);
 
-  /** La cifra que mostraba la lista, si ya no coincide con la vigente. */
   protected readonly cambioDesdeLista = computed(() => {
     const deLista = this.datos().registro?.cantidadDisponible;
     const vigente = this.vigente();
@@ -183,7 +172,6 @@ export class InventarioDialogo {
     return this.esNuevo() ? 'Agregar a la sucursal' : 'Guardar conteo';
   });
 
-  /** Modo con el que se guardó; lo lee quien abrió el diálogo para su aviso. */
   get modoElegido(): ModoInventario {
     return this.modo();
   }
@@ -203,7 +191,6 @@ export class InventarioDialogo {
   protected cambiarModo(modo: ModoInventario): void {
     this.modo.set(modo);
     this.error.set(null);
-    // Solo valida el campo de cantidad del modo visible.
     const { unidades, cantidadDisponible } = this.form.controls;
     if (modo === 'entrada') {
       cantidadDisponible.disable();
@@ -214,10 +201,6 @@ export class InventarioDialogo {
     }
   }
 
-  /**
-   * Vuelve a leer la cantidad al abrir: la vista previa y el conteo parten de lo
-   * que hay ahora, no de lo que había cuando se cargó la lista.
-   */
   private async leerVigente(registro: Inventario): Promise<void> {
     try {
       const filas = await this.repo.listar(registro.idSucursal);
@@ -232,11 +215,9 @@ export class InventarioDialogo {
         cantidadDisponible.setValue(fila.cantidadDisponible);
       }
     } catch {
-      // Sin la lectura se trabaja con la cifra de la lista; guardar valida igual.
     }
   }
 
-  /** "Hay 3 · quedarán 27": lo que pasará al guardar, con la cifra que hay hoy. */
   protected vistaPrevia(): string {
     const unidades = this.form.controls.unidades.value;
     const contada = this.form.controls.cantidadDisponible.value;
@@ -304,10 +285,6 @@ function esEnteroPositivo(valor: unknown, minimo: number): valor is number {
   return typeof valor === 'number' && Number.isInteger(valor) && valor >= minimo;
 }
 
-/**
- * Abre el diálogo y resuelve con el registro guardado y el modo con que se
- * guardó, o undefined si se cancela. El aviso de éxito lo da quien lo abre.
- */
 export async function dialogoInventario(
   modal: NgbModal,
   datos: DatosInventarioDialogo,
@@ -323,7 +300,6 @@ export async function dialogoInventario(
   }
 }
 
-/** Abre el diálogo y resuelve con el registro de inventario resultante, o undefined si se cancela. */
 export async function resultadoDialogoInventario(
   modal: NgbModal,
   datos: DatosInventarioDialogo,
@@ -331,7 +307,6 @@ export async function resultadoDialogoInventario(
   return (await dialogoInventario(modal, datos))?.registro;
 }
 
-/** Abre el diálogo; resuelve true si se guardó. */
 export async function abrirDialogoInventario(modal: NgbModal, datos: DatosInventarioDialogo): Promise<boolean> {
   return (await dialogoInventario(modal, datos)) !== undefined;
 }

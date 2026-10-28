@@ -18,16 +18,13 @@ export interface CampoFormulario {
   etiqueta: string;
   tipo?: 'text' | 'tel' | 'number' | 'textarea' | 'select';
   requerido?: boolean;
-  /** Para números: valor mínimo. */
   minimo?: number;
   maximo?: number;
   patron?: RegExp;
   placeholder?: string;
   ayuda?: string;
   opciones?: OpcionCampo[];
-  /** Se muestra pero no se edita (por ejemplo, la llave de un registro existente). */
   soloLectura?: boolean;
-  /** Ocupa media fila en pantallas medianas o más. */
   mitad?: boolean;
 }
 
@@ -39,11 +36,6 @@ export interface OpcionesFormulario<T> {
   guardar: (valores: Record<string, string>) => Promise<T>;
 }
 
-/**
- * Formulario en diálogo para entidades con atributos simples (marcas, métodos de
- * pago, sucursales, categorías, productos). Los campos se describen con datos y
- * el guardado lo hace el repositorio que recibe en `guardar`.
- */
 @Component({
   selector: 'app-formulario-dialogo',
   imports: [ReactiveFormsModule, ACCESIBILIDAD_FORMULARIOS, CampoError, FaIconComponent],
@@ -180,7 +172,6 @@ export class FormularioDialogo {
   }
 }
 
-/** Abre el formulario. Resuelve con lo que devolvió `guardar`, o undefined si se cancela. */
 export async function abrirFormulario<T>(modal: NgbModal, opciones: OpcionesFormulario<T>): Promise<T | undefined> {
   const ref = modal.open(FormularioDialogo, { ariaLabelledBy: 'formulario-titulo', backdrop: 'static' });
   (ref.componentInstance as FormularioDialogo).iniciar(opciones as OpcionesFormulario<unknown>);

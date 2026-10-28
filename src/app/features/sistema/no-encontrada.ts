@@ -3,7 +3,6 @@ import { Router, RouterLink } from '@angular/router';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faArrowLeft, faHouse } from '@fortawesome/free-solid-svg-icons';
 
-/** Ruta desconocida: dice qué dirección no existe y ofrece volver, en vez de redirigir en silencio. */
 @Component({
   selector: 'app-no-encontrada',
   imports: [RouterLink, FaIconComponent],

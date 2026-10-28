@@ -44,19 +44,22 @@ import { ACCESIBILIDAD_FORMULARIOS } from '../../shared/accesibilidad-formulario
           </div>
         </div>
         <div class="row g-3">
-          <div class="col-sm-7">
+          <div class="col-12">
             <label for="prov-direccion" class="form-label">Dirección</label>
             <input id="prov-direccion" class="form-control" formControlName="direccion" autocomplete="off"
               [class.is-invalid]="invalido('direccion')" aria-describedby="prov-direccion-error" />
             <app-campo-error [control]="form.controls.direccion" [enviado]="enviado()" id="prov-direccion-error" />
           </div>
-          <div class="col-sm-5">
-            <label for="prov-telefono" class="form-label">Teléfono</label>
-            <input id="prov-telefono" type="tel" class="form-control num" formControlName="telefono" autocomplete="off"
-              [class.is-invalid]="invalido('telefono')" aria-describedby="prov-telefono-error" />
-            <app-campo-error [control]="form.controls.telefono" [enviado]="enviado()" id="prov-telefono-error" />
-          </div>
         </div>
+        <app-lista-campos
+          [arreglo]="form.controls.telefonos"
+          etiqueta="Teléfonos"
+          idBase="prov-telefono"
+          tipo="tel"
+          [minimo]="1"
+          textoAgregar="Agregar teléfono"
+          [enviado]="enviado()"
+        />
         <app-lista-campos
           [arreglo]="form.controls.correos"
           etiqueta="Correos"
@@ -97,20 +100,21 @@ export class ProveedorDialogo {
     nit: ['', [Validators.required, Validators.pattern(/^[0-9]{6,12}-?[0-9]$/)]],
     nombre: ['', Validators.required],
     direccion: ['', Validators.required],
-    telefono: ['', [Validators.required, Validators.pattern(/^[0-9 +()-]{7,20}$/)]],
+    telefonos: controlesLista('tel', [], 1),
     correos: controlesLista('email', [], 1),
   });
 
   iniciar(proveedor: Proveedor | null): void {
     this.existente.set(proveedor);
     if (proveedor) {
+      this.form.setControl('telefonos', controlesLista('tel', proveedor.telefonos, 1));
       this.form.setControl('correos', controlesLista('email', proveedor.correos, 1));
       this.form.patchValue(proveedor);
       this.form.controls.nit.disable();
     }
   }
 
-  protected invalido(campo: 'nit' | 'nombre' | 'direccion' | 'telefono'): boolean {
+  protected invalido(campo: 'nit' | 'nombre' | 'direccion'): boolean {
     const control = this.form.controls[campo];
     return control.invalid && (control.touched || this.enviado());
   }
@@ -129,7 +133,7 @@ export class ProveedorDialogo {
           nit: valor.nit.trim(),
           nombre: valor.nombre.trim(),
           direccion: valor.direccion.trim(),
-          telefono: valor.telefono.trim(),
+          telefonos: valoresLista(this.form.controls.telefonos),
           correos: valoresLista(this.form.controls.correos),
         },
         !this.existente(),

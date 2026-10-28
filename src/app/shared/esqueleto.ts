@@ -2,16 +2,9 @@ import { Component, computed, input } from '@angular/core';
 
 type TipoColumna = 'texto' | 'numero';
 
-// Anchos fijos que se repiten por fila y columna: la tabla vacía tiene ritmo de
-// datos reales sin cambiar en cada carga. No hay animación (dial de movimiento 1).
 const ANCHOS_TEXTO = [72, 48, 84, 60, 66, 54, 78];
 const ANCHOS_NUMERO = [44, 58, 36, 52, 40];
 
-/**
- * Lugar de una tabla mientras carga por primera vez: mismas columnas, filas de
- * barras quietas en --soft-bg. Las cifras se alinean a la derecha como en la
- * tabla real, así el contenido no salta al llegar.
- */
 @Component({
   selector: 'app-esqueleto-tabla',
   styles: `
@@ -30,7 +23,6 @@ const ANCHOS_NUMERO = [44, 58, 36, 52, 40];
     .derecha .barra {
       margin-left: auto;
     }
-    /* Misma alineación con la tarjeta que las tablas reales. */
     td:first-child,
     th:first-child {
       padding-left: var(--bs-card-spacer-x, 0.5rem);
@@ -74,10 +66,8 @@ const ANCHOS_NUMERO = [44, 58, 36, 52, 40];
   `,
 })
 export class EsqueletoTabla {
-  /** Número de columnas de texto, o el tipo de cada columna en orden. */
   readonly columnas = input.required<number | TipoColumna[]>();
   readonly filas = input(8);
-  /** Lo que oyen los lectores de pantalla: "Cargando clientes". */
   readonly texto = input.required<string>();
 
   protected readonly tipos = computed<TipoColumna[]>(() => {
@@ -93,10 +83,6 @@ export class EsqueletoTabla {
   }
 }
 
-/**
- * Lugar de un bloque (resumen, gráfico, ficha) mientras carga: unas líneas de
- * texto y, si se pide `alto`, un área del tamaño de lo que viene (un gráfico).
- */
 @Component({
   selector: 'app-esqueleto-bloque',
   styles: `
@@ -140,7 +126,6 @@ export class EsqueletoTabla {
 })
 export class EsqueletoBloque {
   readonly lineas = input(3);
-  /** Alto de un área de contenido bajo las líneas, en unidades CSS ("180px", "12rem"). */
   readonly alto = input<string>();
   readonly texto = input.required<string>();
 

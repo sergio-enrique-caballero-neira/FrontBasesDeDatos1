@@ -3,11 +3,6 @@ import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faMagnifyingGlass, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
 
-/**
- * Buscador de las listas: lupa a la izquierda, botón para borrar cuando hay texto
- * y Escape para vaciarlo. Con `atajo`, la tecla "/" lo enfoca desde cualquier
- * parte de la pantalla que no sea un campo de texto.
- */
 @Component({
   selector: 'app-campo-busqueda',
   imports: [FaIconComponent, NgbTooltip],
@@ -61,13 +56,10 @@ export class CampoBusqueda {
   private static siguiente = 0;
 
   readonly valor = model('');
-  /** Nombre del campo para todos; si no es visible se usa como aria-label. */
   readonly etiqueta = input.required<string>();
   readonly etiquetaVisible = input(true);
   readonly placeholder = input('');
-  /** La tecla "/" enfoca este buscador. Solo uno por pantalla debería tenerlo. */
   readonly atajo = input(false);
-  /** id de un texto de ayuda que se asocia al campo con aria-describedby. */
   readonly describedby = input<string | null>(null);
   readonly enter = output<string>();
 
@@ -76,9 +68,6 @@ export class CampoBusqueda {
   private readonly campo = viewChild.required<ElementRef<HTMLInputElement>>('campo');
 
   constructor() {
-    // [value] no repinta si el padre vacía `valor` en el mismo ciclo en que se escribió
-    // (un lector de barras manda el código y Enter antes del repintado): el último valor
-    // pintado sigue siendo '' y Angular no ve cambio. Aquí se sincroniza el input a mano.
     afterRenderEffect(() => {
       const valor = this.valor();
       const campo = this.campo().nativeElement;
@@ -93,7 +82,6 @@ export class CampoBusqueda {
     this.campo().nativeElement.focus();
   }
 
-  /** Con texto, Escape lo borra y no deja que cierre el diálogo que lo contiene. */
   protected alPulsarEscape(evento: Event): void {
     if (!this.valor()) {
       return;
@@ -111,7 +99,6 @@ export class CampoBusqueda {
       return;
     }
     const campo = this.campo().nativeElement;
-    // Un buscador oculto (otra pestaña, menú cerrado) no debe robar la tecla.
     if (campo.offsetParent === null) {
       return;
     }

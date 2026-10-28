@@ -6,7 +6,6 @@ export interface Aviso {
   tipo: 'exito' | 'error';
 }
 
-/** Mensajes breves que confirman una acción o explican por qué falló. */
 @Injectable({ providedIn: 'root' })
 export class Avisos {
   private siguiente = 1;

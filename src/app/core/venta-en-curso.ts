@@ -7,7 +7,6 @@ export interface LineaEnCurso {
 }
 
 export interface ResumenVentaEnCurso {
-  /** Productos distintos en el carrito. */
   productos: number;
   total: number;
 }
@@ -23,13 +22,6 @@ interface VentaGuardada {
 const PREFIJO_CLAVE = 'ferreteria.venta-en-curso';
 const RESUMEN_VACIO: ResumenVentaEnCurso = { productos: 0, total: 0 };
 
-/**
- * Venta que el vendedor está armando y aún no ha registrado. Vive fuera de la
- * página de venta para sobrevivir a una recarga: se guarda en sessionStorage
- * (solo esta pestaña) con una clave por vendedor y sucursal, así cambiar de
- * sucursal muestra la venta de esa sucursal y otro vendedor nunca ve la ajena.
- * Al cerrar sesión se borra.
- */
 @Injectable({ providedIn: 'root' })
 export class VentaEnCurso {
   private readonly session = inject(Session);
@@ -37,9 +29,7 @@ export class VentaEnCurso {
   readonly lineas = signal<LineaEnCurso[]>([]);
   readonly idCliente = signal<number | null>(null);
   readonly idMetodoPago = signal<number | null>(null);
-  /** Efectivo recibido, para calcular el cambio. */
   readonly recibido = signal<number | null>(null);
-  /** Lo escribe la página de venta con los precios vigentes; lo usa el aviso al salir. */
   readonly resumen = signal<ResumenVentaEnCurso>(RESUMEN_VACIO);
 
   readonly hayVenta = computed(() => this.lineas().length > 0);
@@ -50,12 +40,9 @@ export class VentaEnCurso {
     return usuario && idSucursal !== null ? `${PREFIJO_CLAVE}.${usuario.idEmpleado}.${idSucursal}` : null;
   });
 
-  /** Clave cuyos datos están cargados en las signals; evita guardar una venta bajo la clave de otra. */
   private readonly claveCargada = signal<string | null>(null);
 
   constructor() {
-    // Se borra al pasar de tener usuario a no tenerlo, aunque en ese momento no hubiera
-    // sucursal elegida (por ejemplo, si se cerró sesión desde la pantalla de sucursal).
     let habiaUsuario = false;
     effect(() => {
       const clave = this.clave();
@@ -91,7 +78,6 @@ export class VentaEnCurso {
     });
   }
 
-  /** Descarta la venta: después de registrarla o cuando el vendedor decide no seguir. */
   limpiar(): void {
     this.aplicar(null);
   }
@@ -132,11 +118,9 @@ function escribir(clave: string, datos: VentaGuardada): void {
   try {
     sessionStorage.setItem(clave, JSON.stringify(datos));
   } catch {
-    // Sin almacenamiento, la venta dura mientras la pestaña no se recargue.
   }
 }
 
-/** Al cerrar sesión se borran las ventas sin registrar de todas las sucursales. */
 function borrarTodas(): void {
   try {
     const claves = Array.from({ length: sessionStorage.length }, (_, i) => sessionStorage.key(i));
@@ -146,7 +130,6 @@ function borrarTodas(): void {
       }
     }
   } catch {
-    // Sin almacenamiento no hay nada que borrar.
   }
 }
 
@@ -154,6 +137,5 @@ function borrar(clave: string): void {
   try {
     sessionStorage.removeItem(clave);
   } catch {
-    // Sin almacenamiento no hay nada que borrar.
   }
 }

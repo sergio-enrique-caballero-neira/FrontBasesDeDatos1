@@ -1,4 +1,3 @@
-/* Cada parte bajo los filtros (resumen, aviso del día, conteo, tabla) se separa con un filete. */
 .bloque {
   border-top: 1px solid var(--hairline);
 }
@@ -7,7 +6,6 @@
   flex: 0 1 13rem;
 }
 
-/* En un teléfono cada lista ocupa la fila entera: nada se sale de la pantalla. */
 @media (max-width: 575.98px) {
   .filtro-lista {
     flex-basis: 100%;

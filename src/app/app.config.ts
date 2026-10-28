@@ -20,7 +20,6 @@ import { autenticacion } from './core/autenticacion.interceptor';
 import { Avisos } from './core/avisos';
 import { VentaEnCurso } from './core/venta-en-curso';
 
-/** Pone "Pantalla · Nombre de la app" en la pestaña del navegador. */
 @Injectable()
 class TituloPorPantalla extends TitleStrategy {
   private readonly title = inject(Title);
@@ -38,13 +37,11 @@ export const appConfig: ApplicationConfig = {
     provideRouter(
       routes,
       withComponentInputBinding(),
-      // Falla al cargar el código de una pantalla (por ejemplo, tras publicar una versión nueva).
       withNavigationErrorHandler(() =>
         inject(Avisos).error('No se pudo abrir la pantalla. Recarga la página e inténtalo de nuevo.'),
       ),
     ),
     { provide: TitleStrategy, useClass: TituloPorPantalla },
-    // Se crea al arrancar para que vea el cierre de sesión aunque no se haya abierto la página de venta.
     provideAppInitializer(() => {
       inject(VentaEnCurso);
     }),

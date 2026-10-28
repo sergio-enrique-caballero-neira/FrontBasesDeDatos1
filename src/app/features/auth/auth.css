@@ -1,7 +1,3 @@
-/*
- * En el celular el panel arranca arriba con un margen cómodo (centrarlo deja el formulario
- * bajo el teclado); desde sm se centra en la pantalla. Los env() solo valen algo en iPhone.
- */
 .auth {
   min-height: 100vh;
   min-height: 100dvh;
@@ -25,7 +21,6 @@
   max-width: 28rem;
 }
 
-/* Marca y cambio de tema en una fila: el botón no flota sobre el contenido en pantallas chicas. */
 .auth-cabecera {
   display: flex;
   align-items: center;
@@ -34,7 +29,6 @@
   margin-bottom: 2rem;
 }
 
-/* El nombre de la marca es uno de los pocos lugares con el rojo de acento. */
 .auth-marca {
   color: var(--accent-text);
   font-weight: 600;

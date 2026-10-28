@@ -4,7 +4,6 @@ import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import { faCircleExclamation, faRotateRight } from '@fortawesome/free-solid-svg-icons';
 import { mensajeDeError } from '../core/domain-error';
 
-/** Encabezado de cada pantalla: título, propósito en una línea y acciones a la derecha. */
 @Component({
   selector: 'app-page-header',
   template: `
@@ -26,7 +25,6 @@ export class PageHeader {
   readonly descripcion = input<string>();
 }
 
-/** Estado de carga: dice qué se está cargando, no solo un spinner. */
 @Component({
   selector: 'app-cargando',
   template: `
@@ -40,7 +38,6 @@ export class Cargando {
   readonly texto = input.required<string>();
 }
 
-/** Estado de error con la causa y la acción para reintentar. */
 @Component({
   selector: 'app-error-carga',
   imports: [FaIconComponent],
@@ -68,7 +65,6 @@ export class ErrorCarga {
   }
 }
 
-/** Estado vacío: por qué está vacío y la acción que lo llena (vía ng-content). */
 @Component({
   selector: 'app-vacio',
   imports: [FaIconComponent],

@@ -63,9 +63,11 @@
 
         <dl class="contacto">
           <div>
-            <dt>Teléfono</dt>
+            <dt>{{ d.proveedor.telefonos.length === 1 ? 'Teléfono' : 'Teléfonos' }}</dt>
             <dd>
-              <a class="num link-body-emphasis" [href]="'tel:' + soloDigitos(d.proveedor.telefono)">{{ d.proveedor.telefono }}</a>
+              @for (telefono of d.proveedor.telefonos; track telefono) {
+                <a class="d-block num link-body-emphasis" [href]="'tel:' + soloDigitos(telefono)">{{ telefono }}</a>
+              }
             </dd>
           </div>
           <div>
@@ -351,7 +353,6 @@
                     </td>
                     <td class="text-nowrap">
                       <span class="visually-hidden">{{ fila.evaluacion.calificacion }} de 5</span>
-                      <!-- En celular, una estrella y la cifra: las cinco no caben junto a las demás columnas. -->
                       <span class="d-none d-md-inline" aria-hidden="true">
                         @for (n of estrellas; track n) {
                           <fa-icon [icon]="n <= fila.evaluacion.calificacion ? iconos.faStar : iconos.faEstrellaVacia" />

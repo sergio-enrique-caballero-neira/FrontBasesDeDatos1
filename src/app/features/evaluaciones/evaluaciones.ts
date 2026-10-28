@@ -30,7 +30,7 @@ import { hoyISO } from '../../core/fechas';
 import { DIAS_REEVALUACION, nombreEmpleado } from '../../core/models';
 import { Session } from '../../core/session';
 import { SucursalesRepository } from '../../data/catalogos.repository';
-import { EmpleadosRepository } from '../../data/personas.repository';
+import { EmpleadosRepository } from '../../data/empleados.repository';
 import { ProductosRepository } from '../../data/productos.repository';
 import {
   claveSuministro,
@@ -48,16 +48,13 @@ import { paginar, PieTabla } from '../../shared/tabla/pie-tabla';
 import { ErrorCarga, PageHeader, Vacio } from '../../shared/ui';
 import { abrirDialogoEvaluacion, SuministroElegible, suministrosElegibles } from './evaluacion-dialogo';
 
-/** Por debajo de este número de evaluaciones, el promedio de un proveedor todavía dice poco. */
 const MINIMO_EVALUACIONES = 3;
-/** Pendientes que se ven antes de pedir la lista completa. */
 const PENDIENTES_VISIBLES = 8;
 
 type FiltroCalificacion = 'todas' | 'baja' | 'media' | 'alta';
 type FiltroATiempo = 'todos' | 'si' | 'no';
 type DestinoFoco = 'resumen-titulo' | 'pendientes-titulo' | 'historial-titulo';
 
-/** Días enteros entre dos fechas AAAA-MM-DD, sin que la zona horaria ni el horario de verano los corran. */
 function diasEntre(desde: string, hasta: string): number {
   const utc = (iso: string) => {
     const [anio, mes, dia] = iso.split('-').map(Number);
@@ -85,7 +82,6 @@ function diasEntre(desde: string, hasta: string): number {
     PieTabla,
   ],
   styles: `
-    /* El proveedor elegido como filtro se marca con superficie suave y con texto, no solo con color. */
     tr.elegida > * {
       background: var(--soft-bg);
       --grafico-superficie: var(--soft-bg);
@@ -120,7 +116,6 @@ export class Evaluaciones {
   private readonly ruta = inject(ActivatedRoute);
   private readonly injector = inject(Injector);
 
-  /** NIT que llega en ?proveedor= desde la lista de proveedores. */
   readonly proveedor = input<string>();
 
   protected readonly iconos = {
@@ -158,7 +153,6 @@ export class Evaluaciones {
   protected readonly orden = new Orden<'fecha' | 'calificacion' | 'proveedor'>();
   protected readonly porPagina = signal(15);
 
-  /** Encabezado que recibe el foco cuando la fila que tenía el foco desaparece tras recargar. */
   private readonly focoTrasRecargar = signal<DestinoFoco | null>(null);
 
   protected readonly datos = resource({
@@ -174,7 +168,6 @@ export class Evaluaciones {
       ]);
       const hoy = hoyISO();
       const enVista = (s: { idSucursal: number }) => params.idSucursal === null || s.idSucursal === params.idSucursal;
-      // El repositorio entrega las evaluaciones de la más reciente a la más antigua.
       const evaluacionesEnVista = evaluaciones.filter(enVista);
       const suministrosEnVista = suministros.filter(enVista);
       const nombreProveedor = (nit: string) => proveedores.find((p) => p.nit === nit)?.nombre ?? '';
@@ -211,7 +204,6 @@ export class Evaluaciones {
           };
         })
         .filter((p) => p.dias === null || p.dias > DIAS_REEVALUACION)
-        // Primero los que nunca se evaluaron; después, los de evaluación más vieja.
         .sort(
           (a, b) =>
             (b.dias ?? Infinity) - (a.dias ?? Infinity) ||
@@ -234,7 +226,6 @@ export class Evaluaciones {
             suministros: elegibles.filter((e) => e.nit === proveedor.nit),
           };
         })
-        // Un proveedor sin evaluaciones sigue en la lista si tiene suministros: es el que más necesita una.
         .filter((r) => r.cantidad > 0 || r.suministros.length > 0)
         .sort(
           (a, b) =>
@@ -245,7 +236,6 @@ export class Evaluaciones {
     },
   });
 
-  /** NIT del filtro, solo si corresponde a un proveedor con datos en esta vista. */
   protected readonly nitVigente = computed(() => {
     const nit = this.nit();
     return nit && this.datos.hasValue() && this.datos.value().resumen.some((r) => r.nit === nit) ? nit : '';
@@ -298,13 +288,11 @@ export class Evaluaciones {
     }),
   );
 
-  /** Vuelve a la primera página cuando cambian los filtros o el orden. */
   protected readonly pagina = linkedSignal({
     source: () => [this.nitVigente(), this.calificacion(), this.aTiempo(), this.orden.estado(), this.porPagina()],
     computation: () => 1,
   });
 
-  /** Si al eliminar se vacía la última página, se muestra la anterior. */
   protected readonly paginaValida = computed(() =>
     Math.min(this.pagina(), Math.max(1, Math.ceil(this.ordenadas().length / this.porPagina()))),
   );
@@ -324,7 +312,6 @@ export class Evaluaciones {
 
   protected elegirProveedor(nit: string): void {
     this.nit.set(nit);
-    // El filtro queda en la dirección para poder compartirlo y volver con Atrás.
     void this.router.navigate([], {
       relativeTo: this.ruta,
       queryParams: { proveedor: nit || null },
@@ -360,7 +347,6 @@ export class Evaluaciones {
     await this.evaluar(this.datos.value().elegibles, null, null);
   }
 
-  /** Evaluar desde una fila: si el proveedor tiene un solo suministro, el diálogo abre con él fijo. */
   protected async evaluarProveedor(suministros: SuministroElegible[]): Promise<void> {
     await this.evaluar(suministros, suministros.length === 1 ? suministros[0] : null, 'resumen-titulo');
   }
@@ -375,9 +361,8 @@ export class Evaluaciones {
     fijo: SuministroElegible | null,
     foco: DestinoFoco | null,
   ): Promise<void> {
-    const idEvaluador = this.session.usuario()?.idEmpleado;
-    if (!idEvaluador || suministros.length === 0) return;
-    if (await abrirDialogoEvaluacion(this.modal, suministros, fijo, idEvaluador)) {
+    if (suministros.length === 0) return;
+    if (await abrirDialogoEvaluacion(this.modal, suministros, fijo)) {
       this.avisos.exito('Evaluación registrada.');
       this.datos.reload();
       this.focoTrasRecargar.set(foco);
@@ -402,7 +387,6 @@ export class Evaluaciones {
     }
   }
 
-  /** Promedio con una cifra decimal y coma, para la línea de celular (en pantalla ancha lo dice la tira). */
   protected formatoPromedio(promedio: number): string {
     return promedio.toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   }

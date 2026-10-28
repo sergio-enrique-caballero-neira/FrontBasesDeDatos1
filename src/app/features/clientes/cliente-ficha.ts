@@ -17,7 +17,6 @@ import { FechaPipe, PesosPipe } from '../../shared/formato';
 import { Miga, Migas } from '../../shared/migas';
 import { ClienteHistorial } from './cliente-historial';
 
-/** Lo más repetido de una lista (sucursal, método de pago); con empate, todos los empatados. */
 interface Frecuente {
   nombres: string[];
   veces: number;
@@ -36,17 +35,10 @@ function masFrecuente(ventas: Venta[], clave: (v: Venta) => number, nombre: (id:
   return { nombres, veces };
 }
 
-/** "Sede Norte", "Sede Norte y Sede Sur", "Sede Centro, Sede Norte y Sede Sur". */
 function enumerar(nombres: string[]): string {
   return nombres.length <= 1 ? (nombres[0] ?? '') : `${nombres.slice(0, -1).join(', ')} y ${nombres.at(-1)}`;
 }
 
-/**
- * Ficha de un cliente (ruta /clientes/:id). El historial pone los datos de contacto,
- * las facturas, lo que más compra y las acciones de editar y vender; la ficha suma las
- * migas, el título de la pestaña, cómo compra (ticket, desde cuándo, dónde y cómo paga)
- * y, para administradores, eliminarlo.
- */
 @Component({
   selector: 'app-cliente-ficha',
   imports: [Migas, ClienteHistorial, FaIconComponent, EsqueletoBloque, PesosPipe, FechaPipe],
@@ -145,7 +137,6 @@ function enumerar(nombres: string[]): string {
           </section>
         }
       } @else if (datos.error() && !noExiste()) {
-        <!-- Si el cliente no existe, el historial ya lo explica: aquí no se repite. -->
         <div class="franja-estado mt-5" role="alert">
           <fa-icon [icon]="iconos.faCircleExclamation" class="mt-1 text-danger" />
           <div class="d-flex flex-wrap align-items-center gap-2 flex-grow-1">
@@ -173,7 +164,6 @@ export class ClienteFicha {
   private readonly router = inject(Router);
   private readonly title = inject(Title);
 
-  /** Viene de la ruta /clientes/:id. */
   readonly id = input.required<string>();
 
   protected readonly idCliente = computed(() => Number(this.id()));
@@ -182,10 +172,6 @@ export class ClienteFicha {
   protected readonly eliminando = signal(false);
   protected readonly enumerar = enumerar;
 
-  /**
-   * Nombre para las migas y la pestaña, cuántas compras impiden eliminarlo y cómo
-   * compra. Se calcula en toda la cadena, igual que el historial que va arriba.
-   */
   protected readonly datos = resource({
     params: () => this.idCliente(),
     loader: async ({ params: idCliente }) => {
@@ -197,7 +183,6 @@ export class ClienteFicha {
       ]);
       const nombreSucursal = (id: number) => sucursales.find((s) => s.idSucursal === id)?.nombre ?? 'Sucursal eliminada';
       const nombreMetodo = (id: number) => metodos.find((m) => m.idMetodoPago === id)?.tipo ?? 'Método eliminado';
-      // Las fechas AAAA-MM-DD se ordenan como texto; no depende del orden en que lleguen.
       const fechas = ventas.map((v) => v.fecha).sort();
       return {
         nombre: nombreCliente(cliente),
@@ -216,10 +201,6 @@ export class ClienteFicha {
   protected readonly noExiste = computed(() => this.datos.error() instanceof NoEncontrado);
   protected readonly mensajeError = computed(() => mensajeDeError(this.datos.error()));
 
-  /**
-   * Sus compras en la sucursal de trabajo, si hay una elegida. Se omite cuando todas
-   * sus compras son de esa sucursal: "Compra sobre todo en" ya lo dice.
-   */
   protected readonly enSucursal = computed(() => {
     const idSucursal = this.session.idSucursalFiltro();
     if (idSucursal === null || !this.datos.hasValue()) {
@@ -244,7 +225,6 @@ export class ClienteFicha {
   ]);
 
   constructor() {
-    // La ruta pone "Cliente"; con los datos, la pestaña dice de quién es la ficha.
     effect(() => {
       if (this.datos.hasValue()) {
         this.title.setTitle(`${this.datos.value().nombre} · Clientes · ${NOMBRE_APP}`);
@@ -254,7 +234,6 @@ export class ClienteFicha {
     });
   }
 
-  /** "8 de 12 compras", "todas sus compras" o, con empate, "4 compras en cada una". */
   protected textoVeces(frecuente: Frecuente, compras: number, empate: string): string {
     if (frecuente.veces === compras) {
       return compras === 1 ? 'su única compra' : 'todas sus compras';

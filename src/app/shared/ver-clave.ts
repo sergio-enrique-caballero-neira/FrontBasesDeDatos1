@@ -2,11 +2,6 @@ import { Component, input, signal } from '@angular/core';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 
-/**
- * Botón para mostrar u ocultar una clave mientras se escribe. Va junto al input
- * dentro de un contenedor .campo-clave:
- * <div class="campo-clave"><input #clave type="password" ...><app-ver-clave [campo]="clave" /></div>
- */
 @Component({
   selector: 'app-ver-clave',
   imports: [FaIconComponent],

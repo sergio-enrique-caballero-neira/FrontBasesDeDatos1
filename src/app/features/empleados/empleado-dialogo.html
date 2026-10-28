@@ -12,7 +12,7 @@
       </div>
     }
 
-    <fieldset [attr.aria-describedby]="esUsuarioActual() ? 'empleado-rol-ayuda' : null">
+    <fieldset [attr.aria-describedby]="existente() ? 'empleado-rol-ayuda' : null">
       <legend class="form-label fs-6">Rol</legend>
       <div class="btn-group w-100" role="group">
         <input type="radio" class="btn-check" id="rol-vendedor" value="VENDEDOR" formControlName="rol" />
@@ -20,8 +20,8 @@
         <input type="radio" class="btn-check" id="rol-admin" value="ADMINISTRADOR" formControlName="rol" />
         <label class="btn btn-outline-secondary" for="rol-admin">Administrador</label>
       </div>
-      @if (esUsuarioActual()) {
-        <div class="form-text" id="empleado-rol-ayuda">No puedes cambiar tu propio rol mientras tienes la sesión abierta.</div>
+      @if (existente()) {
+        <div class="form-text" id="empleado-rol-ayuda">El rol queda fijo al crear al empleado.</div>
       }
     </fieldset>
 
@@ -58,6 +58,18 @@
         <div class="form-text" id="emp-correo-ayuda">Es el usuario con el que ingresa al sistema.</div>
         <app-campo-error [control]="form.controls.correo" [enviado]="enviado()" id="emp-correo-error" />
       </div>
+      <div class="col-12">
+        <label for="emp-contrasena" class="form-label">Contraseña</label>
+        <div class="campo-clave">
+          <input #campoContrasena id="emp-contrasena" type="password" class="form-control" formControlName="contrasena" autocomplete="new-password"
+            [class.is-invalid]="invalido('contrasena')" aria-describedby="emp-contrasena-error emp-contrasena-ayuda" />
+          <app-ver-clave [campo]="campoContrasena" />
+        </div>
+        <div class="form-text" id="emp-contrasena-ayuda">
+          {{ existente() ? 'Déjala vacía para conservar la actual.' : 'Con ella inicia sesión junto con el correo.' }} Mínimo 8 caracteres.
+        </div>
+        <app-campo-error [control]="form.controls.contrasena" [enviado]="enviado()" id="emp-contrasena-error" />
+      </div>
     </div>
 
     <app-lista-campos
@@ -88,12 +100,28 @@
               [class.is-invalid]="invalido('claveSeguridad')" aria-describedby="emp-clave-error emp-clave-ayuda" />
             <app-ver-clave [campo]="campoClave" />
           </div>
-          <div class="form-text" id="emp-clave-ayuda">La pide el inicio de sesión. Mínimo 6 caracteres.</div>
+          <div class="form-text" id="emp-clave-ayuda">
+            {{ existente() ? 'Déjala vacía para conservar la actual.' : 'Se guarda cifrada.' }} Mínimo 6 caracteres.
+          </div>
           <app-campo-error [control]="form.controls.claveSeguridad" [enviado]="enviado()" id="emp-clave-error" />
         </div>
       </div>
     } @else {
       <div class="row g-3">
+        <div class="col-12">
+          <label for="emp-sucursal" class="form-label">Sede donde vende</label>
+          <select id="emp-sucursal" class="form-select" formControlName="idSucursal"
+            [class.is-invalid]="invalido('idSucursal')" aria-describedby="emp-sucursal-error">
+            <option [ngValue]="null">{{ sucursales.isLoading() ? 'Cargando sedes…' : 'Elige una sede' }}</option>
+            @for (sucursal of sucursales.value() ?? []; track sucursal.idSucursal) {
+              <option [ngValue]="sucursal.idSucursal">{{ sucursal.nombre }} · {{ sucursal.ciudad }}</option>
+            }
+          </select>
+          <app-campo-error [control]="form.controls.idSucursal" [enviado]="enviado()" id="emp-sucursal-error" />
+          @if (sucursales.error()) {
+            <div class="form-text text-danger">No se pudieron cargar las sedes. Cierra el diálogo e inténtalo de nuevo.</div>
+          }
+        </div>
         <div class="col-sm-5">
           <label for="emp-comision" class="form-label">Comisión por venta (%)</label>
           <input id="emp-comision" type="number" class="form-control num" formControlName="comision" inputmode="decimal"

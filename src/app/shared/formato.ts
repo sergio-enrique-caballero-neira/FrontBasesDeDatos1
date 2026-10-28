@@ -23,7 +23,6 @@ export function pesos(valor: number): string {
   return formatoPesos.format(valor);
 }
 
-/** "$ 2,6 M" para ejes y cifras grandes donde el detalle está en la tabla. */
 export function pesosCompactos(valor: number): string {
   return formatoPesosCompacto.format(valor);
 }
@@ -37,17 +36,14 @@ function desdeISO(iso: string): Date {
   return new Date(anio, mes - 1, dia);
 }
 
-/** Convierte AAAA-MM-DD en "24 oct 2026" sin que la zona horaria corra el día. */
 export function fechaCorta(iso: string): string {
   return formatoFecha.format(desdeISO(iso));
 }
 
-/** "24 oct", para ejes de tiempo. */
 export function diaMes(iso: string): string {
   return formatoDiaMes.format(desdeISO(iso));
 }
 
-/** "viernes, 24 de octubre", para tooltips y encabezados. */
 export function diaLargo(iso: string): string {
   return formatoDiaLargo.format(desdeISO(iso));
 }

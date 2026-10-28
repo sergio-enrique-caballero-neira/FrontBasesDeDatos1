@@ -12,13 +12,11 @@ import { ACCESIBILIDAD_FORMULARIOS } from '../../shared/accesibilidad-formulario
 
 type CampoTexto = 'nombre' | 'apellido' | 'razonSocial' | 'numeroDocumento' | 'direccion';
 
-/** Datos que se adelantan al crear un cliente. */
 export interface PrefillCliente {
   numeroDocumento?: string;
   nombre?: string;
 }
 
-/** Un texto con solo dígitos, puntos, guiones o espacios es un documento; otro, un nombre. */
 export function prefillDesdeTexto(texto: string): PrefillCliente {
   const limpio = texto.trim();
   if (!limpio) {
@@ -30,10 +28,7 @@ export function prefillDesdeTexto(texto: string): PrefillCliente {
 @Component({
   selector: 'app-cliente-dialogo',
   imports: [ReactiveFormsModule, ACCESIBILIDAD_FORMULARIOS, CampoError, ListaCampos, FaIconComponent],
-  // Lee el estado del formulario reactivo (tipo, errores) en la plantilla.
   changeDetection: ChangeDetectionStrategy.Eager,
-  // El diálogo es desplazable: el formulario ocupa el alto del modal y solo el cuerpo
-  // se desplaza, así el pie con Guardar sigue a la vista en un teléfono.
   host: { class: 'd-flex flex-column flex-grow-1 overflow-hidden' },
   templateUrl: './cliente-dialogo.html',
 })
@@ -48,12 +43,9 @@ export class ClienteDialogo {
   protected readonly enviado = signal(false);
   protected readonly guardando = signal(false);
   protected readonly error = signal<string | null>(null);
-  /** Campo que recibe el foco al abrir: el primero que falta por llenar. */
   protected readonly campoInicial = signal<CampoTexto>('nombre');
-  /** Lo que respondió el repositorio sobre el documento (repetido o reservado). */
   private readonly errorDocumento = signal('');
   protected readonly mensajesDocumento = computed(() => ({
-    // Más claro que el genérico "El formato no es válido".
     pattern: 'Escribe de 5 a 15 caracteres: números y, si quieres, puntos o guion (900.123.456-7).',
     servidor: this.errorDocumento(),
   }));
@@ -130,10 +122,6 @@ export class ClienteDialogo {
     }
   }
 
-  /**
-   * Un documento repetido o reservado se marca en su campo, que es donde se corrige;
-   * cualquier otro error del repositorio va al aviso de arriba del formulario.
-   */
   private mostrarError(mensaje: string): void {
     if (!/documento/i.test(mensaje)) {
       this.error.set(mensaje);
@@ -141,7 +129,6 @@ export class ClienteDialogo {
     }
     const documento = this.form.controls.numeroDocumento;
     this.errorDocumento.set(mensaje);
-    // Se limpia solo: al editar el campo, los validadores vuelven a correr.
     documento.setErrors({ ...documento.errors, servidor: mensaje });
     documento.markAsTouched();
     this.documentoInput()?.nativeElement.focus();
@@ -168,11 +155,6 @@ export class ClienteDialogo {
   }
 }
 
-/**
- * Abre el formulario de cliente. Resuelve con el cliente guardado, o undefined si se cancela.
- * Al crear, `prefill` adelanta lo que ya se escribió (por ejemplo, en el buscador de la
- * venta): un texto con solo números va al documento y cualquier otro, al nombre.
- */
 export async function abrirDialogoCliente(
   modal: NgbModal,
   cliente: Cliente | null,
@@ -183,7 +165,6 @@ export async function abrirDialogoCliente(
     size: 'lg',
     backdrop: 'static',
     scrollable: true,
-    // En un teléfono ocupa toda la pantalla y el pie queda fijo abajo.
     fullscreen: 'sm',
   });
   (ref.componentInstance as ClienteDialogo).iniciar(cliente, typeof prefill === 'string' ? prefillDesdeTexto(prefill) : prefill);

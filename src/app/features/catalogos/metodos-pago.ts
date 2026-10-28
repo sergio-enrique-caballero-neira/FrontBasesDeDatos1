@@ -18,9 +18,7 @@ import { ErrorCarga, PageHeader, Vacio } from '../../shared/ui';
 
 interface FilaMetodo {
   metodo: MetodoPago;
-  /** Ventas de toda la cadena: deciden si se puede eliminar. */
   ventasCadena: number;
-  /** Ventas de la sucursal de la barra superior (o de la cadena con "Todas"): lo que muestra /ventas?metodo=ID. */
   ventas: number;
 }
 
@@ -193,7 +191,6 @@ export class MetodosPago {
     }),
   );
 
-  /** El repositorio no deja borrar un método que alguna venta de la cadena usó; se avisa antes de intentarlo. */
   protected motivoNoEliminar(fila: FilaMetodo): string | null {
     if (fila.ventasCadena === 0) {
       return null;
@@ -218,7 +215,6 @@ export class MetodosPago {
 
   protected async eliminar(metodo: MetodoPago, motivo: string | null): Promise<void> {
     if (motivo) {
-      // En pantallas táctiles el tooltip no aparece: el toque explica por qué no se puede.
       this.avisos.error(`${motivo}. Las ventas registradas conservan su método de pago; puedes cambiarle el nombre.`);
       return;
     }

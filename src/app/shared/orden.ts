@@ -4,10 +4,6 @@ import { faSort, faSortDown, faSortUp } from '@fortawesome/free-solid-svg-icons'
 
 export type Direccion = 'asc' | 'desc';
 
-/**
- * Estado de ordenamiento de una tabla. Sin columna elegida, las filas conservan
- * el orden en que llegan. Un clic ordena ascendente; el siguiente, descendente.
- */
 export class Orden<C extends string> {
   readonly estado = signal<{ columna: C; direccion: Direccion } | null>(null);
 
@@ -19,7 +15,6 @@ export class Orden<C extends string> {
     });
   }
 
-  /** Valor para aria-sort en el <th>, que es lo que anuncian los lectores de pantalla. */
   ariaSort(columna: C): 'ascending' | 'descending' | 'none' {
     const actual = this.estado();
     if (actual?.columna !== columna) {
@@ -28,7 +23,6 @@ export class Orden<C extends string> {
     return actual.direccion === 'asc' ? 'ascending' : 'descending';
   }
 
-  /** Devuelve una copia ordenada; los valores vacíos (null) van siempre al final. */
   aplicar<T>(filas: T[], valores: Record<C, (fila: T) => string | number | null>): T[] {
     const actual = this.estado();
     if (!actual) {
@@ -51,10 +45,6 @@ export class Orden<C extends string> {
   }
 }
 
-/**
- * Botón que va dentro de un <th>: muestra el nombre de la columna y la flecha
- * del orden actual. El <th> lleva [attr.aria-sort]="orden.ariaSort(columna)".
- */
 @Component({
   selector: 'app-encabezado-orden',
   imports: [FaIconComponent],
@@ -72,7 +62,6 @@ export class Orden<C extends string> {
       white-space: nowrap;
       text-align: inherit;
     }
-    /* En celular el texto se parte para que la tabla no empuje las acciones fuera de vista. */
     @media (max-width: 767.98px) {
       button {
         white-space: normal;

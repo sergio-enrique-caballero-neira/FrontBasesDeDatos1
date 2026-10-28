@@ -1,12 +1,9 @@
-/* Piezas compartidas por los gráficos con lienzo SVG (tiempo y columnas). */
-
 .lienzo {
   position: relative;
   border-radius: 10px;
   touch-action: pan-y;
 }
 
-/* Rejilla y ejes recesivos: línea fina y sólida, un paso fuera de la superficie. */
 .rejilla {
   stroke: var(--chart-grid);
   stroke-width: 1;
@@ -18,7 +15,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* El valor manda (fuerte, tabular) y la fecha lo acompaña. */
 .tooltip-grafico {
   position: absolute;
   top: 0;
@@ -46,7 +42,6 @@
   font-size: 0.9375rem;
 }
 
-/* La tabla equivalente no estira la tarjeta: se desplaza dentro y se puede enfocar. */
 .tabla-desplazable {
   max-height: 20rem;
   overflow-y: auto;
