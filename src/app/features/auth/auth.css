@@ -75,13 +75,6 @@
   color: var(--ink);
 }
 
-/* La pista de la sede habitual es texto con el dato, en tinta para separarse de la dirección. */
-.sugerencia {
-  margin-top: 0.25rem;
-  color: var(--ink);
-  font-weight: 500;
-}
-
 .opcion-esqueleto,
 .opcion-esqueleto:hover {
   border-color: var(--hairline);

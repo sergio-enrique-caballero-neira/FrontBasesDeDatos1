@@ -110,6 +110,8 @@ export interface Empleado {
   claveSeguridad?: string;
   /** Solo VENDEDOR, como fracción (0.1 = 10 %). */
   comisionVenta?: number;
+  idSucursal?: number;
+  nombreSucursal?: string;
 }
 
 export interface MetodoPago {

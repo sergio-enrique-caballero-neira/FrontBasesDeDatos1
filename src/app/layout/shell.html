@@ -19,8 +19,51 @@
         <fa-icon [icon]="iconos.faBars" />
       </button>
 
-      <div ngbDropdown class="selector me-auto">
-        <button type="button" class="btn btn-soft selector-sucursal" ngbDropdownToggle>
+      @if (esAdmin()) {
+        <div ngbDropdown class="selector me-auto">
+          <button type="button" class="btn btn-soft selector-sucursal" ngbDropdownToggle>
+            <fa-icon [icon]="iconos.faStore" />
+            <span class="text-truncate">
+              <span class="visually-hidden">Sucursal de trabajo: </span>{{ sucursalActual().nombre }}
+              @if (sucursalActual().ciudad; as ciudad) {
+                <span class="ciudad">· {{ ciudad }}</span>
+              }
+            </span>
+          </button>
+          <div ngbDropdownMenu>
+            <h2 class="dropdown-header">Sucursal de trabajo</h2>
+            @if (esAdmin()) {
+              <button
+                ngbDropdownItem
+                type="button"
+                [class.active]="esSeleccionada('TODAS')"
+                [attr.aria-current]="esSeleccionada('TODAS') ? 'true' : null"
+                (click)="cambiarSucursal('TODAS')"
+              >
+                Todas las sucursales
+              </button>
+            }
+            @for (sucursal of listaSucursales(); track sucursal.idSucursal) {
+              <button
+                ngbDropdownItem
+                type="button"
+                [class.active]="esSeleccionada(sucursal.idSucursal)"
+                [attr.aria-current]="esSeleccionada(sucursal.idSucursal) ? 'true' : null"
+                (click)="cambiarSucursal(sucursal.idSucursal)"
+              >
+                {{ sucursal.nombre }} <span class="ciudad-opcion">· {{ sucursal.ciudad }}</span>
+              </button>
+            }
+            @if (sucursales.isLoading() && !listaSucursales().length) {
+              <span class="dropdown-item-text text-body-secondary">Cargando sucursales…</span>
+            } @else if (sucursales.error() && !listaSucursales().length) {
+              <span class="dropdown-item-text text-body-secondary">No se pudo cargar la lista de sucursales.</span>
+              <button ngbDropdownItem type="button" (click)="sucursales.reload()">Reintentar</button>
+            }
+          </div>
+        </div>
+      } @else {
+        <p class="sucursal-fija me-auto mb-0">
           <fa-icon [icon]="iconos.faStore" />
           <span class="text-truncate">
             <span class="visually-hidden">Sucursal de trabajo: </span>{{ sucursalActual().nombre }}
@@ -28,39 +71,8 @@
               <span class="ciudad">· {{ ciudad }}</span>
             }
           </span>
-        </button>
-        <div ngbDropdownMenu>
-          <h2 class="dropdown-header">Sucursal de trabajo</h2>
-          @if (esAdmin()) {
-            <button
-              ngbDropdownItem
-              type="button"
-              [class.active]="esSeleccionada('TODAS')"
-              [attr.aria-current]="esSeleccionada('TODAS') ? 'true' : null"
-              (click)="cambiarSucursal('TODAS')"
-            >
-              Todas las sucursales
-            </button>
-          }
-          @for (sucursal of listaSucursales(); track sucursal.idSucursal) {
-            <button
-              ngbDropdownItem
-              type="button"
-              [class.active]="esSeleccionada(sucursal.idSucursal)"
-              [attr.aria-current]="esSeleccionada(sucursal.idSucursal) ? 'true' : null"
-              (click)="cambiarSucursal(sucursal.idSucursal)"
-            >
-              {{ sucursal.nombre }} <span class="ciudad-opcion">· {{ sucursal.ciudad }}</span>
-            </button>
-          }
-          @if (sucursales.isLoading() && !listaSucursales().length) {
-            <span class="dropdown-item-text text-body-secondary">Cargando sucursales…</span>
-          } @else if (sucursales.error() && !listaSucursales().length) {
-            <span class="dropdown-item-text text-body-secondary">No se pudo cargar la lista de sucursales.</span>
-            <button ngbDropdownItem type="button" (click)="sucursales.reload()">Reintentar</button>
-          }
-        </div>
-      </div>
+        </p>
+      }
 
       @if (mostrarVentaEnCurso()) {
         @let venta = ventaEnCurso()!;

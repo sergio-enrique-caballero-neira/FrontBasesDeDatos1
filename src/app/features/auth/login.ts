@@ -6,10 +6,10 @@ import { faCircleExclamation } from '@fortawesome/free-solid-svg-icons';
 import { NOMBRE_APP } from '../../core/app-info';
 import { mensajeDeError } from '../../core/domain-error';
 import { Session } from '../../core/session';
+import { ACCESIBILIDAD_FORMULARIOS } from '../../shared/accesibilidad-formularios';
 import { BotonTema } from '../../shared/boton-tema';
 import { CampoError } from '../../shared/campo-error';
 import { VerClave } from '../../shared/ver-clave';
-import { ACCESIBILIDAD_FORMULARIOS } from '../../shared/accesibilidad-formularios';
 
 @Component({
   selector: 'app-login',
@@ -21,7 +21,6 @@ export class Login {
   private readonly session = inject(Session);
   private readonly router = inject(Router);
 
-  /** Ruta a la que se quería entrar antes de iniciar sesión. */
   readonly volver = input<string>();
 
   protected readonly nombreApp = NOMBRE_APP;
@@ -32,7 +31,7 @@ export class Login {
 
   protected readonly form = inject(FormBuilder).nonNullable.group({
     correo: ['', [Validators.required, Validators.email]],
-    clave: [''],
+    contrasena: ['', Validators.required],
   });
 
   protected async ingresar(): Promise<void> {
@@ -40,21 +39,17 @@ export class Login {
     if (this.form.invalid) {
       return;
     }
-    const { correo, clave } = this.form.getRawValue();
-    await this.entrar(correo, clave);
-  }
-
-  protected entrarDemo(correo: string, clave: string): Promise<void> {
-    this.form.setValue({ correo, clave });
-    return this.entrar(correo, clave);
-  }
-
-  private async entrar(correo: string, clave: string): Promise<void> {
+    const { correo, contrasena } = this.form.getRawValue();
     this.entrando.set(true);
     this.error.set(null);
     try {
-      await this.session.iniciarSesion(correo, clave);
-      await this.router.navigate(['/sucursal'], { queryParams: { volver: this.volver() } });
+      const empleado = await this.session.iniciarSesion(correo, contrasena);
+      const volver = this.volver();
+      if (empleado.rol === 'VENDEDOR') {
+        await this.router.navigateByUrl(volver && volver.startsWith('/') && !volver.startsWith('/sucursal') ? volver : '/inicio');
+      } else {
+        await this.router.navigate(['/sucursal'], { queryParams: { volver } });
+      }
     } catch (error) {
       this.error.set(mensajeDeError(error));
     } finally {

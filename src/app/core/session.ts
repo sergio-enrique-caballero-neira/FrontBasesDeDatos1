@@ -1,31 +1,26 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { EmpleadosRepository } from '../data/personas.repository';
-import { DomainError } from './domain-error';
+import { Router } from '@angular/router';
+import { AutenticacionRepository } from '../data/autenticacion.repository';
+import { Avisos } from './avisos';
+import { Credenciales } from './credenciales';
 import { Empleado } from './models';
 
-/** Sucursal de trabajo: un id, o TODAS (solo administradores). */
 export type SeleccionSucursal = number | 'TODAS';
 
-interface SesionGuardada {
-  idEmpleado: number;
-  sucursal?: SeleccionSucursal;
-}
+const CLAVE_SUCURSAL = 'ferreteria.sucursal';
 
-const CLAVE_SESION = 'ferreteria.sesion';
-
-/**
- * Sesión simulada. Cuando exista el back, `iniciarSesion` llamará a la API de
- * autenticación y guardará el token; el resto de la app no cambia.
- */
 @Injectable({ providedIn: 'root' })
 export class Session {
-  private readonly empleados = inject(EmpleadosRepository);
+  private readonly autenticacion = inject(AutenticacionRepository);
+  private readonly credenciales = inject(Credenciales);
+  private readonly router = inject(Router);
+  private readonly avisos = inject(Avisos);
 
   readonly usuario = signal<Empleado | null>(null);
   readonly sucursal = signal<SeleccionSucursal | undefined>(undefined);
+  readonly vencida = signal(false);
   readonly esAdmin = computed(() => this.usuario()?.rol === 'ADMINISTRADOR');
   readonly esVendedor = computed(() => this.usuario()?.rol === 'VENDEDOR');
-  /** Id para filtrar consultas: null significa todas las sucursales. */
   readonly idSucursalFiltro = computed(() => {
     const seleccion = this.sucursal();
     return seleccion === undefined || seleccion === 'TODAS' ? null : seleccion;
@@ -33,78 +28,88 @@ export class Session {
 
   private restaurando: Promise<void> | null = null;
 
-  /** Recupera la sesión guardada una sola vez; los guards esperan esta promesa. */
   listo(): Promise<void> {
     this.restaurando ??= this.restaurar();
     return this.restaurando;
   }
 
-  async iniciarSesion(correo: string, clave: string): Promise<Empleado> {
-    const empleado = await this.empleados.buscarPorCorreo(correo);
-    if (!empleado) {
-      throw new DomainError('No encontramos un empleado con ese correo empresarial.');
-    }
-    if (empleado.rol === 'ADMINISTRADOR' && clave !== empleado.claveSeguridad) {
-      throw new DomainError(
-        clave ? 'La clave de seguridad no es correcta.' : 'Los administradores deben ingresar su clave de seguridad.',
-      );
-    }
+  async iniciarSesion(correo: string, contrasena: string): Promise<Empleado> {
+    const { token, empleado } = await this.autenticacion.iniciarSesion(correo.trim(), contrasena);
+    this.credenciales.guardar(token);
+    this.vencida.set(false);
     this.usuario.set(empleado);
-    this.sucursal.set(undefined);
-    this.guardar();
+    this.sucursal.set(empleado.rol === 'VENDEDOR' ? empleado.idSucursal : undefined);
+    this.guardarSucursal();
     return empleado;
   }
 
   elegirSucursal(seleccion: SeleccionSucursal): void {
-    if (seleccion === 'TODAS' && !this.esAdmin()) {
+    if (!this.esAdmin()) {
       return;
     }
     this.sucursal.set(seleccion);
-    this.guardar();
+    this.guardarSucursal();
   }
 
   cerrarSesion(): void {
+    this.vencida.set(false);
+    this.terminar();
+  }
+
+  expirar(): void {
+    if (!this.usuario()) {
+      return;
+    }
+    const volver = this.router.url;
+    this.vencida.set(true);
+    this.terminar();
+    this.avisos.error('Tu sesión venció. Inicia sesión de nuevo.');
+    void this.router.navigate(['/login'], { queryParams: { volver } });
+  }
+
+  private terminar(): void {
+    this.credenciales.limpiar();
     this.usuario.set(null);
     this.sucursal.set(undefined);
     try {
-      localStorage.removeItem(CLAVE_SESION);
+      localStorage.removeItem(CLAVE_SUCURSAL);
     } catch {
-      // Sin almacenamiento no hay nada que borrar.
+      return;
     }
   }
 
   private async restaurar(): Promise<void> {
-    let guardada: SesionGuardada | null = null;
+    if (!this.credenciales.token()) {
+      return;
+    }
     try {
-      guardada = JSON.parse(localStorage.getItem(CLAVE_SESION) ?? 'null') as SesionGuardada | null;
+      const empleado = await this.autenticacion.perfil();
+      this.usuario.set(empleado);
+      this.sucursal.set(empleado.rol === 'VENDEDOR' ? empleado.idSucursal : leerSucursal());
     } catch {
-      guardada = null;
+      this.terminar();
     }
-    if (!guardada) {
-      return;
-    }
-    const { idEmpleado, sucursal: sucursalGuardada } = guardada;
-    const empleados = await this.empleados.listar();
-    const empleado = empleados.find((e) => e.idEmpleado === idEmpleado);
-    if (!empleado) {
-      this.cerrarSesion();
-      return;
-    }
-    this.usuario.set(empleado);
-    const sucursal = sucursalGuardada === 'TODAS' && empleado.rol !== 'ADMINISTRADOR' ? undefined : sucursalGuardada;
-    this.sucursal.set(sucursal);
   }
 
-  private guardar(): void {
-    const usuario = this.usuario();
-    if (!usuario) {
+  private guardarSucursal(): void {
+    const seleccion = this.sucursal();
+    try {
+      if (seleccion === undefined) {
+        localStorage.removeItem(CLAVE_SUCURSAL);
+      } else {
+        localStorage.setItem(CLAVE_SUCURSAL, JSON.stringify(seleccion));
+      }
+    } catch {
       return;
     }
-    const datos: SesionGuardada = { idEmpleado: usuario.idEmpleado, sucursal: this.sucursal() };
-    try {
-      localStorage.setItem(CLAVE_SESION, JSON.stringify(datos));
-    } catch {
-      // La sesión dura hasta recargar la página.
-    }
+  }
+}
+
+function leerSucursal(): SeleccionSucursal | undefined {
+  try {
+    const guardada = JSON.parse(localStorage.getItem(CLAVE_SUCURSAL) ?? 'null') as unknown;
+    return guardada === 'TODAS' || typeof guardada === 'number' ? guardada : undefined;
+  } catch {
+    return undefined;
   }
 }
