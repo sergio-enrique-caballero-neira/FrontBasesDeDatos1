@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import {
+  eligeSucursal,
   requiereSesion,
   requiereSucursal,
   salirDeVenta,
@@ -19,7 +20,7 @@ export const routes: Routes = [
   {
     path: 'sucursal',
     title: 'Elegir sucursal',
-    canActivate: [requiereSesion],
+    canActivate: [requiereSesion, eligeSucursal],
     loadComponent: () => import('./features/auth/elegir-sucursal').then((m) => m.ElegirSucursal),
   },
   {

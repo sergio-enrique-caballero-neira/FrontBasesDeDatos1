@@ -61,7 +61,7 @@ export class VentaEnCurso {
       const clave = this.clave();
       const hayUsuario = this.session.usuario() !== null;
       untracked(() => {
-        if (!hayUsuario && habiaUsuario) {
+        if (!hayUsuario && habiaUsuario && !this.session.vencida()) {
           borrarTodas();
         }
         habiaUsuario = hayUsuario;

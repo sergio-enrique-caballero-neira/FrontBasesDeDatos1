@@ -5,7 +5,7 @@
       <app-boton-tema />
     </div>
     <h1 class="mb-1">Iniciar sesión</h1>
-    <p class="text-body-secondary mb-4">Ingresa con tu correo empresarial.</p>
+    <p class="text-body-secondary mb-4">Ingresa con tu correo empresarial y tu contraseña.</p>
 
     <form [formGroup]="form" (ngSubmit)="ingresar()" novalidate class="card">
       <div class="card-body d-grid gap-3">
@@ -32,23 +32,21 @@
         </div>
 
         <div>
-          <label for="clave" class="form-label">Clave de seguridad</label>
+          <label for="contrasena" class="form-label">Contraseña</label>
           <div class="campo-clave">
             <input
-              #campoClave
-              id="clave"
+              #campoContrasena
+              id="contrasena"
               type="password"
               class="form-control"
-              formControlName="clave"
+              formControlName="contrasena"
               autocomplete="current-password"
-              aria-describedby="clave-ayuda"
+              [class.is-invalid]="form.controls.contrasena.invalid && (form.controls.contrasena.touched || enviado())"
+              aria-describedby="contrasena-error"
             />
-            <app-ver-clave [campo]="campoClave" />
+            <app-ver-clave [campo]="campoContrasena" />
           </div>
-          <div id="clave-ayuda" class="form-text">
-            Solo la piden los administradores. En esta versión de prueba los vendedores entran solo con el correo; la
-            autenticación real llega con el back.
-          </div>
+          <app-campo-error [control]="form.controls.contrasena" [enviado]="enviado()" id="contrasena-error" />
         </div>
 
         <button type="submit" class="btn btn-primary" [disabled]="entrando()">
@@ -61,28 +59,5 @@
         </button>
       </div>
     </form>
-
-    <section class="mt-4 pt-1" aria-labelledby="demo-titulo">
-      <h2 id="demo-titulo" class="h5 mb-1">Acceso de demostración</h2>
-      <p class="text-body-secondary small mb-2">Entra directo con un usuario de prueba de cada rol.</p>
-      <div class="d-grid gap-2 d-sm-flex">
-        <button
-          type="button"
-          class="btn btn-outline-secondary flex-fill"
-          [disabled]="entrando()"
-          (click)="entrarDemo('laura.gomez@ferreteria.demo', 'demo-admin')"
-        >
-          Entrar como administrador
-        </button>
-        <button
-          type="button"
-          class="btn btn-outline-secondary flex-fill"
-          [disabled]="entrando()"
-          (click)="entrarDemo('camila.rojas@ferreteria.demo', '')"
-        >
-          Entrar como vendedor
-        </button>
-      </div>
-    </section>
   </div>
 </main>

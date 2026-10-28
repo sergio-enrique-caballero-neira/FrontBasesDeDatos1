@@ -44,6 +44,17 @@ export const soloVendedor: CanActivateFn = async (ruta) => {
   return session.esVendedor() ? true : sinPermiso(router, ruta);
 };
 
+export const eligeSucursal: CanActivateFn = async (ruta) => {
+  const session = inject(Session);
+  const router = inject(Router);
+  await session.listo();
+  if (!session.esVendedor()) {
+    return true;
+  }
+  const volver = ruta.queryParamMap.get('volver');
+  return router.parseUrl(volver && volver.startsWith('/') && !volver.startsWith('/sucursal') ? volver : '/inicio');
+};
+
 export const soloInvitado: CanActivateFn = async () => {
   const session = inject(Session);
   const router = inject(Router);

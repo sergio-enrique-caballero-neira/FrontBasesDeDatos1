@@ -5,6 +5,7 @@ import {
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
+import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { Title } from '@angular/platform-browser';
 import {
   provideRouter,
@@ -15,6 +16,7 @@ import {
 } from '@angular/router';
 import { routes } from './app.routes';
 import { NOMBRE_APP } from './core/app-info';
+import { autenticacion } from './core/autenticacion.interceptor';
 import { Avisos } from './core/avisos';
 import { VentaEnCurso } from './core/venta-en-curso';
 
@@ -32,6 +34,7 @@ class TituloPorPantalla extends TitleStrategy {
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
+    provideHttpClient(withFetch(), withInterceptors([autenticacion])),
     provideRouter(
       routes,
       withComponentInputBinding(),

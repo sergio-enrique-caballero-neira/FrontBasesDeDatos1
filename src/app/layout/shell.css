@@ -55,6 +55,15 @@
   font-weight: 500;
 }
 
+.sucursal-fija {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.375rem 0.25rem;
+  font-weight: 500;
+}
+
 .ciudad,
 .ciudad-opcion {
   color: var(--muted);
