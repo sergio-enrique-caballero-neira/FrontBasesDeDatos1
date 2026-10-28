@@ -328,12 +328,11 @@ export class ProveedorFicha {
 
   /** Sin clave elige el suministro en el diálogo; con clave lo deja fijo. */
   protected async evaluar(clave: string | null): Promise<void> {
-    const idEvaluador = this.session.usuario()?.idEmpleado;
-    if (!this.datos.hasValue() || !idEvaluador) return;
+    if (!this.datos.hasValue()) return;
     const { elegibles } = this.datos.value();
     const fijo = clave ? (elegibles.find((e) => e.clave === clave) ?? null) : elegibles.length === 1 ? elegibles[0] : null;
     if (clave && !fijo) return;
-    if (await abrirDialogoEvaluacion(this.modal, elegibles, fijo, idEvaluador)) {
+    if (await abrirDialogoEvaluacion(this.modal, elegibles, fijo)) {
       this.avisos.exito('Evaluación registrada.');
       this.datos.reload();
     }

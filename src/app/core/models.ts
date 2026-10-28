@@ -53,7 +53,7 @@ export interface Proveedor {
   nit: string;
   nombre: string;
   direccion: string;
-  telefono: string;
+  telefonos: string[];
   correos: string[];
 }
 

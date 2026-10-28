@@ -63,9 +63,11 @@
 
         <dl class="contacto">
           <div>
-            <dt>Teléfono</dt>
+            <dt>{{ d.proveedor.telefonos.length === 1 ? 'Teléfono' : 'Teléfonos' }}</dt>
             <dd>
-              <a class="num link-body-emphasis" [href]="'tel:' + soloDigitos(d.proveedor.telefono)">{{ d.proveedor.telefono }}</a>
+              @for (telefono of d.proveedor.telefonos; track telefono) {
+                <a class="d-block num link-body-emphasis" [href]="'tel:' + soloDigitos(telefono)">{{ telefono }}</a>
+              }
             </dd>
           </div>
           <div>

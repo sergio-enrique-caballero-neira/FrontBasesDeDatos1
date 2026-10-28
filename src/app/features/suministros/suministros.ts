@@ -285,9 +285,8 @@ export class Suministros {
   protected async evaluar(clave: string): Promise<void> {
     const datos = this.cargados();
     const fijo = datos?.elegibles.find((e) => e.clave === clave) ?? null;
-    const idEvaluador = this.session.usuario()?.idEmpleado;
-    if (!datos || !fijo || !idEvaluador) return;
-    if (await abrirDialogoEvaluacion(this.modal, datos.elegibles, fijo, idEvaluador)) {
+    if (!datos || !fijo) return;
+    if (await abrirDialogoEvaluacion(this.modal, datos.elegibles, fijo)) {
       this.avisos.exito('Evaluación registrada.');
       this.datos.reload();
     }

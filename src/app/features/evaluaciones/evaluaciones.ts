@@ -375,9 +375,8 @@ export class Evaluaciones {
     fijo: SuministroElegible | null,
     foco: DestinoFoco | null,
   ): Promise<void> {
-    const idEvaluador = this.session.usuario()?.idEmpleado;
-    if (!idEvaluador || suministros.length === 0) return;
-    if (await abrirDialogoEvaluacion(this.modal, suministros, fijo, idEvaluador)) {
+    if (suministros.length === 0) return;
+    if (await abrirDialogoEvaluacion(this.modal, suministros, fijo)) {
       this.avisos.exito('Evaluación registrada.');
       this.datos.reload();
       this.focoTrasRecargar.set(foco);

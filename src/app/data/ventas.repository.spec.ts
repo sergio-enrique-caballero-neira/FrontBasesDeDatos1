@@ -1,155 +1,99 @@
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { DomainError, NoEncontrado } from '../core/domain-error';
-import { MockDb } from './mock-db';
+import { URL_API } from '../core/configuracion';
+import { DomainError } from '../core/domain-error';
 import { VentasRepository } from './ventas.repository';
 
-describe('VentasRepository.registrar', () => {
+function venta(idVenta: number, lineas: unknown[] | null = null) {
+  return {
+    idVenta,
+    numeroFactura: `FV-${String(idVenta).padStart(6, '0')}`,
+    fecha: '2026-10-28',
+    hora: '14:05:09',
+    idCliente: 7,
+    nombreCliente: 'Ana Díaz',
+    documentoCliente: '1019876543',
+    idEmpleado: 3,
+    nombreVendedor: 'Camila Rojas',
+    idSucursal: 1,
+    nombreSucursal: 'Sede Centro',
+    idMetodoPago: 2,
+    tipoMetodoPago: 'Tarjeta débito',
+    montoTotal: 55800,
+    lineas,
+  };
+}
+
+describe('VentasRepository', () => {
+  let http: HttpTestingController;
   let ventas: VentasRepository;
-  let db: MockDb;
 
   beforeEach(() => {
-    localStorage.clear();
-    TestBed.configureTestingModule({});
-    db = TestBed.inject(MockDb);
-    db.restaurar();
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    http = TestBed.inject(HttpTestingController);
     ventas = TestBed.inject(VentasRepository);
   });
 
-  async function inventarioDe(idSucursal: number) {
-    return (await db.leer('inventario')).filter((f) => f.idSucursal === idSucursal);
+  afterEach(() => http.verify());
+
+  function paginas(): TestRequest[] {
+    return http.match((r) => r.url === `${URL_API}/ventas`);
   }
 
-  async function filaConStock(idSucursal: number, minimo: number) {
-    const filas = await inventarioDe(idSucursal);
-    const fila = filas.find((f) => f.cantidadDisponible >= minimo);
-    if (!fila) throw new Error('Los datos semilla no tienen stock suficiente para la prueba');
-    return fila;
-  }
+  it('listar recorre todas las páginas del back con los filtros dados', async () => {
+    const lista = ventas.listar({ idSucursal: 1, desde: '2026-10-01' });
+    const [primera] = paginas();
+    expect(primera.request.params.get('pagina')).toBe('0');
+    expect(primera.request.params.get('tamano')).toBe('100');
+    expect(primera.request.params.get('idSucursal')).toBe('1');
+    expect(primera.request.params.get('desde')).toBe('2026-10-01');
+    expect(primera.request.params.has('idCliente')).toBe(false);
+    primera.flush({ contenido: [venta(3)], pagina: 0, tamano: 100, totalElementos: 3, totalPaginas: 3 });
+    await new Promise((listo) => setTimeout(listo));
 
-  it('calcula el total desde las líneas y descuenta el inventario de la sucursal', async () => {
-    const fila = await filaConStock(1, 2);
-    const producto = (await db.leer('productos')).find((p) => p.idProducto === fila.idProducto)!;
+    const resto = paginas();
+    expect(resto.map((r) => r.request.params.get('pagina'))).toEqual(['1', '2']);
+    resto[0].flush({ contenido: [venta(2)], pagina: 1, tamano: 100, totalElementos: 3, totalPaginas: 3 });
+    resto[1].flush({ contenido: [venta(1)], pagina: 2, tamano: 100, totalElementos: 3, totalPaginas: 3 });
 
-    const { venta, detalles } = await ventas.registrar({
-      idCliente: 1,
-      idMetodoPago: 1,
-      idSucursal: 1,
-      idEmpleado: 3,
-      lineas: [{ idProducto: fila.idProducto, cantidad: 2 }],
-    });
+    const resultado = await lista;
+    expect(resultado.map((v) => v.idVenta)).toEqual([3, 2, 1]);
+    expect(resultado[0].hora).toBe('14:05');
+  });
 
-    expect(venta.montoTotal).toBe(producto.precioBaseVenta * 2);
-    expect(detalles).toEqual([
-      { idVenta: venta.idVenta, idProducto: fila.idProducto, cantidad: 2, precioUnitario: producto.precioBaseVenta },
+  it('registrar envía solo cliente, método y líneas: la sede y el vendedor salen de la sesión', async () => {
+    const registro = ventas.registrar({ idCliente: 7, idMetodoPago: 2, lineas: [{ idProducto: 5, cantidad: 2 }] });
+    const peticion = http.expectOne(`${URL_API}/ventas`);
+    expect(peticion.request.method).toBe('POST');
+    expect(peticion.request.body).toEqual({ idCliente: 7, idMetodoPago: 2, lineas: [{ idProducto: 5, cantidad: 2 }] });
+    peticion.flush(venta(41, [{ idProducto: 5, codigo: 'HM-0005', nombreProducto: 'Nivel', cantidad: 2, precioUnitario: 27900, subtotal: 55800 }]));
+
+    const { venta: registrada, detalles } = await registro;
+    expect(registrada.numeroFactura).toBe('FV-000041');
+    expect(detalles).toEqual([{ idVenta: 41, idProducto: 5, cantidad: 2, precioUnitario: 27900 }]);
+  });
+
+  it('sin stock muestra el mensaje del back', async () => {
+    const registro = ventas.registrar({ idCliente: 7, idMetodoPago: 2, lineas: [{ idProducto: 5, cantidad: 99 }] });
+    http.expectOne(`${URL_API}/ventas`).flush(
+      { estado: 409, codigo: 'CONFLICTO', mensaje: 'Stock insuficiente de HM-0005 (Nivel): hay 3 y se piden 99.' },
+      { status: 409, statusText: 'Conflict' },
+    );
+    await expect(registro).rejects.toThrow(new DomainError('Stock insuficiente de HM-0005 (Nivel): hay 3 y se piden 99.'));
+  });
+
+  it('el historial de un cliente junta sus facturas y sus líneas', async () => {
+    const historial = ventas.historialCliente(7);
+    paginas()[0].flush({ contenido: [venta(41)], pagina: 0, tamano: 100, totalElementos: 1, totalPaginas: 1 });
+    const lineas = http.expectOne((r) => r.url === `${URL_API}/ventas/lineas`);
+    expect(lineas.request.params.get('idCliente')).toBe('7');
+    lineas.flush([
+      { idVenta: 41, numeroFactura: 'FV-000041', fecha: '2026-10-28', hora: '14:05:09', idSucursal: 1, idEmpleado: 3, idCliente: 7, idProducto: 5, cantidad: 2, precioUnitario: 27900 },
     ]);
-    const despues = (await inventarioDe(1)).find((f) => f.idProducto === fila.idProducto)!;
-    expect(despues.cantidadDisponible).toBe(fila.cantidadDisponible - 2);
-    const productoDespues = (await db.leer('productos')).find((p) => p.idProducto === fila.idProducto)!;
-    expect(productoDespues.stock).toBe(producto.stock - 2);
-  });
 
-  it('rechaza la venta completa si una línea supera el stock y no toca el inventario', async () => {
-    const conStock = await filaConStock(1, 1);
-    const otra = (await inventarioDe(1)).find((f) => f.idProducto !== conStock.idProducto)!;
-
-    await expect(
-      ventas.registrar({
-        idCliente: 1,
-        idMetodoPago: 1,
-        idSucursal: 1,
-        idEmpleado: 3,
-        lineas: [
-          { idProducto: conStock.idProducto, cantidad: 1 },
-          { idProducto: otra.idProducto, cantidad: otra.cantidadDisponible + 1 },
-        ],
-      }),
-    ).rejects.toBeInstanceOf(DomainError);
-
-    const sinCambios = (await inventarioDe(1)).find((f) => f.idProducto === conStock.idProducto)!;
-    expect(sinCambios.cantidadDisponible).toBe(conStock.cantidadDisponible);
-  });
-
-  it('solo permite que un vendedor registre ventas', async () => {
-    const fila = await filaConStock(1, 1);
-    await expect(
-      ventas.registrar({
-        idCliente: 1,
-        idMetodoPago: 1,
-        idSucursal: 1,
-        idEmpleado: 1,
-        lineas: [{ idProducto: fila.idProducto, cantidad: 1 }],
-      }),
-    ).rejects.toThrow('Solo un vendedor');
-  });
-});
-
-describe('VentasRepository, consultas', () => {
-  let ventas: VentasRepository;
-  let db: MockDb;
-
-  beforeEach(() => {
-    localStorage.clear();
-    TestBed.configureTestingModule({});
-    db = TestBed.inject(MockDb);
-    db.restaurar();
-    ventas = TestBed.inject(VentasRepository);
-  });
-
-  function enOrdenDescendente(filas: { fecha: string; hora: string }[]): boolean {
-    return filas.every((f, i) => i === 0 || `${filas[i - 1].fecha} ${filas[i - 1].hora}` >= `${f.fecha} ${f.hora}`);
-  }
-
-  it('obtener lanza NoEncontrado si la venta no existe', async () => {
-    await expect(ventas.obtener(99999)).rejects.toBeInstanceOf(NoEncontrado);
-  });
-
-  it('listar filtra por cliente y por método de pago', async () => {
-    const todas = await db.leer('ventas');
-    const { idCliente, idMetodoPago } = todas[0];
-
-    const delCliente = await ventas.listar({ idSucursal: null, idCliente });
-    expect(delCliente.length).toBe(todas.filter((v) => v.idCliente === idCliente).length);
-    expect(delCliente.every((v) => v.idCliente === idCliente)).toBe(true);
-
-    const conMetodo = await ventas.listar({ idSucursal: null, idMetodoPago });
-    expect(conMetodo.length).toBe(todas.filter((v) => v.idMetodoPago === idMetodoPago).length);
-    expect(conMetodo.every((v) => v.idMetodoPago === idMetodoPago)).toBe(true);
-  });
-
-  it('listarLineas devuelve una fila por detalle con los datos de su venta', async () => {
-    const [lineas, todas, detalles] = await Promise.all([
-      ventas.listarLineas({ idSucursal: 1 }),
-      db.leer('ventas'),
-      db.leer('detallesVenta'),
-    ]);
-    const deSucursal = new Map(todas.filter((v) => v.idSucursal === 1).map((v) => [v.idVenta, v]));
-
-    expect(lineas.length).toBe(detalles.filter((d) => deSucursal.has(d.idVenta)).length);
-    for (const linea of lineas) {
-      const venta = deSucursal.get(linea.idVenta)!;
-      expect(linea).toMatchObject({
-        fecha: venta.fecha,
-        hora: venta.hora,
-        idSucursal: 1,
-        idEmpleado: venta.idEmpleado,
-        idCliente: venta.idCliente,
-        numeroFactura: venta.numeroFactura,
-      });
-    }
-    expect(enOrdenDescendente(lineas)).toBe(true);
-  });
-
-  it('historialCliente trae solo las compras del cliente, la más reciente primero', async () => {
-    const todas = await db.leer('ventas');
-    const idCliente = todas[0].idCliente;
-
-    const historial = await ventas.historialCliente(idCliente);
-
-    expect(historial.ventas.length).toBe(todas.filter((v) => v.idCliente === idCliente).length);
-    expect(historial.ventas.every((v) => v.idCliente === idCliente)).toBe(true);
-    expect(enOrdenDescendente(historial.ventas)).toBe(true);
-    const ids = new Set(historial.ventas.map((v) => v.idVenta));
-    expect(historial.detalles.length).toBeGreaterThan(0);
-    expect(historial.detalles.every((d) => ids.has(d.idVenta))).toBe(true);
+    const { ventas: facturas, detalles } = await historial;
+    expect(facturas).toHaveLength(1);
+    expect(detalles).toEqual([{ idVenta: 41, idProducto: 5, cantidad: 2, precioUnitario: 27900 }]);
   });
 });

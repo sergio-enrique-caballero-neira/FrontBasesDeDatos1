@@ -16,7 +16,6 @@ import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { Avisos } from '../../core/avisos';
 import { mensajeDeError, NoEncontrado } from '../../core/domain-error';
 import { Inventario, Producto, Sucursal, Suministro, UMBRAL_STOCK_BAJO } from '../../core/models';
-import { Session } from '../../core/session';
 import { CategoriasRepository, MarcasRepository, SucursalesRepository } from '../../data/catalogos.repository';
 import { EstadisticasRepository } from '../../data/estadisticas.repository';
 import { InventarioRepository, ProductosRepository } from '../../data/productos.repository';
@@ -95,7 +94,6 @@ interface LineaFicha extends LineaVendida {
   styleUrl: './producto-ficha.css',
 })
 export class ProductoFicha {
-  private readonly session = inject(Session);
   private readonly productosRepo = inject(ProductosRepository);
   private readonly inventarioRepo = inject(InventarioRepository);
   private readonly marcasRepo = inject(MarcasRepository);
@@ -390,11 +388,10 @@ export class ProductoFicha {
   }
 
   protected async evaluar(fila: FilaSuministro): Promise<void> {
-    const idEvaluador = this.session.usuario()?.idEmpleado;
     const datos = this.ficha.value();
-    if (!datos || !fila.elegible || !idEvaluador) return;
+    if (!datos || !fila.elegible) return;
     const elegibles = datos.suministros.flatMap((s) => (s.elegible ? [s.elegible] : []));
-    if (await abrirDialogoEvaluacion(this.modal, elegibles, fila.elegible, idEvaluador)) {
+    if (await abrirDialogoEvaluacion(this.modal, elegibles, fila.elegible)) {
       this.avisos.exito(`Evaluación de ${fila.proveedor} registrada.`);
       this.ficha.reload();
     }

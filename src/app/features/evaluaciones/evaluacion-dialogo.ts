@@ -200,7 +200,6 @@ export class EvaluacionDialogo {
   protected readonly hoy = hoyISO();
   protected readonly suministros = signal<SuministroElegible[]>([]);
   protected readonly fijo = signal<SuministroElegible | null>(null);
-  private readonly idEvaluador = signal(0);
   protected readonly enviado = signal(false);
   protected readonly guardando = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -221,10 +220,9 @@ export class EvaluacionDialogo {
     this.form.controls.calificacion.valueChanges.subscribe((valor) => this.calificacion.set(Number(valor)));
   }
 
-  iniciar(suministros: SuministroElegible[], fijo: SuministroElegible | null, idEvaluador: number): void {
+  iniciar(suministros: SuministroElegible[], fijo: SuministroElegible | null): void {
     this.suministros.set(suministros);
     this.fijo.set(fijo);
-    this.idEvaluador.set(idEvaluador);
     if (fijo) {
       this.form.controls.clave.setValue(fijo.clave);
     }
@@ -256,7 +254,6 @@ export class EvaluacionDialogo {
         nit: suministro.nit,
         idProducto: suministro.idProducto,
         idSucursal: suministro.idSucursal,
-        idEmpleado: this.idEvaluador(),
         fechaEvaluacion: valor.fechaEvaluacion,
         calificacion: Number(valor.calificacion),
         cumplimientoTiempo: valor.cumplimientoTiempo,
@@ -275,10 +272,9 @@ export async function abrirDialogoEvaluacion(
   modal: NgbModal,
   suministros: SuministroElegible[],
   fijo: SuministroElegible | null,
-  idEvaluador: number,
 ): Promise<Evaluacion | undefined> {
   const ref = modal.open(EvaluacionDialogo, { ariaLabelledBy: 'evaluacion-titulo', size: 'lg', backdrop: 'static' });
-  (ref.componentInstance as EvaluacionDialogo).iniciar(suministros, fijo, idEvaluador);
+  (ref.componentInstance as EvaluacionDialogo).iniciar(suministros, fijo);
   try {
     return (await ref.result) as Evaluacion;
   } catch {

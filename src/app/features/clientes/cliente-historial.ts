@@ -200,7 +200,7 @@ const TOP_PRODUCTOS = 5;
                 <p class="titulo-seccion" role="heading" [attr.aria-level]="nivelSeccion()" [id]="id + '-facturas'">
                   Facturas
                 </p>
-                <p class="small text-body-secondary mb-0">La más reciente primero, de todas las sucursales.</p>
+                <p class="small text-body-secondary mb-0">La más reciente primero, {{ esAdmin() ? 'de todas las sucursales' : 'de tu sucursal' }}.</p>
               </div>
               <div class="table-responsive">
                 <table class="table align-middle">

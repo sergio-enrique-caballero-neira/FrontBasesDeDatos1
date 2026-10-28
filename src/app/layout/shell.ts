@@ -6,7 +6,6 @@ import {
   faBars,
   faCartShopping,
   faCheck,
-  faDatabase,
   faMoon,
   faRightFromBracket,
   faStore,
@@ -25,7 +24,6 @@ import { nombreEmpleado, Sucursal } from '../core/models';
 import { SeleccionSucursal, Session } from '../core/session';
 import { TemaService } from '../core/tema';
 import { VentaEnCurso } from '../core/venta-en-curso';
-import { MockDb } from '../data/mock-db';
 import { SucursalesRepository } from '../data/catalogos.repository';
 import { BotonTema } from '../shared/boton-tema';
 import { Confirmar } from '../shared/confirmar';
@@ -60,13 +58,12 @@ export class Shell {
   private readonly router = inject(Router);
   private readonly offcanvas = inject(NgbOffcanvas);
   private readonly confirmar = inject(Confirmar);
-  private readonly db = inject(MockDb);
   private readonly api = inject(Api);
   private readonly sucursalesRepo = inject(SucursalesRepository);
   private readonly venta = inject(VentaEnCurso);
   protected readonly tema = inject(TemaService);
 
-  protected readonly iconos = { faBars, faCartShopping, faCheck, faDatabase, faMoon, faRightFromBracket, faStore };
+  protected readonly iconos = { faBars, faCartShopping, faCheck, faMoon, faRightFromBracket, faStore };
   protected readonly usuario = this.session.usuario;
   protected readonly esAdmin = this.session.esAdmin;
   protected readonly esVendedor = this.session.esVendedor;
@@ -185,20 +182,6 @@ export class Shell {
 
   protected cerrarMenu(): void {
     this.offcanvas.dismiss();
-  }
-
-  protected async restaurarDatos(): Promise<void> {
-    const confirmado = await this.confirmar.preguntar({
-      titulo: 'Restaurar datos de demostración',
-      mensaje:
-        'Se borran las ventas, clientes y cambios que hayas hecho en este navegador y se cargan de nuevo los datos iniciales. La sesión se mantiene.',
-      confirmar: 'Restaurar datos',
-      peligro: true,
-    });
-    if (confirmado) {
-      this.db.restaurar();
-      location.reload();
-    }
   }
 
   /** Cerrar sesión descarta la venta sin registrar (VentaEnCurso la borra), así que se pregunta antes. */

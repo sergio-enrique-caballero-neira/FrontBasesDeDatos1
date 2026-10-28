@@ -1,7 +1,7 @@
 <div class="page">
   <app-page-header
     titulo="Clientes"
-    descripcion="Personas naturales y empresas que compran en la cadena. Las compras se cuentan en todas las sucursales."
+    [descripcion]="esAdmin() ? 'Personas naturales y empresas que compran en la cadena. Las compras se cuentan en todas las sucursales.' : 'Personas naturales y empresas que compran en la cadena. Las compras son las de tu sucursal.'"
   >
     <button type="button" class="btn btn-primary" (click)="editar(null)">
       <fa-icon [icon]="iconos.faUserPlus" />
@@ -65,7 +65,7 @@
         } @else {
           <div class="table-responsive">
             <table class="table align-middle mb-0">
-              <caption class="visually-hidden">Clientes, con sus compras en todas las sucursales</caption>
+              <caption class="visually-hidden">Clientes, con sus compras {{ esAdmin() ? 'en todas las sucursales' : 'en tu sucursal' }}</caption>
               <thead>
                 <tr>
                   <th scope="col" [attr.aria-sort]="orden.ariaSort('cliente')">

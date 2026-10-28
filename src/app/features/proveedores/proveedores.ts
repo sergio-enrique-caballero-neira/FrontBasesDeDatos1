@@ -66,7 +66,9 @@ import { abrirDialogoProveedor } from './proveedor-dialogo';
                           </a>
                           <span class="small text-body-secondary num">NIT {{ fila.proveedor.nit }}</span>
                           <span class="d-block solo-movil small mt-1">
-                            <a class="num link-body-emphasis" [href]="'tel:' + soloDigitos(fila.proveedor.telefono)">{{ fila.proveedor.telefono }}</a>
+                            @if (fila.proveedor.telefonos[0]; as telefono) {
+                              <a class="num link-body-emphasis" [href]="'tel:' + soloDigitos(telefono)">{{ telefono }}</a>
+                            }
                             <span class="d-block text-body-secondary">
                               @if (fila.suministros) {
                                 <a class="text-body-secondary" routerLink="/suministros" [queryParams]="{ proveedor: fila.proveedor.nit }">
@@ -79,7 +81,9 @@ import { abrirDialogoProveedor } from './proveedor-dialogo';
                           </span>
                         </td>
                         <td class="col-sec">
-                          <a class="d-block num link-body-emphasis" [href]="'tel:' + soloDigitos(fila.proveedor.telefono)">{{ fila.proveedor.telefono }}</a>
+                          @for (telefono of fila.proveedor.telefonos; track telefono) {
+                            <a class="d-block num link-body-emphasis" [href]="'tel:' + soloDigitos(telefono)">{{ telefono }}</a>
+                          }
                           @for (correo of fila.proveedor.correos; track correo) {
                             <a class="d-block small text-body-secondary" [href]="'mailto:' + correo">{{ correo }}</a>
                           }

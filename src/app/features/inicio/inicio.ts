@@ -352,10 +352,9 @@ export class Inicio {
         dias.map((d) => ({ fecha: d.fecha, valor: d.total, detalle: cuentaVentas(d.cantidad) }));
 
       if (params.idSucursal !== null) {
-        const [dias, resumenActual, resumenAnterior] = await Promise.all([
+        const [dias, { actual: resumenActual, anterior: resumenAnterior }] = await Promise.all([
           this.estadisticas.ventasPorDia(catorce),
           this.estadisticas.resumen(actual),
-          this.estadisticas.resumen(anterior),
         ]);
         const deHoy = dias.at(-1);
         const hayBase = resumenAnterior.cantidad > 0;

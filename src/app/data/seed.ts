@@ -82,10 +82,10 @@ const estantes = ['estante A', 'estante B', 'estante C', 'estante D'];
 const noManeja: Record<number, number[]> = { 1: [], 2: [13], 3: [5, 13, 16] };
 
 const proveedores: Proveedor[] = [
-  { nit: '900215334-1', nombre: 'Distribuidora Ferretera Andina S.A.S.', direccion: 'Carrera 68 # 13-40, Bogotá', telefono: '601 405 7788', correos: ['pedidos@ferreandina.demo', 'cartera@ferreandina.demo'] },
-  { nit: '830104552-8', nombre: 'Importadora de Herramientas del Caribe S.A.S.', direccion: 'Vía 40 # 71-120, Barranquilla', telefono: '605 360 1422', correos: ['ventas@herracaribe.demo'] },
-  { nit: '901330871-5', nombre: 'Tubos y Conexiones de Antioquia S.A.S.', direccion: 'Calle 10 Sur # 50-28, Medellín', telefono: '604 285 9010', correos: ['comercial@tuboscon.demo'] },
-  { nit: '860002184-3', nombre: 'Pinturas y Recubrimientos Mayoristas Ltda.', direccion: 'Avenida Boyacá # 64-15, Bogotá', telefono: '601 744 2036', correos: ['pedidos@pinturasmayoristas.demo'] },
+  { nit: '900215334-1', nombre: 'Distribuidora Ferretera Andina S.A.S.', direccion: 'Carrera 68 # 13-40, Bogotá', telefonos: ['601 405 7788'], correos: ['pedidos@ferreandina.demo', 'cartera@ferreandina.demo'] },
+  { nit: '830104552-8', nombre: 'Importadora de Herramientas del Caribe S.A.S.', direccion: 'Vía 40 # 71-120, Barranquilla', telefonos: ['605 360 1422'], correos: ['ventas@herracaribe.demo'] },
+  { nit: '901330871-5', nombre: 'Tubos y Conexiones de Antioquia S.A.S.', direccion: 'Calle 10 Sur # 50-28, Medellín', telefonos: ['604 285 9010'], correos: ['comercial@tuboscon.demo'] },
+  { nit: '860002184-3', nombre: 'Pinturas y Recubrimientos Mayoristas Ltda.', direccion: 'Avenida Boyacá # 64-15, Bogotá', telefonos: ['601 744 2036'], correos: ['pedidos@pinturasmayoristas.demo'] },
 ];
 
 /** [NIT, productos, sucursales, días de entrega] */
