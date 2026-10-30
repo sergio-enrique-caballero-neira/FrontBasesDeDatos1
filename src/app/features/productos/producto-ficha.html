@@ -136,7 +136,8 @@
                       (click)="registrarEntrada(fila)"
                     >
                       <fa-icon [icon]="fila.registro ? iconos.faTruckRampBox : iconos.faPlus" />
-                      {{ fila.registro ? 'Registrar entrada' : 'Agregar a esta sucursal' }}
+                      <span class="d-none d-md-inline">{{ fila.registro ? 'Registrar entrada' : 'Agregar a esta sucursal' }}</span>
+                      <span class="d-md-none">{{ fila.registro ? 'Entrada' : 'Agregar' }}</span>
                     </button>
                   </td>
                 </tr>
@@ -197,7 +198,7 @@
                     <th scope="col" class="text-end col-sec" [attr.aria-sort]="ordenProveedores.ariaSort('entrega')">
                       <app-encabezado-orden [orden]="ordenProveedores" columna="entrega" texto="Entrega" />
                     </th>
-                    <th scope="col" [attr.aria-sort]="ordenProveedores.ariaSort('calidad')">
+                    <th scope="col" class="col-sec" [attr.aria-sort]="ordenProveedores.ariaSort('calidad')">
                       <app-encabezado-orden [orden]="ordenProveedores" columna="calidad" texto="Calidad" />
                     </th>
                     <th scope="col"><span class="visually-hidden">Acciones</span></th>
@@ -210,14 +211,19 @@
                         <a class="fw-medium link-body-emphasis" [routerLink]="['/proveedores', fila.suministro.nit]">{{ fila.proveedor }}</a>
                         <span class="d-block solo-movil small text-body-secondary">
                           {{ fila.sucursal }} · {{ dias(fila.suministro.tiempoEntregaDias) }} · margen
-                          <span class="num">{{ porcentaje(fila.margen) }}</span>
+                          <span class="num">{{ porcentaje(fila.margen) }}</span> ·
+                          @if (fila.promedio !== null) {
+                            <span class="text-nowrap">calidad <span class="num">{{ calificacion(fila.promedio) }}</span> de 5</span>
+                          } @else {
+                            sin evaluar
+                          }
                         </span>
                       </td>
                       <td class="col-sec">{{ fila.sucursal }}</td>
                       <td class="text-end num fw-medium">{{ fila.suministro.precioSuministro | pesos }}</td>
                       <td class="text-end num col-sec">{{ porcentaje(fila.margen) }}</td>
                       <td class="text-end num col-sec">{{ dias(fila.suministro.tiempoEntregaDias) }}</td>
-                      <td class="text-nowrap">
+                      <td class="text-nowrap col-sec">
                         @if (fila.promedio !== null) {
                           <span class="calificacion">
                             <fa-icon [icon]="iconos.faStar" class="estrella" />
@@ -298,7 +304,7 @@
                 <thead>
                   <tr>
                     <th scope="col">Factura</th>
-                    <th scope="col">Fecha</th>
+                    <th scope="col" class="col-sec">Fecha</th>
                     <th scope="col" class="col-sec">Sucursal</th>
                     <th scope="col" class="text-end">Cantidad</th>
                     <th scope="col" class="text-end col-sec">Precio c/u</th>
@@ -316,9 +322,11 @@
                         >
                           {{ linea.numeroFactura }}
                         </a>
-                        <span class="d-block solo-movil small text-body-secondary mt-1">{{ linea.sucursal }}</span>
+                        <span class="d-block solo-movil small text-body-secondary mt-1">
+                          <span class="num">{{ linea.fecha | fecha }} {{ linea.hora }}</span> · {{ linea.sucursal }}
+                        </span>
                       </td>
-                      <td class="num">
+                      <td class="num col-sec">
                         {{ linea.fecha | fecha }}
                         <span class="text-body-secondary">{{ linea.hora }}</span>
                       </td>

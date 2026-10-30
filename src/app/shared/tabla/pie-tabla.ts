@@ -30,6 +30,11 @@ import { NgbPagination } from '@ng-bootstrap/ng-bootstrap';
       padding-top: 0.25rem;
       padding-bottom: 0.25rem;
     }
+    @media (pointer: coarse) {
+      .tamano select {
+        min-height: 2.75rem;
+      }
+    }
   `,
   template: `
     <p class="mb-0 text-body-secondary" aria-live="polite">

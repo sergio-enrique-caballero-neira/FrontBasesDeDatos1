@@ -89,7 +89,12 @@ function diasEntre(desde: string, hasta: string): number {
       min-width: 11.5rem;
     }
     .celda-medidor {
-      min-width: 10rem;
+      min-width: 8rem;
+    }
+    @media (min-width: 768px) {
+      .celda-medidor {
+        min-width: 10rem;
+      }
     }
     .observaciones {
       min-width: 14rem;

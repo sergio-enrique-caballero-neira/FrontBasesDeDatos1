@@ -212,7 +212,7 @@
                   <th scope="col" class="text-end col-sec" [attr.aria-sort]="orden.ariaSort('entrega')">
                     <app-encabezado-orden [orden]="orden" columna="entrega" texto="Entrega" />
                   </th>
-                  <th scope="col" [attr.aria-sort]="orden.ariaSort('calidad')">
+                  <th scope="col" class="col-sec" [attr.aria-sort]="orden.ariaSort('calidad')">
                     <app-encabezado-orden [orden]="orden" columna="calidad" texto="Calidad" />
                   </th>
                   <th scope="col" class="col-sec" [attr.aria-sort]="orden.ariaSort('ultima')">
@@ -237,7 +237,12 @@
                         <span class="code-tag mt-1">{{ fila.codigo }}</span>
                       }
                       <span class="d-block solo-movil small text-body-secondary mt-1">
-                        {{ fila.sucursal }} · <span class="num">{{ dias(fila.suministro.tiempoEntregaDias) }}</span>
+                        {{ fila.sucursal }} · <span class="num">{{ dias(fila.suministro.tiempoEntregaDias) }}</span> ·
+                        @if (fila.evaluaciones) {
+                          <span class="text-nowrap">calidad <span class="num">{{ calificacion(fila.promedio) }}</span> de 5</span>
+                        } @else {
+                          sin evaluar
+                        }
                         @if (fila.alternativa; as otra) {
                           <span class="d-block">
                             Otra opción: {{ otra.proveedor }}, <span class="num">{{ dias(otra.dias) }} · {{ otra.precio | pesos }}</span>
@@ -248,7 +253,7 @@
                     <td class="col-sec">{{ fila.sucursal }}</td>
                     <td class="text-end num">{{ fila.suministro.precioSuministro | pesos }}</td>
                     <td class="text-end num col-sec">{{ dias(fila.suministro.tiempoEntregaDias) }}</td>
-                    <td>
+                    <td class="col-sec">
                       @if (fila.evaluaciones) {
                         <span class="text-nowrap">
                           <fa-icon [icon]="iconos.faStar" class="me-1" aria-hidden="true" />
@@ -330,7 +335,7 @@
                   <th scope="col">Fecha</th>
                   <th scope="col">Suministro</th>
                   <th scope="col">Calificación</th>
-                  <th scope="col">A tiempo</th>
+                  <th scope="col" class="col-sec">A tiempo</th>
                   <th scope="col" class="col-sec">Observaciones</th>
                   <th scope="col" class="col-sec">Evaluador</th>
                 </tr>
@@ -341,6 +346,9 @@
                     <td class="num text-nowrap">
                       {{ fila.evaluacion.fechaEvaluacion | fecha }}
                       <span class="d-block solo-movil small text-body-secondary">{{ fila.evaluador }}</span>
+                      <span class="d-block solo-movil small text-body-secondary">
+                        {{ fila.evaluacion.cumplimientoTiempo ? 'Entregó a tiempo' : 'No entregó a tiempo' }}
+                      </span>
                     </td>
                     <td>
                       @if (fila.existeProducto) {
@@ -362,7 +370,7 @@
                         <fa-icon [icon]="iconos.faStar" class="me-1" /><span class="num">{{ fila.evaluacion.calificacion }}</span> de 5
                       </span>
                     </td>
-                    <td class="text-nowrap">
+                    <td class="text-nowrap col-sec">
                       @if (fila.evaluacion.cumplimientoTiempo) {
                         <fa-icon [icon]="iconos.faCheck" class="me-1" aria-hidden="true" />Sí
                       } @else {

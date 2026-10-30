@@ -88,7 +88,7 @@
                     <th scope="col" class="text-end col-sec" [attr.aria-sort]="orden.ariaSort('entrega')">
                       <app-encabezado-orden [orden]="orden" columna="entrega" texto="Entrega" />
                     </th>
-                    <th scope="col" [attr.aria-sort]="orden.ariaSort('calidad')">
+                    <th scope="col" class="col-sec" [attr.aria-sort]="orden.ariaSort('calidad')">
                       <app-encabezado-orden [orden]="orden" columna="calidad" texto="Calidad" />
                     </th>
                     <th scope="col"><span class="visually-hidden">Acciones</span></th>
@@ -112,6 +112,11 @@
                             · {{ fila.sucursal }}
                           }
                           · <span class="num">{{ fila.suministro.tiempoEntregaDias }} {{ fila.suministro.tiempoEntregaDias === 1 ? 'día' : 'días' }}</span>
+                          @if (fila.evaluaciones) {
+                            · <span class="text-nowrap">calidad <span class="num">{{ formatoCalificacion(fila.promedio) }}</span> de 5</span>
+                          } @else {
+                            · sin evaluar
+                          }
                         </span>
                       </td>
                       <td class="col-sec">
@@ -124,7 +129,7 @@
                       <td class="text-end num col-sec">
                         {{ fila.suministro.tiempoEntregaDias }} {{ fila.suministro.tiempoEntregaDias === 1 ? 'día' : 'días' }}
                       </td>
-                      <td>
+                      <td class="col-sec">
                         @if (fila.evaluaciones) {
                           <span class="text-nowrap">
                             <fa-icon [icon]="iconos.faStar" class="me-1" aria-hidden="true" />

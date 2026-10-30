@@ -79,8 +79,10 @@
   font-weight: 600;
 }
 
-.celda-alcanza {
-  min-width: 9.5rem;
+@media (min-width: 768px) {
+  .celda-alcanza {
+    min-width: 9.5rem;
+  }
 }
 
 .veredicto {

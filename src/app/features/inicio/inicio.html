@@ -169,7 +169,7 @@
                       @if (porTodas()) {
                         <th scope="col" class="col-sec">Sucursal</th>
                       }
-                      <th scope="col" class="text-end">Quedan</th>
+                      <th scope="col" class="text-end col-sec">Quedan</th>
                       <th scope="col" class="text-end col-sec">Vendidas en {{ diasRitmo }} días</th>
                       <th scope="col">Alcanza para</th>
                       @if (veProveedores()) {
@@ -187,6 +187,13 @@
                           </a>
                           <span class="code-tag mt-1">{{ item.producto.codigo }}</span>
                           <div class="solo-movil small text-body-secondary mt-1">
+                            <span class="text-nowrap" [class.stock-low]="item.fila.cantidadDisponible <= umbral">
+                              @if (item.fila.cantidadDisponible <= umbral) {
+                                <fa-icon [icon]="iconos.faTriangleExclamation" class="me-1" />
+                              }
+                              Quedan <span class="num">{{ item.fila.cantidadDisponible }}</span>
+                            </span>
+                            ·
                             @if (porTodas()) {
                               {{ item.sucursal.nombre }} ·
                             }
@@ -203,7 +210,7 @@
                         @if (porTodas()) {
                           <td class="col-sec">{{ item.sucursal.nombre }}</td>
                         }
-                        <td class="text-end num" [class.stock-low]="item.fila.cantidadDisponible <= umbral">
+                        <td class="text-end num col-sec" [class.stock-low]="item.fila.cantidadDisponible <= umbral">
                           @if (item.fila.cantidadDisponible <= umbral) {
                             <fa-icon [icon]="iconos.faTriangleExclamation" class="me-1" />
                           }
