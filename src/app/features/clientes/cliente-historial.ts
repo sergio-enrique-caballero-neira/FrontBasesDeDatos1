@@ -9,20 +9,16 @@ import { Cliente, DOCUMENTO_CONSUMIDOR_FINAL, esConsumidorFinal, nombreCliente }
 import { Session } from '../../core/session';
 import { SucursalesRepository } from '../../data/catalogos.repository';
 import { ClientesRepository } from '../../data/personas.repository';
-import { ProductosRepository } from '../../data/productos.repository';
 import { VentasRepository } from '../../data/ventas.repository';
 import { EsqueletoBloque, EsqueletoTabla } from '../../shared/esqueleto';
-import { FechaPipe, numero, PesosPipe } from '../../shared/formato';
-import { BarraCelda } from '../../shared/graficos/barra-celda';
+import { FechaPipe, PesosPipe } from '../../shared/formato';
 import { paginar, PieTabla } from '../../shared/tabla/pie-tabla';
 import { ErrorCarga, Vacio } from '../../shared/ui';
 import { abrirDialogoCliente } from './cliente-dialogo';
 
-const TOP_PRODUCTOS = 5;
-
 @Component({
   selector: 'app-cliente-historial',
-  imports: [RouterLink, FaIconComponent, ErrorCarga, Vacio, EsqueletoBloque, EsqueletoTabla, BarraCelda, PieTabla, PesosPipe, FechaPipe],
+  imports: [RouterLink, FaIconComponent, ErrorCarga, Vacio, EsqueletoBloque, EsqueletoTabla, PieTabla, PesosPipe, FechaPipe],
   styles: `
     :host {
       display: block;
@@ -42,15 +38,6 @@ const TOP_PRODUCTOS = 5;
       margin: 0.125rem 0 0;
       overflow-wrap: anywhere;
     }
-    .rejilla {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
-      gap: 1.5rem;
-      align-items: start;
-    }
-    .rejilla > .card {
-      min-width: 0;
-    }
     .titulo-seccion {
       font-size: 1rem;
       font-weight: 600;
@@ -67,13 +54,6 @@ const TOP_PRODUCTOS = 5;
               <h1 class="mb-1">{{ h.nombre }}</h1>
             } @else {
               <h2 class="h4 mb-1">{{ h.nombre }}</h2>
-            }
-            @if (h.compras > 0) {
-              <p class="mb-0 text-body-secondary">
-                <span class="num">{{ h.compras }}</span> {{ h.compras === 1 ? 'compra' : 'compras' }} ·
-                <span class="num">{{ h.total | pesos }}</span> · la última el
-                <span class="num">{{ h.ultima | fecha }}</span>
-              </p>
             }
           </div>
           @if (mostrarAcciones()) {
@@ -136,100 +116,55 @@ const TOP_PRODUCTOS = 5;
 
         @if (h.compras === 0) {
           <div class="card">
-            <app-vacio [icono]="iconos.faReceipt" titulo="Aún no tiene compras" [detalle]="detalleSinCompras()">
+            <app-vacio [icono]="iconos.faReceipt" [titulo]="esVendedor() ? 'Aún no compra en tu sucursal' : 'Aún no tiene compras'" [detalle]="detalleSinCompras()">
               @if (mostrarAcciones() && esVendedor()) {
                 <a class="btn btn-accent" routerLink="/ventas/nueva" [queryParams]="{ cliente: h.cliente.idCliente }">
-                  Registrarle la primera venta
+                  Registrarle una venta
                 </a>
               }
             </app-vacio>
           </div>
         } @else {
-          <div class="rejilla">
-            <section class="card" [attr.aria-labelledby]="id + '-top'">
-              <div class="card-body pb-2">
-                <p class="titulo-seccion" role="heading" [attr.aria-level]="nivelSeccion()" [id]="id + '-top'">
-                  Lo que más compra
-                </p>
-                <p class="small text-body-secondary mb-0">Por unidades, en todas sus compras.</p>
-              </div>
-              <div class="table-responsive">
-                <table class="table align-middle">
-                  <thead>
+          <section class="card" [attr.aria-labelledby]="id + '-facturas'">
+            <div class="card-body pb-2">
+              <p class="titulo-seccion" role="heading" [attr.aria-level]="nivelSeccion()" [id]="id + '-facturas'">
+                Facturas
+              </p>
+              <p class="small text-body-secondary mb-0">La más reciente primero, {{ esAdmin() ? 'de todas las sucursales' : 'de tu sucursal' }}.</p>
+            </div>
+            <div class="table-responsive">
+              <table class="table align-middle">
+                <thead>
+                  <tr>
+                    <th scope="col">Factura</th>
+                    <th scope="col">Fecha</th>
+                    <th scope="col" class="col-sec">Sucursal</th>
+                    <th scope="col" class="text-end">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (fila of facturasPagina(); track fila.venta.idVenta) {
                     <tr>
-                      <th scope="col">Producto</th>
-                      <th scope="col" class="text-end">Unidades</th>
-                      <th scope="col" class="text-end col-sec">Gastado</th>
+                      <td>
+                        <a
+                          [routerLink]="['/ventas', fila.venta.idVenta]"
+                          class="code-tag text-decoration-none"
+                          [attr.aria-label]="'Ver factura ' + fila.venta.numeroFactura"
+                        >
+                          {{ fila.venta.numeroFactura }}
+                        </a>
+                        <span class="d-block solo-movil small text-body-secondary mt-1">{{ fila.sucursal }}</span>
+                      </td>
+                      <td class="num">{{ fila.venta.fecha | fecha }}</td>
+                      <td class="col-sec">{{ fila.sucursal }}</td>
+                      <td class="text-end num">{{ fila.venta.montoTotal | pesos }}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    @for (item of h.top; track item.idProducto) {
-                      <tr>
-                        <td>
-                          @if (esAdmin()) {
-                            <a class="d-block fw-medium link-body-emphasis" [routerLink]="['/productos', item.idProducto]">{{
-                              item.nombre
-                            }}</a>
-                          } @else {
-                            <span class="d-block fw-medium">{{ item.nombre }}</span>
-                          }
-                          @if (item.codigo) {
-                            <span class="code-tag mt-1">{{ item.codigo }}</span>
-                          }
-                          <span class="d-block solo-movil small text-body-secondary num">{{ item.total | pesos }}</span>
-                        </td>
-                        <td class="text-end">
-                          <app-barra-celda [texto]="formatoNumero(item.unidades)" [proporcion]="item.unidades / h.maxUnidades" />
-                        </td>
-                        <td class="text-end num col-sec">{{ item.total | pesos }}</td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-            <section class="card" [attr.aria-labelledby]="id + '-facturas'">
-              <div class="card-body pb-2">
-                <p class="titulo-seccion" role="heading" [attr.aria-level]="nivelSeccion()" [id]="id + '-facturas'">
-                  Facturas
-                </p>
-                <p class="small text-body-secondary mb-0">La más reciente primero, {{ esAdmin() ? 'de todas las sucursales' : 'de tu sucursal' }}.</p>
-              </div>
-              <div class="table-responsive">
-                <table class="table align-middle">
-                  <thead>
-                    <tr>
-                      <th scope="col">Factura</th>
-                      <th scope="col">Fecha</th>
-                      <th scope="col" class="col-sec">Sucursal</th>
-                      <th scope="col" class="text-end">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (fila of facturasPagina(); track fila.venta.idVenta) {
-                      <tr>
-                        <td>
-                          <a
-                            [routerLink]="['/ventas', fila.venta.idVenta]"
-                            class="code-tag text-decoration-none"
-                            [attr.aria-label]="'Ver factura ' + fila.venta.numeroFactura"
-                          >
-                            {{ fila.venta.numeroFactura }}
-                          </a>
-                          <span class="d-block solo-movil small text-body-secondary mt-1">{{ fila.sucursal }}</span>
-                        </td>
-                        <td class="num">{{ fila.venta.fecha | fecha }}</td>
-                        <td class="col-sec">{{ fila.sucursal }}</td>
-                        <td class="text-end num">{{ fila.venta.montoTotal | pesos }}</td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-              <app-pie-tabla [total]="h.facturas.length" nombre="facturas" [(pagina)]="pagina" [(porPagina)]="porPagina" />
-            </section>
-          </div>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <app-pie-tabla [total]="h.facturas.length" nombre="facturas" [(pagina)]="pagina" [(porPagina)]="porPagina" />
+          </section>
         }
       </div>
     } @else if (noExiste()) {
@@ -257,7 +192,6 @@ export class ClienteHistorial {
   private readonly clientesRepo = inject(ClientesRepository);
   private readonly ventasRepo = inject(VentasRepository);
   private readonly sucursalesRepo = inject(SucursalesRepository);
-  private readonly productosRepo = inject(ProductosRepository);
   private readonly modal = inject(NgbModal);
   private readonly avisos = inject(Avisos);
 
@@ -276,32 +210,11 @@ export class ClienteHistorial {
   protected readonly historial = resource({
     params: () => this.idCliente(),
     loader: async ({ params: idCliente }) => {
-      const [cliente, { ventas, detalles }, sucursales, productos] = await Promise.all([
+      const [cliente, ventas, sucursales] = await Promise.all([
         this.clientesRepo.obtener(idCliente),
-        this.ventasRepo.historialCliente(idCliente),
+        this.ventasRepo.listar({ idSucursal: null, idCliente }),
         this.sucursalesRepo.listar(),
-        this.productosRepo.listar(),
       ]);
-      const porProducto = new Map<number, { unidades: number; total: number }>();
-      for (const d of detalles) {
-        const acumulado = porProducto.get(d.idProducto) ?? { unidades: 0, total: 0 };
-        acumulado.unidades += d.cantidad;
-        acumulado.total += d.cantidad * d.precioUnitario;
-        porProducto.set(d.idProducto, acumulado);
-      }
-      const top = [...porProducto.entries()]
-        .map(([idProducto, { unidades, total }]) => {
-          const producto = productos.find((p) => p.idProducto === idProducto);
-          return {
-            idProducto,
-            unidades,
-            total,
-            nombre: producto?.nombre ?? 'Producto eliminado del catálogo',
-            codigo: producto?.codigo ?? '',
-          };
-        })
-        .sort((a, b) => b.unidades - a.unidades || b.total - a.total || a.nombre.localeCompare(b.nombre, 'es'))
-        .slice(0, TOP_PRODUCTOS);
       const nombreSucursal = (idSucursal: number) => {
         const sucursal = sucursales.find((s) => s.idSucursal === idSucursal);
         return sucursal ? `${sucursal.nombre} · ${sucursal.ciudad}` : 'Sucursal eliminada';
@@ -311,11 +224,7 @@ export class ClienteHistorial {
         nombre: nombreCliente(cliente),
         consumidorFinal: esConsumidorFinal(cliente),
         compras: ventas.length,
-        total: ventas.reduce((suma, v) => suma + v.montoTotal, 0),
-        ultima: ventas[0]?.fecha ?? '',
         facturas: ventas.map((venta) => ({ venta, sucursal: nombreSucursal(venta.idSucursal) })),
-        top,
-        maxUnidades: Math.max(1, ...top.map((t) => t.unidades)),
       };
     },
   });
@@ -331,13 +240,9 @@ export class ClienteHistorial {
 
   protected readonly detalleSinCompras = computed(() =>
     this.esVendedor()
-      ? 'Cuando le registres una venta, aquí verás sus facturas y lo que más compra.'
-      : 'Sus facturas y lo que más compra aparecerán aquí cuando un vendedor le registre una venta.',
+      ? 'Aquí ves solo las facturas de tu sucursal. Cuando le registres una venta, aparecerá en esta lista.'
+      : 'Sus facturas aparecerán aquí cuando un vendedor le registre una venta.',
   );
-
-  protected formatoNumero(valor: number): string {
-    return numero(valor);
-  }
 
   protected soloDigitos(telefono: string): string {
     return telefono.replace(/[^0-9+]/g, '');

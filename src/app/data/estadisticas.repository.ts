@@ -121,21 +121,8 @@ export class EstadisticasRepository {
     return { ...filtro, desde: fechaISO(sumarDias(desde, -dias)), hasta: fechaISO(sumarDias(desde, -1)) };
   }
 
-  porSucursal(filtro: FiltroPeriodo): Promise<Agrupado[]> {
-    return this.api.get<Agrupado[]>('/estadisticas/por-sucursal', parametros(filtro));
-  }
-
-  porVendedor(filtro: FiltroPeriodo): Promise<Agrupado[]> {
-    return this.api.get<Agrupado[]>('/estadisticas/por-vendedor', parametros(filtro));
-  }
-
   porMetodoPago(filtro: FiltroPeriodo): Promise<Agrupado[]> {
     return this.api.get<Agrupado[]>('/estadisticas/por-metodo-pago', parametros(filtro));
-  }
-
-  async productosMasVendidos(filtro: FiltroPeriodo, limite = 10): Promise<ProductoVendido[]> {
-    const filas = await this.api.get<ProductoVendidoApi[]>('/estadisticas/productos-mas-vendidos', { ...parametros(filtro), limite });
-    return filas.map(({ idProducto, nombreProducto, codigo, unidades, total }) => ({ idProducto, nombre: nombreProducto, codigo, unidades, total }));
   }
 
   ventasDeProducto(idProducto: number, filtro: FiltroPeriodo): Promise<{ unidades: number; total: number; porDia: VentasDelDia[] }> {

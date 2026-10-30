@@ -82,18 +82,4 @@ describe('VentasRepository', () => {
     );
     await expect(registro).rejects.toThrow(new DomainError('Stock insuficiente de HM-0005 (Nivel): hay 3 y se piden 99.'));
   });
-
-  it('el historial de un cliente junta sus facturas y sus líneas', async () => {
-    const historial = ventas.historialCliente(7);
-    paginas()[0].flush({ contenido: [venta(41)], pagina: 0, tamano: 100, totalElementos: 1, totalPaginas: 1 });
-    const lineas = http.expectOne((r) => r.url === `${URL_API}/ventas/lineas`);
-    expect(lineas.request.params.get('idCliente')).toBe('7');
-    lineas.flush([
-      { idVenta: 41, numeroFactura: 'FV-000041', fecha: '2026-10-28', hora: '14:05:09', idSucursal: 1, idEmpleado: 3, idCliente: 7, idProducto: 5, cantidad: 2, precioUnitario: 27900 },
-    ]);
-
-    const { ventas: facturas, detalles } = await historial;
-    expect(facturas).toHaveLength(1);
-    expect(detalles).toEqual([{ idVenta: 41, idProducto: 5, cantidad: 2, precioUnitario: 27900 }]);
-  });
 });

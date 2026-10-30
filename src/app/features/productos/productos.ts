@@ -4,7 +4,6 @@ import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faFileArrowDown, faPen, faPlus, faScrewdriverWrench, faTrashCan } from '@fortawesome/free-solid-svg-icons';
 import { NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
 import { Avisos } from '../../core/avisos';
-import { mensajeDeError } from '../../core/domain-error';
 import { Categoria, Producto } from '../../core/models';
 import { CategoriasRepository, MarcasRepository } from '../../data/catalogos.repository';
 import { EstadisticasRepository } from '../../data/estadisticas.repository';
@@ -242,20 +241,15 @@ export class Productos {
   }
 
   protected async eliminar(producto: Producto): Promise<void> {
-    const confirmado = await this.confirmar.preguntar({
+    const eliminado = await this.confirmar.eliminar({
       titulo: 'Eliminar producto',
       mensaje: `Se eliminará ${producto.nombre} (${producto.codigo}) del catálogo. Esta acción no se puede deshacer.`,
       confirmar: 'Eliminar producto',
-      peligro: true,
+      accion: (clave) => this.repo.eliminar(producto.idProducto, clave),
     });
-    if (!confirmado) return;
-    try {
-      await this.repo.eliminar(producto.idProducto);
-      this.avisos.exito('Producto eliminado.');
-      this.catalogo.reload();
-    } catch (error) {
-      this.avisos.error(mensajeDeError(error));
-    }
+    if (!eliminado) return;
+    this.avisos.exito('Producto eliminado.');
+    this.catalogo.reload();
   }
 
   private reflejarEnUrl(): void {

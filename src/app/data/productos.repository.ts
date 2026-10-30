@@ -73,8 +73,8 @@ export class ProductosRepository {
     return aProducto(guardado);
   }
 
-  eliminar(idProducto: number): Promise<void> {
-    return this.api.delete(`/productos/${idProducto}`);
+  eliminar(idProducto: number, claveSeguridad: string): Promise<void> {
+    return this.api.delete(`/productos/${idProducto}`, claveSeguridad);
   }
 }
 
@@ -97,7 +97,7 @@ export class InventarioRepository {
     return aInventario(await this.api.post<InventarioApi>(`/inventario/${idSucursal}/${idProducto}/entradas`, cuerpo));
   }
 
-  eliminar(idProducto: number, idSucursal: number): Promise<void> {
-    return this.api.delete(`/inventario/${idSucursal}/${idProducto}`);
+  eliminar(idProducto: number, idSucursal: number, claveSeguridad: string): Promise<void> {
+    return this.api.delete(`/inventario/${idSucursal}/${idProducto}`, claveSeguridad);
   }
 }

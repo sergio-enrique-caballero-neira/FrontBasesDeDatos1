@@ -68,8 +68,8 @@ export class SucursalesRepository {
     return aSucursal(guardada);
   }
 
-  eliminar(idSucursal: number): Promise<void> {
-    return this.api.delete(`/sucursales/${idSucursal}`);
+  eliminar(idSucursal: number, claveSeguridad: string): Promise<void> {
+    return this.api.delete(`/sucursales/${idSucursal}`, claveSeguridad);
   }
 }
 
@@ -89,8 +89,8 @@ export class MarcasRepository {
     return aMarca(guardada);
   }
 
-  eliminar(idMarca: number): Promise<void> {
-    return this.api.delete(`/marcas/${idMarca}`);
+  eliminar(idMarca: number, claveSeguridad: string): Promise<void> {
+    return this.api.delete(`/marcas/${idMarca}`, claveSeguridad);
   }
 }
 
@@ -114,8 +114,8 @@ export class CategoriasRepository {
     return aCategoria(guardada);
   }
 
-  eliminar(idCategoria: number): Promise<void> {
-    return this.api.delete(`/categorias/${idCategoria}`);
+  eliminar(idCategoria: number, claveSeguridad: string): Promise<void> {
+    return this.api.delete(`/categorias/${idCategoria}`, claveSeguridad);
   }
 }
 
@@ -134,7 +134,7 @@ export class MetodosPagoRepository {
       : this.api.post<MetodoPago>('/metodos-pago', cuerpo);
   }
 
-  eliminar(idMetodoPago: number): Promise<void> {
-    return this.api.delete(`/metodos-pago/${idMetodoPago}`);
+  eliminar(idMetodoPago: number, claveSeguridad: string): Promise<void> {
+    return this.api.delete(`/metodos-pago/${idMetodoPago}`, claveSeguridad);
   }
 }

@@ -14,8 +14,9 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { Avisos } from '../../core/avisos';
-import { mensajeDeError, NoEncontrado } from '../../core/domain-error';
+import { NoEncontrado } from '../../core/domain-error';
 import { Inventario, Producto, Sucursal, Suministro, UMBRAL_STOCK_BAJO } from '../../core/models';
+import { Session } from '../../core/session';
 import { CategoriasRepository, MarcasRepository, SucursalesRepository } from '../../data/catalogos.repository';
 import { EstadisticasRepository } from '../../data/estadisticas.repository';
 import { InventarioRepository, ProductosRepository } from '../../data/productos.repository';
@@ -83,6 +84,7 @@ interface LineaFicha extends LineaVendida {
   styleUrl: './producto-ficha.css',
 })
 export class ProductoFicha {
+  private readonly session = inject(Session);
   private readonly productosRepo = inject(ProductosRepository);
   private readonly inventarioRepo = inject(InventarioRepository);
   private readonly marcasRepo = inject(MarcasRepository);
@@ -113,11 +115,12 @@ export class ProductoFicha {
     faTruckRampBox,
   };
   protected readonly umbral = UMBRAL_STOCK_BAJO;
+  protected readonly veProveedores = computed(() => this.session.tieneNivel(2));
   protected readonly ordenProveedores = new Orden<'proveedor' | 'sucursal' | 'precio' | 'entrega' | 'calidad'>();
 
   protected readonly ficha = resource({
-    params: () => Number(this.id()),
-    loader: async ({ params: idProducto }) => {
+    params: () => ({ idProducto: Number(this.id()), conProveedores: this.veProveedores() }),
+    loader: async ({ params: { idProducto, conProveedores } }) => {
       const periodo = ultimosDias(DIAS_VENTAS);
       const filtro = { idSucursal: null, ...periodo };
       const [producto, marcas, categorias, inventario, sucursales, suministros, proveedores, evaluaciones, ventas, lineas] =
@@ -127,9 +130,9 @@ export class ProductoFicha {
           this.categoriasRepo.listar(),
           this.inventarioRepo.listar(null),
           this.sucursalesRepo.listar(),
-          this.suministrosRepo.listar(),
-          this.proveedoresRepo.listar(),
-          this.evaluacionesRepo.listar(),
+          conProveedores ? this.suministrosRepo.listar() : Promise.resolve([]),
+          conProveedores ? this.proveedoresRepo.listar() : Promise.resolve([]),
+          conProveedores ? this.evaluacionesRepo.listar() : Promise.resolve([]),
           this.estadisticas.ventasDeProducto(idProducto, filtro),
           this.ventasRepo.listarLineas(filtro),
         ]);
@@ -278,20 +281,15 @@ export class ProductoFicha {
   protected async eliminar(): Promise<void> {
     if (!this.ficha.hasValue()) return;
     const producto = this.ficha.value().producto;
-    const confirmado = await this.confirmar.preguntar({
+    const eliminado = await this.confirmar.eliminar({
       titulo: 'Eliminar producto',
       mensaje: `Se eliminará ${producto.nombre} (${producto.codigo}) del catálogo. Esta acción no se puede deshacer.`,
       confirmar: 'Eliminar producto',
-      peligro: true,
+      accion: (clave) => this.productosRepo.eliminar(producto.idProducto, clave),
     });
-    if (!confirmado) return;
-    try {
-      await this.productosRepo.eliminar(producto.idProducto);
-      this.avisos.exito(`Producto ${producto.nombre} eliminado.`);
-      void this.router.navigate(['/productos']);
-    } catch (error) {
-      this.avisos.error(mensajeDeError(error));
-    }
+    if (!eliminado) return;
+    this.avisos.exito(`Producto ${producto.nombre} eliminado.`);
+    void this.router.navigate(['/productos']);
   }
 
   protected async registrarEntrada(fila: FilaExistencia): Promise<void> {

@@ -139,15 +139,22 @@
       <section class="card" aria-labelledby="reabastecer-titulo">
         <div class="card-body pb-2">
           <h2 class="card-title" id="reabastecer-titulo" tabindex="-1">Productos por reabastecer</h2>
-          <p class="text-body-secondary mb-1">
-            Con {{ umbral }} unidades o menos, o que se agotarían antes de que llegue un pedido al ritmo de los últimos
-            {{ diasRitmo }} días en esa sucursal. Arriba, lo agotado y lo que se acaba antes de la entrega.
-          </p>
-          <p class="small text-body-secondary mb-0">
-            Proveedor sugerido: el que entrega más rápido a esa sucursal; si empatan, el de mejor calificación y luego el
-            de menor precio. En la barra, el relleno son los días que alcanza (hasta 30) y la raya vertical, los días que
-            tarda el pedido.
-          </p>
+          @if (veProveedores()) {
+            <p class="text-body-secondary mb-1">
+              Con {{ umbral }} unidades o menos, o que se agotarían antes de que llegue un pedido al ritmo de los últimos
+              {{ diasRitmo }} días en esa sucursal. Arriba, lo agotado y lo que se acaba antes de la entrega.
+            </p>
+            <p class="small text-body-secondary mb-0">
+              Proveedor sugerido: el que entrega más rápido a esa sucursal; si empatan, el de mejor calificación y luego el
+              de menor precio. En la barra, el relleno son los días que alcanza (hasta 30) y la raya vertical, los días que
+              tarda el pedido.
+            </p>
+          } @else {
+            <p class="text-body-secondary mb-1">
+              Con {{ umbral }} unidades o menos. Arriba, lo agotado y lo que se acaba primero al ritmo de los últimos {{ diasRitmo }} días.
+            </p>
+            <p class="small text-body-secondary mb-0">En la barra, el relleno son los días que alcanza al ritmo de venta (hasta 30).</p>
+          }
         </div>
 
         @if (reabastecer.hasValue()) {
@@ -165,7 +172,9 @@
                       <th scope="col" class="text-end">Quedan</th>
                       <th scope="col" class="text-end col-sec">Vendidas en {{ diasRitmo }} días</th>
                       <th scope="col">Alcanza para</th>
-                      <th scope="col" class="col-sec">Proveedor sugerido</th>
+                      @if (veProveedores()) {
+                        <th scope="col" class="col-sec">Proveedor sugerido</th>
+                      }
                       <th scope="col"><span class="visually-hidden">Acciones</span></th>
                     </tr>
                   </thead>
@@ -182,10 +191,12 @@
                               {{ item.sucursal.nombre }} ·
                             }
                             <span class="num">{{ cuentaVendidas(item.vendidas) }}</span> en {{ diasRitmo }} días
-                            @if (item.sugerido; as s) {
-                              · {{ s.proveedor }}, {{ cuentaDias(s.suministro.tiempoEntregaDias) }}
-                            } @else {
-                              · Sin proveedor registrado
+                            @if (veProveedores()) {
+                              @if (item.sugerido; as s) {
+                                · {{ s.proveedor }}, {{ cuentaDias(s.suministro.tiempoEntregaDias) }}
+                              } @else {
+                                · Sin proveedor registrado
+                              }
                             }
                           </div>
                         </td>
@@ -209,23 +220,25 @@
                             </span>
                           }
                         </td>
-                        <td class="col-sec">
-                          @if (item.sugerido; as s) {
-                            <a [routerLink]="['/proveedores', s.suministro.nit]" class="d-block enlace-tinta">{{ s.proveedor }}</a>
-                            <span class="small text-body-secondary">
-                              <span class="num">{{ cuentaDias(s.suministro.tiempoEntregaDias) }} · {{ s.suministro.precioSuministro | pesos }} c/u</span>
-                              · {{ calidadTexto(s.calidad) }}
-                            </span>
-                            @if (item.otrasOpciones) {
-                              <a [routerLink]="['/productos', item.producto.idProducto]" class="d-block small enlace-tinta">
-                                +{{ item.otrasOpciones }} {{ item.otrasOpciones === 1 ? 'opción' : 'opciones' }}
-                                <span class="visually-hidden">de proveedor para {{ item.producto.nombre }}</span>
-                              </a>
+                        @if (veProveedores()) {
+                          <td class="col-sec">
+                            @if (item.sugerido; as s) {
+                              <a [routerLink]="['/proveedores', s.suministro.nit]" class="d-block enlace-tinta">{{ s.proveedor }}</a>
+                              <span class="small text-body-secondary">
+                                <span class="num">{{ cuentaDias(s.suministro.tiempoEntregaDias) }} · {{ s.suministro.precioSuministro | pesos }} c/u</span>
+                                · {{ calidadTexto(s.calidad) }}
+                              </span>
+                              @if (item.otrasOpciones) {
+                                <a [routerLink]="['/productos', item.producto.idProducto]" class="d-block small enlace-tinta">
+                                  +{{ item.otrasOpciones }} {{ item.otrasOpciones === 1 ? 'opción' : 'opciones' }}
+                                  <span class="visually-hidden">de proveedor para {{ item.producto.nombre }}</span>
+                                </a>
+                              }
+                            } @else {
+                              <span class="text-body-secondary">Sin proveedor registrado</span>
                             }
-                          } @else {
-                            <span class="text-body-secondary">Sin proveedor registrado</span>
-                          }
-                        </td>
+                          </td>
+                        }
                         <td class="text-end">
                           <button
                             type="button"
@@ -289,7 +302,9 @@
                 }
               </p>
             </div>
-            <a routerLink="/sucursales" class="btn btn-outline-secondary btn-sm">Comparar sucursales</a>
+            @if (comparaSucursales()) {
+              <a routerLink="/sucursales" class="btn btn-outline-secondary btn-sm">Comparar sucursales</a>
+            }
           </div>
 
           @if (ventas.hasValue()) {

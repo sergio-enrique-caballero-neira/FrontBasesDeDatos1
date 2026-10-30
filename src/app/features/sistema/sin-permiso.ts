@@ -40,6 +40,7 @@ export class SinPermiso {
   private readonly router = inject(Router);
 
   readonly seccion = input<string>();
+  readonly nivel = input<string>();
 
   protected readonly iconos = { faHouse, faRightFromBracket };
 
@@ -54,6 +55,10 @@ export class SinPermiso {
   protected readonly explicacion = computed(() => {
     const nombre = this.nombreSeccion();
     const sujeto = nombre ? `La sección ${nombre}` : 'Esta sección';
+    const nivel = Number(this.nivel());
+    if (this.session.esAdmin() && nivel > this.session.nivel() && nivel <= 3) {
+      return `${sujeto} pide nivel de acceso ${nivel} y el tuyo es ${this.session.nivel()}. Lo cambia un administrador de nivel 3.`;
+    }
     return this.session.esAdmin()
       ? `${sujeto} es solo para ${this.paraQuien()}: las ventas las registra quien atiende en la sucursal.`
       : `${sujeto} es solo para ${this.paraQuien()}.`;

@@ -98,40 +98,6 @@
   background: var(--soft-bg);
 }
 
-.frecuentes {
-  display: grid;
-  gap: 0.25rem;
-}
-
-.frecuente {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.75rem;
-  width: 100%;
-  min-height: 2.5rem;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--hairline);
-  border-radius: 10px;
-  background: var(--paper);
-  color: var(--ink);
-  text-align: left;
-  transition: background-color 120ms ease;
-}
-
-.frecuente:hover {
-  background: var(--soft-bg);
-}
-
-.frecuente:focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 2px;
-}
-
-.frecuente > .text-truncate {
-  min-width: 0;
-}
-
 .lineas {
   display: grid;
   gap: 0.75rem;

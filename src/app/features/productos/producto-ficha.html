@@ -45,7 +45,7 @@
             <small>margen de catálogo {{ porcentaje((p.precioBaseVenta - p.costoCompra) / p.precioBaseVenta) }}</small>
           </dd>
         </div>
-        @if (f.costoReal; as costo) {
+        @if (veProveedores() && f.costoReal; as costo) {
           <div>
             <dt>Costo real con proveedores</dt>
             <dd>
@@ -154,103 +154,105 @@
           </table>
         </div>
       </section>
-      <section class="card" aria-labelledby="proveedores-titulo">
-        <div class="card-body pb-2 d-flex flex-wrap align-items-start justify-content-between gap-2">
-          <div class="min-w-0">
-            <h2 class="card-title" id="proveedores-titulo">Quién lo surte</h2>
-            <p class="small text-body-secondary mb-0">
-              Precio por unidad que cobra cada proveedor en cada sede, del más barato al más caro. El margen sale de ese
-              precio frente al precio base de venta.
-            </p>
+      @if (veProveedores()) {
+        <section class="card" aria-labelledby="proveedores-titulo">
+          <div class="card-body pb-2 d-flex flex-wrap align-items-start justify-content-between gap-2">
+            <div class="min-w-0">
+              <h2 class="card-title" id="proveedores-titulo">Quién lo surte</h2>
+              <p class="small text-body-secondary mb-0">
+                Precio por unidad que cobra cada proveedor en cada sede, del más barato al más caro. El margen sale de ese
+                precio frente al precio base de venta.
+              </p>
+            </div>
+            @if (f.suministros.length > 0) {
+              <button type="button" class="btn btn-soft btn-sm" (click)="registrarSuministro()">
+                <fa-icon [icon]="iconos.faPlus" />
+                Agregar proveedor
+              </button>
+            }
           </div>
-          @if (f.suministros.length > 0) {
-            <button type="button" class="btn btn-soft btn-sm" (click)="registrarSuministro()">
-              <fa-icon [icon]="iconos.faPlus" />
-              Agregar proveedor
-            </button>
-          }
-        </div>
-        @if (f.suministros.length === 0) {
-          <app-vacio
-            [icono]="iconos.faTruckRampBox"
-            titulo="Ningún proveedor lo surte todavía"
-            detalle="Registra qué proveedor lo entrega, a qué sucursal, a qué precio y en cuántos días para poder comparar."
-          >
-            <button type="button" class="btn btn-primary" (click)="registrarSuministro()">Registrar un suministro</button>
-          </app-vacio>
-        } @else {
-          <div class="table-responsive">
-            <table class="table align-middle">
-              <thead>
-                <tr>
-                  <th scope="col" [attr.aria-sort]="ordenProveedores.ariaSort('proveedor')">
-                    <app-encabezado-orden [orden]="ordenProveedores" columna="proveedor" texto="Proveedor" />
-                  </th>
-                  <th scope="col" class="col-sec" [attr.aria-sort]="ordenProveedores.ariaSort('sucursal')">
-                    <app-encabezado-orden [orden]="ordenProveedores" columna="sucursal" texto="Sede que recibe" />
-                  </th>
-                  <th scope="col" class="text-end" [attr.aria-sort]="ordenProveedores.ariaSort('precio')">
-                    <app-encabezado-orden [orden]="ordenProveedores" columna="precio" texto="Precio c/u" />
-                  </th>
-                  <th scope="col" class="text-end col-sec">Margen</th>
-                  <th scope="col" class="text-end col-sec" [attr.aria-sort]="ordenProveedores.ariaSort('entrega')">
-                    <app-encabezado-orden [orden]="ordenProveedores" columna="entrega" texto="Entrega" />
-                  </th>
-                  <th scope="col" [attr.aria-sort]="ordenProveedores.ariaSort('calidad')">
-                    <app-encabezado-orden [orden]="ordenProveedores" columna="calidad" texto="Calidad" />
-                  </th>
-                  <th scope="col"><span class="visually-hidden">Acciones</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (fila of suministrosOrdenados(); track fila.clave) {
+          @if (f.suministros.length === 0) {
+            <app-vacio
+              [icono]="iconos.faTruckRampBox"
+              titulo="Ningún proveedor lo surte todavía"
+              detalle="Registra qué proveedor lo entrega, a qué sucursal, a qué precio y en cuántos días para poder comparar."
+            >
+              <button type="button" class="btn btn-primary" (click)="registrarSuministro()">Registrar un suministro</button>
+            </app-vacio>
+          } @else {
+            <div class="table-responsive">
+              <table class="table align-middle">
+                <thead>
                   <tr>
-                    <td>
-                      <a class="fw-medium link-body-emphasis" [routerLink]="['/proveedores', fila.suministro.nit]">{{ fila.proveedor }}</a>
-                      <span class="d-block solo-movil small text-body-secondary">
-                        {{ fila.sucursal }} · {{ dias(fila.suministro.tiempoEntregaDias) }} · margen
-                        <span class="num">{{ porcentaje(fila.margen) }}</span>
-                      </span>
-                    </td>
-                    <td class="col-sec">{{ fila.sucursal }}</td>
-                    <td class="text-end num fw-medium">{{ fila.suministro.precioSuministro | pesos }}</td>
-                    <td class="text-end num col-sec">{{ porcentaje(fila.margen) }}</td>
-                    <td class="text-end num col-sec">{{ dias(fila.suministro.tiempoEntregaDias) }}</td>
-                    <td class="text-nowrap">
-                      @if (fila.promedio !== null) {
-                        <span class="calificacion">
-                          <fa-icon [icon]="iconos.faStar" class="estrella" />
-                          <span class="num fw-medium">{{ calificacion(fila.promedio) }}</span>
-                          <span class="visually-hidden">de 5,</span>
-                          <span class="small text-body-secondary num">
-                            ({{ fila.evaluaciones }}<span class="visually-hidden">
-                              {{ fila.evaluaciones === 1 ? 'evaluación' : 'evaluaciones' }}</span>)
-                          </span>
-                        </span>
-                      } @else {
-                        <span class="text-body-secondary">Sin evaluar</span>
-                      }
-                    </td>
-                    <td class="text-end text-nowrap">
-                      @if (fila.elegible) {
-                        <button
-                          type="button"
-                          class="btn btn-soft btn-sm"
-                          [attr.aria-label]="'Evaluar el suministro de ' + fila.proveedor + ' a ' + fila.sucursal"
-                          (click)="evaluar(fila)"
-                        >
-                          <fa-icon [icon]="iconos.faClipboardCheck" />
-                          Evaluar
-                        </button>
-                      }
-                    </td>
+                    <th scope="col" [attr.aria-sort]="ordenProveedores.ariaSort('proveedor')">
+                      <app-encabezado-orden [orden]="ordenProveedores" columna="proveedor" texto="Proveedor" />
+                    </th>
+                    <th scope="col" class="col-sec" [attr.aria-sort]="ordenProveedores.ariaSort('sucursal')">
+                      <app-encabezado-orden [orden]="ordenProveedores" columna="sucursal" texto="Sede que recibe" />
+                    </th>
+                    <th scope="col" class="text-end" [attr.aria-sort]="ordenProveedores.ariaSort('precio')">
+                      <app-encabezado-orden [orden]="ordenProveedores" columna="precio" texto="Precio c/u" />
+                    </th>
+                    <th scope="col" class="text-end col-sec">Margen</th>
+                    <th scope="col" class="text-end col-sec" [attr.aria-sort]="ordenProveedores.ariaSort('entrega')">
+                      <app-encabezado-orden [orden]="ordenProveedores" columna="entrega" texto="Entrega" />
+                    </th>
+                    <th scope="col" [attr.aria-sort]="ordenProveedores.ariaSort('calidad')">
+                      <app-encabezado-orden [orden]="ordenProveedores" columna="calidad" texto="Calidad" />
+                    </th>
+                    <th scope="col"><span class="visually-hidden">Acciones</span></th>
                   </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        }
-      </section>
+                </thead>
+                <tbody>
+                  @for (fila of suministrosOrdenados(); track fila.clave) {
+                    <tr>
+                      <td>
+                        <a class="fw-medium link-body-emphasis" [routerLink]="['/proveedores', fila.suministro.nit]">{{ fila.proveedor }}</a>
+                        <span class="d-block solo-movil small text-body-secondary">
+                          {{ fila.sucursal }} · {{ dias(fila.suministro.tiempoEntregaDias) }} · margen
+                          <span class="num">{{ porcentaje(fila.margen) }}</span>
+                        </span>
+                      </td>
+                      <td class="col-sec">{{ fila.sucursal }}</td>
+                      <td class="text-end num fw-medium">{{ fila.suministro.precioSuministro | pesos }}</td>
+                      <td class="text-end num col-sec">{{ porcentaje(fila.margen) }}</td>
+                      <td class="text-end num col-sec">{{ dias(fila.suministro.tiempoEntregaDias) }}</td>
+                      <td class="text-nowrap">
+                        @if (fila.promedio !== null) {
+                          <span class="calificacion">
+                            <fa-icon [icon]="iconos.faStar" class="estrella" />
+                            <span class="num fw-medium">{{ calificacion(fila.promedio) }}</span>
+                            <span class="visually-hidden">de 5,</span>
+                            <span class="small text-body-secondary num">
+                              ({{ fila.evaluaciones }}<span class="visually-hidden">
+                                {{ fila.evaluaciones === 1 ? 'evaluación' : 'evaluaciones' }}</span>)
+                            </span>
+                          </span>
+                        } @else {
+                          <span class="text-body-secondary">Sin evaluar</span>
+                        }
+                      </td>
+                      <td class="text-end text-nowrap">
+                        @if (fila.elegible) {
+                          <button
+                            type="button"
+                            class="btn btn-soft btn-sm"
+                            [attr.aria-label]="'Evaluar el suministro de ' + fila.proveedor + ' a ' + fila.sucursal"
+                            (click)="evaluar(fila)"
+                          >
+                            <fa-icon [icon]="iconos.faClipboardCheck" />
+                            Evaluar
+                          </button>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+      }
       <section class="card" aria-labelledby="ventas-titulo">
         <div class="card-body">
           <h2 class="card-title" id="ventas-titulo">Ventas de los últimos 30 días</h2>

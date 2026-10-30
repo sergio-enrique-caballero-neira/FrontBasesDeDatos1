@@ -4,7 +4,6 @@ import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faClipboardCheck, faPen, faPlus, faStar, faTrashCan, faTruckRampBox } from '@fortawesome/free-solid-svg-icons';
 import { NgbModal, NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
 import { Avisos } from '../../core/avisos';
-import { mensajeDeError } from '../../core/domain-error';
 import { Producto, Proveedor, Sucursal, Suministro } from '../../core/models';
 import { Session } from '../../core/session';
 import { SucursalesRepository } from '../../data/catalogos.repository';
@@ -277,19 +276,14 @@ export class Suministros {
   }
 
   protected async eliminar(suministro: Suministro, descripcion: string): Promise<void> {
-    const confirmado = await this.confirmar.preguntar({
+    const eliminado = await this.confirmar.eliminar({
       titulo: 'Eliminar suministro',
       mensaje: `Se eliminará el suministro ${descripcion}. Esta acción no se puede deshacer.`,
       confirmar: 'Eliminar suministro',
-      peligro: true,
+      accion: (clave) => this.repo.eliminar(suministro, clave),
     });
-    if (!confirmado) return;
-    try {
-      await this.repo.eliminar(suministro);
-      this.avisos.exito('Suministro eliminado.');
-      this.datos.reload();
-    } catch (error) {
-      this.avisos.error(mensajeDeError(error));
-    }
+    if (!eliminado) return;
+    this.avisos.exito('Suministro eliminado.');
+    this.datos.reload();
   }
 }

@@ -32,6 +32,7 @@ interface Enlace {
   texto: string;
   icono: IconDefinition;
   excepto?: string;
+  nivel?: number;
 }
 
 interface Grupo {
@@ -100,28 +101,31 @@ export class NavMenu {
     if (!this.session.esAdmin()) {
       return [mostrador];
     }
-    return [
+    const grupos: Grupo[] = [
       mostrador,
       {
         titulo: 'Administración',
         enlaces: [
           { ruta: '/productos', texto: 'Productos', icono: faScrewdriverWrench },
-          { ruta: '/proveedores', texto: 'Proveedores', icono: faTruck },
-          { ruta: '/suministros', texto: 'Suministros', icono: faTruckRampBox },
-          { ruta: '/evaluaciones', texto: 'Evaluaciones de calidad', icono: faClipboardCheck },
-          { ruta: '/sucursales', texto: 'Sucursales', icono: faStore },
-          { ruta: '/empleados', texto: 'Empleados', icono: faIdBadge },
+          { ruta: '/proveedores', texto: 'Proveedores', icono: faTruck, nivel: 2 },
+          { ruta: '/suministros', texto: 'Suministros', icono: faTruckRampBox, nivel: 2 },
+          { ruta: '/evaluaciones', texto: 'Evaluaciones de calidad', icono: faClipboardCheck, nivel: 2 },
+          { ruta: '/sucursales', texto: 'Sucursales', icono: faStore, nivel: 3 },
+          { ruta: '/empleados', texto: 'Empleados', icono: faIdBadge, nivel: 3 },
         ],
       },
       {
         titulo: 'Catálogos',
         enlaces: [
-          { ruta: '/catalogos/marcas', texto: 'Marcas', icono: faTags },
-          { ruta: '/catalogos/categorias', texto: 'Categorías', icono: faSitemap },
-          { ruta: '/catalogos/metodos-pago', texto: 'Métodos de pago', icono: faCreditCard },
+          { ruta: '/catalogos/marcas', texto: 'Marcas', icono: faTags, nivel: 3 },
+          { ruta: '/catalogos/categorias', texto: 'Categorías', icono: faSitemap, nivel: 3 },
+          { ruta: '/catalogos/metodos-pago', texto: 'Métodos de pago', icono: faCreditCard, nivel: 3 },
         ],
       },
     ];
+    return grupos
+      .map((grupo) => ({ ...grupo, enlaces: grupo.enlaces.filter((enlace) => this.session.tieneNivel(enlace.nivel ?? 1)) }))
+      .filter((grupo) => grupo.enlaces.length > 0);
   });
 
   protected activo(enlace: Enlace): boolean {

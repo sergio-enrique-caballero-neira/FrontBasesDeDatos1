@@ -4,7 +4,6 @@ import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faCartShopping, faPen, faTrashCan, faUserPlus, faUsers } from '@fortawesome/free-solid-svg-icons';
 import { NgbModal, NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
 import { Avisos } from '../../core/avisos';
-import { mensajeDeError } from '../../core/domain-error';
 import { Cliente, esConsumidorFinal, nombreCliente, TipoCliente } from '../../core/models';
 import { Session } from '../../core/session';
 import { ClientesRepository } from '../../data/personas.repository';
@@ -198,21 +197,16 @@ export class Clientes {
     if (fila.compras > 0) {
       return;
     }
-    const confirmado = await this.confirmar.preguntar({
+    const eliminado = await this.confirmar.eliminar({
       titulo: 'Eliminar cliente',
       mensaje: `Se eliminará a ${fila.nombre} con sus teléfonos y correos. Esta acción no se puede deshacer.`,
       confirmar: 'Eliminar cliente',
-      peligro: true,
+      accion: (clave) => this.repo.eliminar(fila.cliente.idCliente, clave),
     });
-    if (!confirmado) {
+    if (!eliminado) {
       return;
     }
-    try {
-      await this.repo.eliminar(fila.cliente.idCliente);
-      this.avisos.exito(`${fila.nombre} eliminado de los clientes.`);
-      this.clientes.reload();
-    } catch (error) {
-      this.avisos.error(mensajeDeError(error));
-    }
+    this.avisos.exito(`${fila.nombre} eliminado de los clientes.`);
+    this.clientes.reload();
   }
 }

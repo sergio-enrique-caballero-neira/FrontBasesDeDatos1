@@ -4,7 +4,6 @@ import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faCreditCard, faPen, faPlus, faTrashCan } from '@fortawesome/free-solid-svg-icons';
 import { NgbModal, NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
 import { Avisos } from '../../core/avisos';
-import { mensajeDeError } from '../../core/domain-error';
 import { MetodoPago } from '../../core/models';
 import { Session } from '../../core/session';
 import { MetodosPagoRepository, SucursalesRepository } from '../../data/catalogos.repository';
@@ -218,19 +217,14 @@ export class MetodosPago {
       this.avisos.error(`${motivo}. Las ventas registradas conservan su método de pago; puedes cambiarle el nombre.`);
       return;
     }
-    const confirmado = await this.confirmar.preguntar({
+    const eliminado = await this.confirmar.eliminar({
       titulo: 'Eliminar método de pago',
       mensaje: `Se eliminará ${metodo.tipo}. Esta acción no se puede deshacer.`,
       confirmar: 'Eliminar método',
-      peligro: true,
+      accion: (clave) => this.repo.eliminar(metodo.idMetodoPago, clave),
     });
-    if (!confirmado) return;
-    try {
-      await this.repo.eliminar(metodo.idMetodoPago);
-      this.avisos.exito('Método de pago eliminado.');
-      this.metodos.reload();
-    } catch (error) {
-      this.avisos.error(mensajeDeError(error));
-    }
+    if (!eliminado) return;
+    this.avisos.exito('Método de pago eliminado.');
+    this.metodos.reload();
   }
 }
