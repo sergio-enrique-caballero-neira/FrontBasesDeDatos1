@@ -59,7 +59,7 @@ export class ClientesRepository {
     return aCliente(guardado);
   }
 
-  eliminar(idCliente: number): Promise<void> {
-    return this.api.delete(`/clientes/${idCliente}`);
+  eliminar(idCliente: number, claveSeguridad: string): Promise<void> {
+    return this.api.delete(`/clientes/${idCliente}`, claveSeguridad);
   }
 }

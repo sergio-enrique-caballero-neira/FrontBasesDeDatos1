@@ -25,7 +25,6 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { NgbModal, NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
 import { Avisos } from '../../core/avisos';
-import { mensajeDeError } from '../../core/domain-error';
 import { hoyISO } from '../../core/fechas';
 import { DIAS_REEVALUACION, nombreEmpleado } from '../../core/models';
 import { Session } from '../../core/session';
@@ -370,21 +369,16 @@ export class Evaluaciones {
   }
 
   protected async eliminar(fila: { evaluacion: { idEvaluacion: number }; proveedor: string; producto: string }): Promise<void> {
-    const confirmado = await this.confirmar.preguntar({
+    const eliminado = await this.confirmar.eliminar({
       titulo: 'Eliminar evaluación',
       mensaje: `La evaluación de ${fila.producto} (${fila.proveedor}) dejará de contar en el promedio del proveedor. Esta acción no se puede deshacer.`,
       confirmar: 'Eliminar evaluación',
-      peligro: true,
+      accion: (clave) => this.repo.eliminar(fila.evaluacion.idEvaluacion, clave),
     });
-    if (!confirmado) return;
-    try {
-      await this.repo.eliminar(fila.evaluacion.idEvaluacion);
-      this.avisos.exito('Evaluación eliminada.');
-      this.datos.reload();
-      this.focoTrasRecargar.set('historial-titulo');
-    } catch (error) {
-      this.avisos.error(mensajeDeError(error));
-    }
+    if (!eliminado) return;
+    this.avisos.exito('Evaluación eliminada.');
+    this.datos.reload();
+    this.focoTrasRecargar.set('historial-titulo');
   }
 
   protected formatoPromedio(promedio: number): string {

@@ -34,7 +34,6 @@ import { NgbModal, NgbOffcanvas, NgbTooltip, NgbTypeahead, NgbTypeaheadSelectIte
 import { debounceTime, distinctUntilChanged, map, Observable } from 'rxjs';
 import { Avisos } from '../../core/avisos';
 import { mensajeDeError } from '../../core/domain-error';
-import { fechaISO, sumarDias } from '../../core/fechas';
 import { VENTA_REGISTRADA } from '../../core/guards';
 import { Cliente, esConsumidorFinal, nombreCliente, Producto } from '../../core/models';
 import { Session } from '../../core/session';
@@ -79,25 +78,12 @@ interface LineaCarrito {
   subtotal: number;
 }
 
-interface OtraSede {
-  nombre: string;
-  cantidad: number;
-}
-
 interface Anuncio {
   texto: string;
   problema: boolean;
 }
 
-const DIAS_FRECUENTES = 30;
-const MAX_FRECUENTES = 4;
-
 const BILLETES = [2000, 5000, 10000, 20000, 50000, 100000];
-
-function interpretarBusqueda(texto: string): { cantidad: number | null; termino: string } {
-  const partes = /^\s*(\d{1,4})\s*\*\s*(.*)$/.exec(texto);
-  return partes ? { cantidad: Number(partes[1]), termino: partes[2].trim() } : { cantidad: null, termino: texto.trim() };
-}
 
 function unidades(n: number): string {
   return `${n} ${n === 1 ? 'unidad' : 'unidades'}`;
@@ -165,7 +151,6 @@ export class NuevaVentaPage {
     faUserPlus,
     faXmark,
   };
-  protected readonly diasFrecuentes = DIAS_FRECUENTES;
   protected readonly nombreCliente = nombreCliente;
   protected readonly esConsumidorFinal = esConsumidorFinal;
   protected readonly unidades = unidades;
@@ -223,44 +208,8 @@ export class NuevaVentaPage {
     },
   });
 
-  protected readonly cadena = resource({
-    params: () => this.idSucursal() ?? undefined,
-    loader: async ({ params: idSucursal }) => {
-      const desde = fechaISO(sumarDias(new Date(), -(DIAS_FRECUENTES - 1)));
-      const [inventario, ventas, sucursales] = await Promise.all([
-        this.inventarioRepo.listar(null),
-        this.ventasRepo.listar({ idSucursal, desde }),
-        this.sucursalesRepo.listar(),
-      ]);
-      const otrasSedes = new Map<number, OtraSede[]>();
-      for (const fila of inventario) {
-        if (fila.idSucursal === idSucursal || fila.cantidadDisponible <= 0) {
-          continue;
-        }
-        const nombre = sucursales.find((s) => s.idSucursal === fila.idSucursal)?.nombre ?? `Sucursal ${fila.idSucursal}`;
-        const lista = otrasSedes.get(fila.idProducto) ?? [];
-        lista.push({ nombre, cantidad: fila.cantidadDisponible });
-        otrasSedes.set(fila.idProducto, lista);
-      }
-      for (const lista of otrasSedes.values()) {
-        lista.sort((a, b) => b.cantidad - a.cantidad);
-      }
-      const comprasPorCliente = new Map<number, { compras: number; ultima: string }>();
-      for (const v of ventas) {
-        const actual = comprasPorCliente.get(v.idCliente);
-        comprasPorCliente.set(v.idCliente, { compras: (actual?.compras ?? 0) + 1, ultima: actual?.ultima ?? v.fecha });
-      }
-      return { idSucursal, otrasSedes, comprasPorCliente };
-    },
-  });
-
   protected readonly d = computed(() => {
     const valor = this.datos.hasValue() ? this.datos.value() : undefined;
-    return valor && valor.idSucursal === this.idSucursal() ? valor : undefined;
-  });
-
-  private readonly cadenaActual = computed(() => {
-    const valor = this.cadena.hasValue() ? this.cadena.value() : undefined;
     return valor && valor.idSucursal === this.idSucursal() ? valor : undefined;
   });
 
@@ -284,9 +233,7 @@ export class NuevaVentaPage {
   private focoInicialHecho = false;
   private temporizadorAnuncio: ReturnType<typeof setTimeout> | undefined;
 
-  protected readonly consulta = computed(() => interpretarBusqueda(this.busqueda()));
-
-  protected readonly productosFiltrados = computed(() => this.filtrar(this.consulta().termino));
+  protected readonly productosFiltrados = computed(() => this.filtrar(this.busqueda()));
 
   protected readonly filtrosActivos = computed(() => Number(this.busqueda().trim() !== '') + Number(this.categoria() !== null));
 
@@ -360,21 +307,6 @@ export class NuevaVentaPage {
     const cambio = this.cambio();
     if (cambio !== null && cambio < 0) faltan.push('El efectivo recibido no cubre el total.');
     return faltan;
-  });
-
-  protected readonly frecuentes = computed(() => {
-    const cadena = this.cadenaActual();
-    if (!cadena) {
-      return [];
-    }
-    const clientes = this.clientes();
-    return [...cadena.comprasPorCliente.entries()]
-      .flatMap(([idCliente, datos]) => {
-        const cliente = clientes.find((c) => c.idCliente === idCliente);
-        return cliente && !esConsumidorFinal(cliente) ? [{ cliente, ...datos }] : [];
-      })
-      .sort((a, b) => b.compras - a.compras || b.ultima.localeCompare(a.ultima))
-      .slice(0, MAX_FRECUENTES);
   });
 
   protected readonly sinCoincidenciasCliente = computed(() => {
@@ -480,19 +412,9 @@ export class NuevaVentaPage {
     return Math.max(0, v.disponible - (this.enCarrito().get(v.producto.idProducto) ?? 0));
   }
 
-  protected otraSede(idProducto: number): OtraSede | null {
-    return this.cadenaActual()?.otrasSedes.get(idProducto)?.[0] ?? null;
-  }
-
-  protected agotadoEnCadena(idProducto: number): boolean {
-    const cadena = this.cadenaActual();
-    return cadena !== undefined && !cadena.otrasSedes.has(idProducto);
-  }
-
-  protected agregar(vendible: ProductoVendible, pedidas = 1): void {
+  protected agregar(vendible: ProductoVendible): void {
     const { producto } = vendible;
-    const restante = this.restante(vendible);
-    if (restante <= 0) {
+    if (this.restante(vendible) <= 0) {
       this.anunciar(
         vendible.disponible === 0
           ? `${producto.nombre} está agotado en esta sucursal.`
@@ -501,33 +423,19 @@ export class NuevaVentaPage {
       );
       return;
     }
-    const agregadas = Math.min(pedidas, restante);
     this.error.set(null);
     this.lineas.update((lineas) =>
       lineas.some((l) => l.idProducto === producto.idProducto)
-        ? lineas.map((l) => (l.idProducto === producto.idProducto ? { ...l, cantidad: l.cantidad + agregadas } : l))
-        : [...lineas, { idProducto: producto.idProducto, cantidad: agregadas }],
+        ? lineas.map((l) => (l.idProducto === producto.idProducto ? { ...l, cantidad: l.cantidad + 1 } : l))
+        : [...lineas, { idProducto: producto.idProducto, cantidad: 1 }],
     );
-    const total = pesos(this.total());
-    if (agregadas < pedidas) {
-      this.anunciar(
-        `Pediste ${pedidas} de ${producto.nombre} y solo quedaban ${agregadas}: se agregaron ${unidades(agregadas)}. Total ${total}.`,
-        true,
-      );
-    } else {
-      this.anunciar(`Agregado ${producto.nombre}, ${unidades(agregadas)}. Total ${total}.`, false);
-    }
+    this.anunciar(`Agregado ${producto.nombre}, ${unidades(1)}. Total ${pesos(this.total())}.`, false);
   }
 
   protected alPulsarEnter(): void {
     const d = this.d();
-    const { cantidad, termino } = this.consulta();
+    const termino = this.busqueda().trim();
     if (!d || !termino) {
-      return;
-    }
-    const pedidas = cantidad === null ? 1 : cantidad;
-    if (pedidas < 1) {
-      this.anunciar('La cantidad debe ser al menos 1.', true);
       return;
     }
     const codigo = normalizar(termino);
@@ -535,7 +443,7 @@ export class NuevaVentaPage {
     const resultados = this.productosFiltrados();
     const elegido = exacto ?? (resultados.length === 1 ? resultados[0] : undefined);
     if (elegido) {
-      this.agregar(elegido, pedidas);
+      this.agregar(elegido);
       this.buscador()?.valor.set('');
       this.busqueda.set('');
       const entrada = this.entradaBusqueda();
@@ -729,7 +637,6 @@ export class NuevaVentaPage {
       this.error.set(mensajeDeError(error));
       this.enfocarTrasRecarga.set(true);
       this.datos.reload();
-      this.cadena.reload();
     } finally {
       this.registrando.set(false);
     }

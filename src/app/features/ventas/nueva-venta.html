@@ -30,8 +30,7 @@
           (enter)="alPulsarEnter()"
         />
         <p class="small text-body-secondary mt-2 mb-0" id="ayuda-buscador">
-          Escanea o escribe el código y pulsa <kbd>Enter</kbd>. Para varias unidades, antepón la cantidad y un
-          asterisco: <kbd>20*</kbd> y el código.
+          Escanea o escribe el código y pulsa <kbd>Enter</kbd>. Cambia la cantidad en el resumen.
           <span class="d-none d-md-inline">
             Confirma la venta con <kbd>{{ teclaModificadora }}</kbd> + <kbd>Enter</kbd>.
           </span>
@@ -93,22 +92,9 @@
                 <div class="producto-precio">
                   <span class="num fw-medium">{{ v.producto.precioBaseVenta | pesos }}</span>
                   @if (v.disponible === 0) {
-                    @let otra = otraSede(v.producto.idProducto);
-                    <span class="small">
-                      @if (agotadoEnCadena(v.producto.idProducto)) {
-                        <span class="stock-low">
-                          <fa-icon [icon]="iconos.faTriangleExclamation" aria-hidden="true" />
-                          Agotado en la cadena
-                        </span>
-                      } @else {
-                        <span class="stock-low">
-                          <fa-icon [icon]="iconos.faTriangleExclamation" aria-hidden="true" />
-                          Agotado aquí
-                        </span>
-                        @if (otra) {
-                          <span class="text-body-secondary"> · <span class="num">{{ otra.cantidad }}</span> en {{ otra.nombre }}</span>
-                        }
-                      }
+                    <span class="small stock-low">
+                      <fa-icon [icon]="iconos.faTriangleExclamation" aria-hidden="true" />
+                      Agotado aquí
                     </span>
                   } @else if (quedan === 0) {
                     <span class="small text-body-secondary">Todo en el carrito</span>
@@ -258,37 +244,6 @@
                     <fa-icon [icon]="iconos.faUserPlus" aria-hidden="true" />
                     Crear cliente nuevo
                   </button>
-                }
-
-                @if (!textoCliente().trim()) {
-                  @if (frecuentes().length) {
-                    <p class="eyebrow mt-3 mb-2" id="frecuentes-titulo">
-                      Frecuentes en esta sede, últimos {{ diasFrecuentes }} días
-                    </p>
-                    <ul class="list-unstyled frecuentes mb-0" aria-labelledby="frecuentes-titulo">
-                      @for (f of frecuentes(); track f.cliente.idCliente) {
-                        <li>
-                          <button type="button" class="frecuente" (click)="elegirClientePorId(f.cliente.idCliente)">
-                            <span class="text-truncate">{{ nombreCliente(f.cliente) }}</span>
-                            <span class="small text-body-secondary text-nowrap">
-                              <span class="num">{{ f.compras }}</span> {{ f.compras === 1 ? 'compra' : 'compras' }}
-                            </span>
-                          </button>
-                        </li>
-                      }
-                    </ul>
-                  } @else if (cadena.error()) {
-                    <p class="small text-body-secondary mt-3 mb-0">
-                      No se pudieron cargar los clientes frecuentes de la sede.
-                      <button type="button" class="btn btn-link btn-sm p-0 align-baseline" (click)="cadena.reload()">
-                        Reintentar
-                      </button>
-                    </p>
-                  } @else if (cadena.hasValue()) {
-                    <p class="small text-body-secondary mt-3 mb-0">
-                      Ningún cliente registrado ha comprado en esta sede en los últimos {{ diasFrecuentes }} días.
-                    </p>
-                  }
                 }
               }
             </section>

@@ -243,19 +243,14 @@ export class Sucursales {
       this.avisos.error('Estás trabajando en esta sucursal. Cambia de sucursal en la barra superior antes de eliminarla.');
       return;
     }
-    const confirmado = await this.confirmar.preguntar({
+    const eliminado = await this.confirmar.eliminar({
       titulo: 'Eliminar sucursal',
       mensaje: `Se eliminará ${sucursal.nombre}. Esta acción no se puede deshacer.`,
       confirmar: 'Eliminar sucursal',
-      peligro: true,
+      accion: (clave) => this.repo.eliminar(sucursal.idSucursal, clave),
     });
-    if (!confirmado) return;
-    try {
-      await this.repo.eliminar(sucursal.idSucursal);
-      this.avisos.exito('Sucursal eliminada.');
-      this.datos.reload();
-    } catch (error) {
-      this.avisos.error(mensajeDeError(error));
-    }
+    if (!eliminado) return;
+    this.avisos.exito('Sucursal eliminada.');
+    this.datos.reload();
   }
 }

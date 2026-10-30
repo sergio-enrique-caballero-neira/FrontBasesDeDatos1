@@ -4,7 +4,6 @@ import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faPen, faPlus, faTags, faTrashCan } from '@fortawesome/free-solid-svg-icons';
 import { NgbModal, NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
 import { Avisos } from '../../core/avisos';
-import { mensajeDeError } from '../../core/domain-error';
 import { Marca } from '../../core/models';
 import { MarcasRepository } from '../../data/catalogos.repository';
 import { ProductosRepository } from '../../data/productos.repository';
@@ -203,19 +202,14 @@ export class Marcas {
       return;
     }
     const { marca } = fila;
-    const confirmado = await this.confirmar.preguntar({
+    const eliminado = await this.confirmar.eliminar({
       titulo: 'Eliminar marca',
       mensaje: `Se eliminará la marca ${marca.nombre}. Esta acción no se puede deshacer.`,
       confirmar: 'Eliminar marca',
-      peligro: true,
+      accion: (clave) => this.repo.eliminar(marca.idMarca, clave),
     });
-    if (!confirmado) return;
-    try {
-      await this.repo.eliminar(marca.idMarca);
-      this.avisos.exito('Marca eliminada.');
-      this.marcas.reload();
-    } catch (error) {
-      this.avisos.error(mensajeDeError(error));
-    }
+    if (!eliminado) return;
+    this.avisos.exito('Marca eliminada.');
+    this.marcas.reload();
   }
 }

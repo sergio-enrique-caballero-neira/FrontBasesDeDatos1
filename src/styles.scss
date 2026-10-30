@@ -596,6 +596,27 @@ app-pie-tabla .pagination {
   }
 }
 
+// En pantallas táctiles botones y campos miden al menos 44px, lo mínimo para tocarlos con el dedo.
+@media (pointer: coarse) {
+  .btn,
+  .btn-sm,
+  .form-control,
+  .form-select {
+    min-height: 2.75rem;
+  }
+
+  .btn-icon,
+  .btn-icon.btn-sm {
+    width: 2.75rem;
+  }
+
+  .campo-clave .btn-ver-clave {
+    right: 0;
+    width: 2.75rem;
+    min-height: 2.75rem;
+  }
+}
+
 .invalid-feedback {
   font-size: 0.8125rem;
 }

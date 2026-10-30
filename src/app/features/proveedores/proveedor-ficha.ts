@@ -17,7 +17,7 @@ import {
 import { NgbModal, NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
 import { NOMBRE_APP } from '../../core/app-info';
 import { Avisos } from '../../core/avisos';
-import { mensajeDeError, NoEncontrado } from '../../core/domain-error';
+import { NoEncontrado } from '../../core/domain-error';
 import { nombreEmpleado, Suministro } from '../../core/models';
 import { Session } from '../../core/session';
 import { SucursalesRepository } from '../../data/catalogos.repository';
@@ -279,20 +279,15 @@ export class ProveedorFicha {
   protected async eliminarProveedor(): Promise<void> {
     if (!this.datos.hasValue()) return;
     const proveedor = this.datos.value().proveedor;
-    const confirmado = await this.confirmar.preguntar({
+    const eliminado = await this.confirmar.eliminar({
       titulo: 'Eliminar proveedor',
       mensaje: `Se eliminará ${proveedor.nombre} con sus correos. Esta acción no se puede deshacer.`,
       confirmar: 'Eliminar proveedor',
-      peligro: true,
+      accion: (clave) => this.repo.eliminar(proveedor.nit, clave),
     });
-    if (!confirmado) return;
-    try {
-      await this.repo.eliminar(proveedor.nit);
-      this.avisos.exito(`Proveedor ${proveedor.nombre} eliminado.`);
-      void this.router.navigateByUrl('/proveedores');
-    } catch (error) {
-      this.avisos.error(mensajeDeError(error));
-    }
+    if (!eliminado) return;
+    this.avisos.exito(`Proveedor ${proveedor.nombre} eliminado.`);
+    void this.router.navigateByUrl('/proveedores');
   }
 
   protected async editarSuministro(suministro: Suministro | null): Promise<void> {

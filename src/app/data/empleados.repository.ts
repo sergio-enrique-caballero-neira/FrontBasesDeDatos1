@@ -70,7 +70,7 @@ export class EmpleadosRepository {
     return aEmpleado(guardado);
   }
 
-  eliminar(idEmpleado: number): Promise<void> {
-    return this.api.delete(`/empleados/${idEmpleado}`);
+  eliminar(idEmpleado: number, claveSeguridad: string): Promise<void> {
+    return this.api.delete(`/empleados/${idEmpleado}`, claveSeguridad);
   }
 }

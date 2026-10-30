@@ -23,7 +23,6 @@ import {
   NgbTooltip,
 } from '@ng-bootstrap/ng-bootstrap';
 import { Avisos } from '../../core/avisos';
-import { mensajeDeError } from '../../core/domain-error';
 import { hoyISO } from '../../core/fechas';
 import { Inventario, Producto, Sucursal, UMBRAL_STOCK_BAJO } from '../../core/models';
 import { Session } from '../../core/session';
@@ -466,22 +465,17 @@ export class InventarioPage {
       }
       return;
     }
-    const confirmado = await this.confirmar.preguntar({
+    const eliminado = await this.confirmar.eliminar({
       titulo: 'Retirar producto de la sucursal',
       mensaje: `${producto.nombre} dejará de aparecer en el inventario de ${sucursal.nombre}. El producto sigue existiendo en el catálogo.`,
       confirmar: 'Retirar de la sucursal',
-      peligro: true,
+      accion: (clave) => this.repo.eliminar(fila.idProducto, fila.idSucursal, clave),
     });
-    if (!confirmado) {
+    if (!eliminado) {
       return;
     }
-    try {
-      await this.repo.eliminar(fila.idProducto, fila.idSucursal);
-      this.avisos.exito(`${producto.nombre} se retiró de ${sucursal.nombre}.`);
-      this.recargar();
-    } catch (error) {
-      this.avisos.error(mensajeDeError(error));
-    }
+    this.avisos.exito(`${producto.nombre} se retiró de ${sucursal.nombre}.`);
+    this.recargar();
   }
 
   protected recargar(): void {

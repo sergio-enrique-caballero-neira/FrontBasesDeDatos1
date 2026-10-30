@@ -21,12 +21,17 @@ export class Session {
   readonly vencida = signal(false);
   readonly esAdmin = computed(() => this.usuario()?.rol === 'ADMINISTRADOR');
   readonly esVendedor = computed(() => this.usuario()?.rol === 'VENDEDOR');
+  readonly nivel = computed(() => (this.esAdmin() ? (this.usuario()?.nivelAcceso ?? 0) : 0));
   readonly idSucursalFiltro = computed(() => {
     const seleccion = this.sucursal();
     return seleccion === undefined || seleccion === 'TODAS' ? null : seleccion;
   });
 
   private restaurando: Promise<void> | null = null;
+
+  tieneNivel(nivel: number): boolean {
+    return this.nivel() >= nivel;
+  }
 
   listo(): Promise<void> {
     this.restaurando ??= this.restaurar();

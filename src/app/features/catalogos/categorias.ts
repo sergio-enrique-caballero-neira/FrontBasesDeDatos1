@@ -5,7 +5,6 @@ import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faPen, faPlus, faSitemap, faTrashCan } from '@fortawesome/free-solid-svg-icons';
 import { NgbModal, NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
 import { Avisos } from '../../core/avisos';
-import { mensajeDeError } from '../../core/domain-error';
 import { Categoria } from '../../core/models';
 import { CategoriasRepository } from '../../data/catalogos.repository';
 import { ProductosRepository } from '../../data/productos.repository';
@@ -311,19 +310,14 @@ export class Categorias {
       this.avisos.error(`${motivo.texto}. ${motivo.solucion}`);
       return;
     }
-    const confirmado = await this.confirmar.preguntar({
+    const eliminado = await this.confirmar.eliminar({
       titulo: 'Eliminar categoría',
       mensaje: `Se eliminará ${categoria.nombre}. Esta acción no se puede deshacer.`,
       confirmar: 'Eliminar categoría',
-      peligro: true,
+      accion: (clave) => this.repo.eliminar(categoria.idCategoria, clave),
     });
-    if (!confirmado) return;
-    try {
-      await this.repo.eliminar(categoria.idCategoria);
-      this.avisos.exito('Categoría eliminada.');
-      this.arbol.reload();
-    } catch (error) {
-      this.avisos.error(mensajeDeError(error));
-    }
+    if (!eliminado) return;
+    this.avisos.exito('Categoría eliminada.');
+    this.arbol.reload();
   }
 }

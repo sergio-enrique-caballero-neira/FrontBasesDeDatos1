@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import {
   eligeSucursal,
+  requiereNivel,
   requiereSesion,
   requiereSucursal,
   salirDeVenta,
@@ -86,49 +87,61 @@ export const routes: Routes = [
             loadComponent: () => import('./features/productos/productos').then((m) => m.Productos),
           },
           {
-            path: 'proveedores/:nit',
-            title: 'Proveedor',
-            loadComponent: () => import('./features/proveedores/proveedor-ficha').then((m) => m.ProveedorFicha),
+            path: '',
+            canActivate: [requiereNivel(2)],
+            children: [
+              {
+                path: 'proveedores/:nit',
+                title: 'Proveedor',
+                loadComponent: () => import('./features/proveedores/proveedor-ficha').then((m) => m.ProveedorFicha),
+              },
+              {
+                path: 'proveedores',
+                title: 'Proveedores',
+                loadComponent: () => import('./features/proveedores/proveedores').then((m) => m.Proveedores),
+              },
+              {
+                path: 'suministros',
+                title: 'Suministros',
+                loadComponent: () => import('./features/suministros/suministros').then((m) => m.Suministros),
+              },
+              {
+                path: 'evaluaciones',
+                title: 'Evaluaciones de calidad',
+                loadComponent: () => import('./features/evaluaciones/evaluaciones').then((m) => m.Evaluaciones),
+              },
+            ],
           },
           {
-            path: 'proveedores',
-            title: 'Proveedores',
-            loadComponent: () => import('./features/proveedores/proveedores').then((m) => m.Proveedores),
-          },
-          {
-            path: 'suministros',
-            title: 'Suministros',
-            loadComponent: () => import('./features/suministros/suministros').then((m) => m.Suministros),
-          },
-          {
-            path: 'evaluaciones',
-            title: 'Evaluaciones de calidad',
-            loadComponent: () => import('./features/evaluaciones/evaluaciones').then((m) => m.Evaluaciones),
-          },
-          {
-            path: 'sucursales',
-            title: 'Sucursales',
-            loadComponent: () => import('./features/sucursales/sucursales').then((m) => m.Sucursales),
-          },
-          {
-            path: 'empleados',
-            title: 'Empleados',
-            loadComponent: () => import('./features/empleados/empleados').then((m) => m.Empleados),
-          },
-          {
-            path: 'catalogos/marcas',
-            title: 'Marcas',
-            loadComponent: () => import('./features/catalogos/marcas').then((m) => m.Marcas),
-          },
-          {
-            path: 'catalogos/categorias',
-            title: 'Categorías',
-            loadComponent: () => import('./features/catalogos/categorias').then((m) => m.Categorias),
-          },
-          {
-            path: 'catalogos/metodos-pago',
-            title: 'Métodos de pago',
-            loadComponent: () => import('./features/catalogos/metodos-pago').then((m) => m.MetodosPago),
+            path: '',
+            canActivate: [requiereNivel(3)],
+            children: [
+              {
+                path: 'sucursales',
+                title: 'Sucursales',
+                loadComponent: () => import('./features/sucursales/sucursales').then((m) => m.Sucursales),
+              },
+              {
+                path: 'empleados',
+                title: 'Empleados',
+                loadComponent: () => import('./features/empleados/empleados').then((m) => m.Empleados),
+              },
+              {
+                path: 'catalogos/marcas',
+                title: 'Marcas',
+                loadComponent: () => import('./features/catalogos/marcas').then((m) => m.Marcas),
+              },
+              {
+                path: 'catalogos/categorias',
+                title: 'Categorías',
+                loadComponent: () => import('./features/catalogos/categorias').then((m) => m.Categorias),
+              },
+              {
+                path: 'catalogos/metodos-pago',
+                title: 'Métodos de pago',
+                loadComponent: () => import('./features/catalogos/metodos-pago').then((m) => m.MetodosPago),
+              },
+            ],
           },
         ],
       },

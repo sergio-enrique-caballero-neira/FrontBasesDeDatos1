@@ -15,7 +15,6 @@ import { NgbModal, NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
 import { Avisos } from '../../core/avisos';
 import { fechaISO, hoyISO, sumarDias } from '../../core/fechas';
 import {
-  COMISION_VENDEDOR,
   DIAS_RITMO_VENTAS,
   Inventario,
   nombreCliente,
@@ -134,6 +133,8 @@ export class Inicio {
   protected readonly esAdmin = this.session.esAdmin;
   protected readonly hoy = hoyISO();
   protected readonly porTodas = computed(() => this.session.idSucursalFiltro() === null);
+  protected readonly veProveedores = computed(() => this.session.tieneNivel(2));
+  protected readonly comparaSucursales = computed(() => this.session.tieneNivel(3));
   protected readonly hayVentaEnCurso = this.ventaEnCurso.hayVenta;
   protected readonly ventaEnCursoResumen = this.ventaEnCurso.resumen;
   protected readonly pesos = pesos;
@@ -144,12 +145,12 @@ export class Inicio {
       const usuario = this.usuario();
       return this.esAdmin() || !usuario
         ? undefined
-        : { idEmpleado: usuario.idEmpleado, idSucursal: this.session.idSucursalFiltro() };
+        : { idEmpleado: usuario.idEmpleado, idSucursal: this.session.idSucursalFiltro(), tasa: usuario.comisionVenta };
     },
     loader: async ({ params }) => {
       const hoy = this.hoy;
       const mes = tramoDelMes(hoy);
-      const delDia: FiltroPeriodo = { ...params, desde: hoy, hasta: hoy };
+      const delDia: FiltroPeriodo = { idEmpleado: params.idEmpleado, idSucursal: params.idSucursal, desde: hoy, hasta: hoy };
       const delMes: FiltroPeriodo = { idSucursal: null, idEmpleado: params.idEmpleado, desde: mes.desde, hasta: hoy };
       const mesAnterior: FiltroPeriodo = { ...delMes, desde: mes.anteriorDesde, hasta: mes.anteriorHasta };
       const [ventas, clientes, metodos, sucursales, porMetodo, comisionMes, comisionAnterior, diasMes] = await Promise.all([
@@ -165,7 +166,7 @@ export class Inicio {
 
       const suya = comisionMes.find((c) => c.idEmpleado === params.idEmpleado);
       const anterior = comisionAnterior.find((c) => c.idEmpleado === params.idEmpleado);
-      const tasa = suya?.tasa ?? COMISION_VENDEDOR;
+      const tasa = params.tasa ?? suya?.tasa ?? 0;
       const totalHoy = ventas.reduce((suma, v) => suma + v.montoTotal, 0);
       const cantidadMes = suya?.cantidad ?? 0;
       const sedes = suya?.sucursales ?? [];
@@ -225,7 +226,8 @@ export class Inicio {
   });
 
   protected readonly reabastecer = resource({
-    params: () => (this.esAdmin() ? { idSucursal: this.session.idSucursalFiltro() } : undefined),
+    params: () =>
+      this.esAdmin() ? { idSucursal: this.session.idSucursalFiltro(), conProveedores: this.veProveedores() } : undefined,
     loader: async ({ params }) => {
       const hoy = this.hoy;
       const desde = restarDias(hoy, DIAS_RITMO_VENTAS - 1);
@@ -233,9 +235,9 @@ export class Inicio {
         this.inventarioRepo.listar(params.idSucursal),
         this.productosRepo.listar(),
         this.sucursalesRepo.listar(),
-        this.suministrosRepo.listar(),
-        this.proveedoresRepo.listar(),
-        this.evaluacionesRepo.listar(),
+        params.conProveedores ? this.suministrosRepo.listar() : Promise.resolve([]),
+        params.conProveedores ? this.proveedoresRepo.listar() : Promise.resolve([]),
+        params.conProveedores ? this.evaluacionesRepo.listar() : Promise.resolve([]),
         this.estadisticas.unidadesPorInventario({ idSucursal: params.idSucursal, desde, hasta: hoy }),
       ]);
 
@@ -283,7 +285,7 @@ export class Inicio {
           cobertura,
           entrega,
           alcanza: textoAlcanza(fila.cantidadDisponible, cobertura),
-          veredicto: veredicto(fila.cantidadDisponible, cobertura, entrega),
+          veredicto: params.conProveedores ? veredicto(fila.cantidadDisponible, cobertura, entrega) : null,
           sugerido: elegido
             ? {
                 suministro: elegido.suministro,

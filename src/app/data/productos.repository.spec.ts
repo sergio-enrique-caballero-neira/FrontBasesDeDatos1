@@ -126,8 +126,10 @@ describe('InventarioRepository', () => {
   });
 
   it('retirar con unidades muestra la regla del back', async () => {
-    const retiro = inventario.eliminar(1, 2);
-    http.expectOne(`${URL_API}/inventario/2/1`).flush(
+    const retiro = inventario.eliminar(1, 2, 'demo-admin');
+    const peticion = http.expectOne(`${URL_API}/inventario/2/1`);
+    expect(peticion.request.headers.get('X-Clave-Seguridad')).toBe('demo-admin');
+    peticion.flush(
       { estado: 400, codigo: 'REGLA_NEGOCIO', mensaje: 'Aún quedan 8 unidades en esta sucursal. Lleve la cantidad a 0 antes de retirar el producto.' },
       { status: 400, statusText: 'Bad Request' },
     );

@@ -93,8 +93,8 @@ export class ProveedoresRepository {
     return aProveedor(guardado);
   }
 
-  eliminar(nit: string): Promise<void> {
-    return this.api.delete(`/proveedores/${encodeURIComponent(nit)}`);
+  eliminar(nit: string, claveSeguridad: string): Promise<void> {
+    return this.api.delete(`/proveedores/${encodeURIComponent(nit)}`, claveSeguridad);
   }
 }
 
@@ -119,8 +119,8 @@ export class SuministrosRepository {
     return aSuministro(guardado);
   }
 
-  eliminar(suministro: Suministro): Promise<void> {
-    return this.api.delete(rutaSuministro(suministro));
+  eliminar(suministro: Suministro, claveSeguridad: string): Promise<void> {
+    return this.api.delete(rutaSuministro(suministro), claveSeguridad);
   }
 }
 
@@ -147,7 +147,7 @@ export class EvaluacionesRepository {
     return aEvaluacion(await this.api.post<EvaluacionApi>('/evaluaciones', cuerpo));
   }
 
-  eliminar(idEvaluacion: number): Promise<void> {
-    return this.api.delete(`/evaluaciones/${idEvaluacion}`);
+  eliminar(idEvaluacion: number, claveSeguridad: string): Promise<void> {
+    return this.api.delete(`/evaluaciones/${idEvaluacion}`, claveSeguridad);
   }
 }

@@ -4,7 +4,9 @@ import { firstValueFrom, Observable } from 'rxjs';
 import { URL_API } from './configuracion';
 import { DomainError, NoEncontrado } from './domain-error';
 
-export type Parametros = Record<string, string | number | boolean | null | undefined>;
+export const ENCABEZADO_CLAVE = 'X-Clave-Seguridad';
+
+export type Parametros =Record<string, string | number | boolean | null | undefined>;
 
 interface ErrorApi {
   mensaje?: unknown;
@@ -29,8 +31,10 @@ export class Api {
     return this.modificar(this.http.put<T>(URL_API + ruta, cuerpo));
   }
 
-  delete(ruta: string): Promise<void> {
-    return this.modificar(this.http.delete<void>(URL_API + ruta));
+  delete(ruta: string, claveSeguridad: string): Promise<void> {
+    return this.modificar(
+      this.http.delete<void>(URL_API + ruta, { headers: { [ENCABEZADO_CLAVE]: encodeURIComponent(claveSeguridad) } }),
+    );
   }
 
   private async modificar<T>(peticion: Observable<T>): Promise<T> {

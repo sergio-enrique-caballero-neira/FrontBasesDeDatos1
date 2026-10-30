@@ -30,6 +30,15 @@ export const soloAdministrador: CanActivateFn = async (ruta) => {
   return session.esAdmin() ? true : sinPermiso(router, ruta);
 };
 
+export function requiereNivel(nivel: number): CanActivateFn {
+  return async (ruta) => {
+    const session = inject(Session);
+    const router = inject(Router);
+    await session.listo();
+    return session.tieneNivel(nivel) ? true : sinPermiso(router, ruta, nivel);
+  };
+}
+
 export const soloVendedor: CanActivateFn = async (ruta) => {
   const session = inject(Session);
   const router = inject(Router);
@@ -86,13 +95,13 @@ function mensajeVentaEnCurso(venta: VentaEnCurso): string {
   return `El carrito tiene ${que}${cuanto} y la venta aún no está registrada. Si sales, se pierde.`;
 }
 
-function sinPermiso(router: Router, ruta: ActivatedRouteSnapshot) {
+function sinPermiso(router: Router, ruta: ActivatedRouteSnapshot, nivel?: number) {
   let destino = ruta;
   while (destino.firstChild) {
     destino = destino.firstChild;
   }
   const titulo = destino.routeConfig?.title ?? ruta.routeConfig?.title;
   return router.createUrlTree(['/sin-permiso'], {
-    queryParams: typeof titulo === 'string' ? { seccion: titulo } : {},
+    queryParams: { ...(typeof titulo === 'string' ? { seccion: titulo } : {}), ...(nivel ? { nivel } : {}) },
   });
 }

@@ -4,7 +4,6 @@ import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faPen, faPlus, faStar, faTrashCan, faTruck } from '@fortawesome/free-solid-svg-icons';
 import { NgbModal, NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
 import { Avisos } from '../../core/avisos';
-import { mensajeDeError } from '../../core/domain-error';
 import { Proveedor } from '../../core/models';
 import { EvaluacionesRepository, ProveedoresRepository, SuministrosRepository } from '../../data/proveedores.repository';
 import { Confirmar } from '../../shared/confirmar';
@@ -240,19 +239,14 @@ export class Proveedores {
   }
 
   protected async eliminar(proveedor: Proveedor): Promise<void> {
-    const confirmado = await this.confirmar.preguntar({
+    const eliminado = await this.confirmar.eliminar({
       titulo: 'Eliminar proveedor',
       mensaje: `Se eliminará ${proveedor.nombre} con sus correos. Esta acción no se puede deshacer.`,
       confirmar: 'Eliminar proveedor',
-      peligro: true,
+      accion: (clave) => this.repo.eliminar(proveedor.nit, clave),
     });
-    if (!confirmado) return;
-    try {
-      await this.repo.eliminar(proveedor.nit);
-      this.avisos.exito('Proveedor eliminado.');
-      this.proveedores.reload();
-    } catch (error) {
-      this.avisos.error(mensajeDeError(error));
-    }
+    if (!eliminado) return;
+    this.avisos.exito('Proveedor eliminado.');
+    this.proveedores.reload();
   }
 }

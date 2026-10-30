@@ -135,16 +135,6 @@ export class VentasRepository {
     return (await this.api.get<LineaVendidaApi[]>('/ventas/lineas', parametros(filtro))).map(aLineaVendida);
   }
 
-  async historialCliente(idCliente: number): Promise<{ ventas: Venta[]; detalles: DetalleVenta[] }> {
-    const [ventas, lineas] = await Promise.all([
-      this.listar({ idSucursal: null, idCliente }),
-      this.listarLineas({ idSucursal: null, idCliente }),
-    ]);
-    return {
-      ventas,
-      detalles: lineas.map((l) => ({ idVenta: l.idVenta, idProducto: l.idProducto, cantidad: l.cantidad, precioUnitario: l.precioUnitario })),
-    };
-  }
 
   async obtener(idVenta: number): Promise<VentaConDetalle> {
     return aConDetalle(await this.api.get<VentaApi>(`/ventas/${idVenta}`));

@@ -12,7 +12,6 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { NgbModal, NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
 import { Avisos } from '../../core/avisos';
-import { mensajeDeError } from '../../core/domain-error';
 import { fechaISO, hoyISO } from '../../core/fechas';
 import { COMISION_VENDEDOR, Empleado, nombreEmpleado, Rol } from '../../core/models';
 import { Session } from '../../core/session';
@@ -44,7 +43,7 @@ interface FilaComision extends ComisionVendedor {
 }
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
-const NIVELES: Record<number, string> = { 1: 'Consulta', 2: 'Operación', 3: 'Total' };
+const NIVELES: Record<number, string> = { 1: 'Mostrador y productos', 2: 'Más proveedores', 3: 'Todo' };
 const formatoMes = new Intl.DateTimeFormat('es-CO', { month: 'long' });
 const formatoMesCorto = new Intl.DateTimeFormat('es-CO', { month: 'short' });
 
@@ -357,20 +356,15 @@ export class Empleados {
   }
 
   protected async eliminar(empleado: Empleado): Promise<void> {
-    const confirmado = await this.confirmar.preguntar({
+    const eliminado = await this.confirmar.eliminar({
       titulo: 'Eliminar empleado',
       mensaje: `Se eliminará a ${nombreEmpleado(empleado)} con sus teléfonos. Esta acción no se puede deshacer.`,
       confirmar: 'Eliminar empleado',
-      peligro: true,
+      accion: (clave) => this.repo.eliminar(empleado.idEmpleado, clave),
     });
-    if (!confirmado) return;
-    try {
-      await this.repo.eliminar(empleado.idEmpleado);
-      this.avisos.exito('Empleado eliminado.');
-      this.personal.reload();
-      this.comisiones.reload();
-    } catch (error) {
-      this.avisos.error(mensajeDeError(error));
-    }
+    if (!eliminado) return;
+    this.avisos.exito('Empleado eliminado.');
+    this.personal.reload();
+    this.comisiones.reload();
   }
 }

@@ -87,11 +87,14 @@
         <div class="col-sm-5">
           <label for="emp-nivel" class="form-label">Nivel de acceso</label>
           <select id="emp-nivel" class="form-select" formControlName="nivelAcceso" aria-describedby="emp-nivel-ayuda">
-            <option [ngValue]="1">1 · Consulta</option>
-            <option [ngValue]="2">2 · Operación</option>
-            <option [ngValue]="3">3 · Total</option>
+            <option [ngValue]="1">1 · Mostrador y productos</option>
+            <option [ngValue]="2">2 · Más proveedores</option>
+            <option [ngValue]="3">3 · Todo</option>
           </select>
-          <div class="form-text" id="emp-nivel-ayuda">Se guarda para cuando el back aplique permisos por nivel.</div>
+          <div class="form-text" id="emp-nivel-ayuda">
+            1: inicio, ventas, clientes, inventario y productos. 2: además proveedores, suministros y evaluaciones.
+            3: además empleados, sucursales y catálogos. Un cambio aplica cuando vuelve a iniciar sesión.
+          </div>
         </div>
         <div class="col-sm-7">
           <label for="emp-clave" class="form-label">Clave de seguridad</label>
@@ -101,7 +104,7 @@
             <app-ver-clave [campo]="campoClave" />
           </div>
           <div class="form-text" id="emp-clave-ayuda">
-            {{ existente() ? 'Déjala vacía para conservar la actual.' : 'Se guarda cifrada.' }} Mínimo 6 caracteres.
+            Se pide para eliminar registros. Mínimo 6 caracteres.{{ existente() ? ' Déjala vacía para conservar la actual.' : '' }}
           </div>
           <app-campo-error [control]="form.controls.claveSeguridad" [enviado]="enviado()" id="emp-clave-error" />
         </div>

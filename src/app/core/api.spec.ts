@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { Api } from './api';
+import { Api, ENCABEZADO_CLAVE } from './api';
 import { URL_API } from './configuracion';
 import { DomainError, NoEncontrado } from './domain-error';
 
@@ -36,12 +36,31 @@ describe('Api', () => {
   });
 
   it('un 409 muestra el mensaje del back', async () => {
-    const respuesta = api.delete('/marcas/1');
+    const respuesta = api.delete('/marcas/1', 'demo-admin');
     http.expectOne(`${URL_API}/marcas/1`).flush(
       { estado: 409, codigo: 'CONFLICTO', mensaje: 'No se puede eliminar la marca: la usan 3 productos.' },
       { status: 409, statusText: 'Conflict' },
     );
     await expect(respuesta).rejects.toThrow(new DomainError('No se puede eliminar la marca: la usan 3 productos.'));
+  });
+
+  it('al eliminar envía la clave de seguridad codificada en su encabezado', async () => {
+    const respuesta = api.delete('/marcas/8', 'ñandú 2026+');
+    const peticion = http.expectOne(`${URL_API}/marcas/8`);
+    expect(peticion.request.method).toBe('DELETE');
+    expect(peticion.request.headers.get(ENCABEZADO_CLAVE)).toBe('%C3%B1and%C3%BA%202026%2B');
+    peticion.flush(null, { status: 204, statusText: 'No Content' });
+    await respuesta;
+    expect(api.cambios()).toBe(1);
+  });
+
+  it('una clave incorrecta muestra el mensaje del back sin cerrar la sesión', async () => {
+    const respuesta = api.delete('/marcas/8', 'otra');
+    http.expectOne(`${URL_API}/marcas/8`).flush(
+      { estado: 403, codigo: 'CLAVE_INCORRECTA', mensaje: 'La clave de seguridad no es correcta.' },
+      { status: 403, statusText: 'Forbidden' },
+    );
+    await expect(respuesta).rejects.toThrow(new DomainError('La clave de seguridad no es correcta.'));
   });
 
   it('un 400 de validación muestra el primer campo con error', async () => {

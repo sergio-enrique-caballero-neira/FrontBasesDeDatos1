@@ -53,6 +53,20 @@ describe('Session', () => {
     expect(session.sucursal()).toBe(1);
   });
 
+  it('el nivel del administrador abre sus áreas y el vendedor no tiene nivel', async () => {
+    const session = crear();
+    const login = session.iniciarSesion('ricardo.moreno@ferreteria.demo', 'Ferreteria2026');
+    http.expectOne(`${URL_API}/auth/login`).flush({ token: 't', tipo: 'Bearer', expiraEnMs: 1000, empleado: { ...LAURA, idEmpleado: 10, nivelAcceso: 1 } });
+    await login;
+    expect([session.nivel(), session.tieneNivel(1), session.tieneNivel(2), session.tieneNivel(3)]).toEqual([1, true, false, false]);
+
+    session.usuario.set({ ...LAURA, nivelAcceso: 3 } as never);
+    expect(session.tieneNivel(3)).toBe(true);
+
+    session.usuario.set({ ...CAMILA, nivelAcceso: 3 } as never);
+    expect([session.nivel(), session.tieneNivel(1)]).toEqual([0, false]);
+  });
+
   it('el administrador inicia sesión sin sucursal y luego elige', async () => {
     const session = crear();
     const login = session.iniciarSesion('laura.gomez@ferreteria.demo', 'Ferreteria2026');
