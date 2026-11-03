@@ -4,7 +4,8 @@ import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faClipboardCheck, faPen, faPlus, faStar, faTrashCan, faTruckRampBox } from '@fortawesome/free-solid-svg-icons';
 import { NgbModal, NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
 import { Avisos } from '../../core/avisos';
-import { Producto, Proveedor, Sucursal, Suministro } from '../../core/models';
+import { hoyISO } from '../../core/fechas';
+import { pendienteDeEvaluar, Producto, Proveedor, Sucursal, Suministro } from '../../core/models';
 import { Session } from '../../core/session';
 import { SucursalesRepository } from '../../data/catalogos.repository';
 import { ProductosRepository } from '../../data/productos.repository';
@@ -138,7 +139,7 @@ export class Suministros {
   protected readonly porTodas = computed(() => this.session.idSucursalFiltro() === null);
   protected readonly busqueda = signal('');
   protected readonly nit = linkedSignal(() => this.proveedor() ?? '');
-  protected readonly soloSinEvaluar = signal(false);
+  protected readonly soloPendientes = signal(false);
   protected readonly orden = new Orden<'proveedor' | 'producto' | 'sucursal' | 'precio' | 'entrega' | 'calidad'>();
 
   protected readonly datos = resource({
@@ -192,17 +193,17 @@ export class Suministros {
     );
   });
 
-  protected readonly sinEvaluar = computed(() => this.porProveedorYTexto().filter((f) => f.evaluaciones === 0).length);
+  protected readonly pendientes = computed(() => this.porProveedorYTexto().filter((f) => pendienteDeEvaluar(f.ultima, hoyISO())).length);
 
   protected readonly filtradas = computed(() =>
-    this.soloSinEvaluar() ? this.porProveedorYTexto().filter((f) => f.evaluaciones === 0) : this.porProveedorYTexto(),
+    this.soloPendientes() ? this.porProveedorYTexto().filter((f) => pendienteDeEvaluar(f.ultima, hoyISO())) : this.porProveedorYTexto(),
   );
 
   protected readonly sinResultados = computed(() =>
-    this.soloSinEvaluar() && this.porProveedorYTexto().length > 0
+    this.soloPendientes() && this.porProveedorYTexto().length > 0
       ? {
-          titulo: 'Todos estos suministros ya tienen evaluación',
-          detalle: 'Apaga "Solo sin evaluar" para verlos, o elige otro proveedor.',
+          titulo: 'Ninguno de estos suministros está pendiente de evaluar',
+          detalle: 'Apaga "Solo pendientes de evaluar" para verlos, o elige otro proveedor.',
         }
       : {
           titulo: 'Ningún suministro coincide con los filtros',
@@ -211,7 +212,7 @@ export class Suministros {
   );
 
   protected readonly filtrosActivos = computed(
-    () => (this.nit() ? 1 : 0) + (this.busqueda().trim() ? 1 : 0) + (this.soloSinEvaluar() ? 1 : 0),
+    () => (this.nit() ? 1 : 0) + (this.busqueda().trim() ? 1 : 0) + (this.soloPendientes() ? 1 : 0),
   );
 
   protected readonly ordenadas = computed(() =>
@@ -226,7 +227,7 @@ export class Suministros {
   );
 
   protected readonly pagina = linkedSignal({
-    source: () => [this.nit(), this.busqueda(), this.soloSinEvaluar(), this.orden.estado(), this.session.idSucursalFiltro()],
+    source: () => [this.nit(), this.busqueda(), this.soloPendientes(), this.orden.estado(), this.session.idSucursalFiltro()],
     computation: () => 1,
   });
   protected readonly porPagina = signal(15);
@@ -248,7 +249,7 @@ export class Suministros {
 
   protected quitarFiltros(): void {
     this.busqueda.set('');
-    this.soloSinEvaluar.set(false);
+    this.soloPendientes.set(false);
     this.elegirProveedor('');
   }
 

@@ -20,6 +20,9 @@
         <input type="radio" class="btn-check" id="tipo-juridico" value="JURIDICO" formControlName="tipo" />
         <label class="btn btn-outline-secondary" for="tipo-juridico">Persona jurídica</label>
       </div>
+      @if (existente()) {
+        <div class="form-text">El tipo de cliente no se cambia después del registro.</div>
+      }
     </fieldset>
 
     @if (form.controls.tipo.value === 'NATURAL') {

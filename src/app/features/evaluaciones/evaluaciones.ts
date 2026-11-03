@@ -25,8 +25,8 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { NgbModal, NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
 import { Avisos } from '../../core/avisos';
-import { hoyISO } from '../../core/fechas';
-import { DIAS_REEVALUACION, nombreEmpleado } from '../../core/models';
+import { diasEntre, hoyISO } from '../../core/fechas';
+import { DIAS_REEVALUACION, nombreEmpleado, pendienteDeEvaluar } from '../../core/models';
 import { Session } from '../../core/session';
 import { SucursalesRepository } from '../../data/catalogos.repository';
 import { EmpleadosRepository } from '../../data/empleados.repository';
@@ -53,14 +53,6 @@ const PENDIENTES_VISIBLES = 8;
 type FiltroCalificacion = 'todas' | 'baja' | 'media' | 'alta';
 type FiltroATiempo = 'todos' | 'si' | 'no';
 type DestinoFoco = 'resumen-titulo' | 'pendientes-titulo' | 'historial-titulo';
-
-function diasEntre(desde: string, hasta: string): number {
-  const utc = (iso: string) => {
-    const [anio, mes, dia] = iso.split('-').map(Number);
-    return Date.UTC(anio, mes - 1, dia);
-  };
-  return Math.round((utc(hasta) - utc(desde)) / 86_400_000);
-}
 
 @Component({
   selector: 'app-evaluaciones',
@@ -207,7 +199,7 @@ export class Evaluaciones {
             elegible: elegibles.find((e) => e.clave === clave) ?? null,
           };
         })
-        .filter((p) => p.dias === null || p.dias > DIAS_REEVALUACION)
+        .filter((p) => pendienteDeEvaluar(p.ultima, hoy))
         .sort(
           (a, b) =>
             (b.dias ?? Infinity) - (a.dias ?? Infinity) ||
