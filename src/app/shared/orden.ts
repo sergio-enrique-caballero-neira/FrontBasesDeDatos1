@@ -67,6 +67,11 @@ export class Orden<C extends string> {
         white-space: normal;
       }
     }
+    @media (pointer: coarse) {
+      button {
+        min-height: 2.75rem;
+      }
+    }
     button:hover,
     button.activo {
       color: var(--ink);

@@ -217,7 +217,7 @@
                   <app-encabezado-orden [orden]="orden" columna="disponible" texto="Disponible" />
                 </th>
                 @if (!porTodas()) {
-                  <th scope="col" class="text-end" [attr.aria-sort]="orden.ariaSort('otras')">
+                  <th scope="col" class="text-end col-sec" [attr.aria-sort]="orden.ariaSort('otras')">
                     <app-encabezado-orden [orden]="orden" columna="otras" texto="Otras sedes" />
                   </th>
                 }
@@ -228,6 +228,50 @@
             </thead>
             <tbody>
               @for (item of paginaRegistros(); track item.fila.idProducto + '-' + item.fila.idSucursal) {
+                <ng-template #otrasDelProducto>
+                  @if (otrasSedes.hasValue()) {
+                    @let otras = otrasDe(item.producto.idProducto)!;
+                    <ng-template #detalleSedes>
+                      <ul class="list-unstyled mb-0 d-grid gap-1">
+                        @for (sede of otras.sedes; track sede.sucursal.idSucursal) {
+                          <li class="d-flex justify-content-between gap-3">
+                            <span>
+                              {{ sede.sucursal.nombre }}
+                              <span class="text-body-secondary">· {{ sede.sucursal.ciudad }}</span>
+                            </span>
+                            @if (sede.cantidad === null) {
+                              <span class="text-body-secondary">No lo maneja</span>
+                            } @else if (sede.cantidad <= umbral) {
+                              <span class="stock-low num">
+                                <fa-icon [icon]="iconos.faTriangleExclamation" class="me-1" />{{ sede.cantidad }}
+                                <span class="visually-hidden">, stock bajo</span>
+                              </span>
+                            } @else {
+                              <span class="num fw-medium">{{ sede.cantidad }}</span>
+                            }
+                          </li>
+                        }
+                      </ul>
+                    </ng-template>
+                    <button
+                      type="button"
+                      class="otras-sedes num"
+                      [class.ninguna]="otras.manejan === 0"
+                      [ngbPopover]="detalleSedes"
+                      popoverTitle="En otras sedes"
+                      placement="bottom-end top-end auto"
+                      container="body"
+                      [attr.aria-label]="etiquetaOtras(item.producto.nombre, otras)"
+                    >
+                      {{ otras.manejan === 0 ? 'Ninguna' : otras.total }}
+                    </button>
+                  } @else if (otrasSedes.error()) {
+                    <span class="text-body-secondary">No disponible</span>
+                  } @else {
+                    <span class="espera" aria-hidden="true"></span>
+                    <span class="visually-hidden">Consultando otras sedes</span>
+                  }
+                </ng-template>
                 <tr>
                   <td>
                     @if (esAdmin()) {
@@ -243,6 +287,7 @@
                       {{ item.fila.ubicacionBodega }}
                       @if (!porTodas()) {
                         · <span class="num">{{ item.producto.precioBaseVenta | pesos }}</span>
+                        · otras sedes: <ng-container [ngTemplateOutlet]="otrasDelProducto" />
                       }
                     </div>
                   </td>
@@ -266,50 +311,7 @@
                     }
                   </td>
                   @if (!porTodas()) {
-                    <td class="text-end num">
-                      @if (otrasSedes.hasValue()) {
-                        @let otras = otrasDe(item.producto.idProducto)!;
-                        <ng-template #detalleSedes>
-                          <ul class="list-unstyled mb-0 d-grid gap-1">
-                            @for (sede of otras.sedes; track sede.sucursal.idSucursal) {
-                              <li class="d-flex justify-content-between gap-3">
-                                <span>
-                                  {{ sede.sucursal.nombre }}
-                                  <span class="text-body-secondary">· {{ sede.sucursal.ciudad }}</span>
-                                </span>
-                                @if (sede.cantidad === null) {
-                                  <span class="text-body-secondary">No lo maneja</span>
-                                } @else if (sede.cantidad <= umbral) {
-                                  <span class="stock-low num">
-                                    <fa-icon [icon]="iconos.faTriangleExclamation" class="me-1" />{{ sede.cantidad }}
-                                    <span class="visually-hidden">, stock bajo</span>
-                                  </span>
-                                } @else {
-                                  <span class="num fw-medium">{{ sede.cantidad }}</span>
-                                }
-                              </li>
-                            }
-                          </ul>
-                        </ng-template>
-                        <button
-                          type="button"
-                          class="otras-sedes num"
-                          [class.ninguna]="otras.manejan === 0"
-                          [ngbPopover]="detalleSedes"
-                          popoverTitle="En otras sedes"
-                          placement="bottom-end top-end auto"
-                          container="body"
-                          [attr.aria-label]="etiquetaOtras(item.producto.nombre, otras)"
-                        >
-                          {{ otras.manejan === 0 ? 'Ninguna' : otras.total }}
-                        </button>
-                      } @else if (otrasSedes.error()) {
-                        <span class="text-body-secondary">No disponible</span>
-                      } @else {
-                        <span class="espera" aria-hidden="true"></span>
-                        <span class="visually-hidden">Consultando otras sedes</span>
-                      }
-                    </td>
+                    <td class="text-end num col-sec"><ng-container [ngTemplateOutlet]="otrasDelProducto" /></td>
                   }
                   @if (esAdmin()) {
                     <td class="text-end text-nowrap">

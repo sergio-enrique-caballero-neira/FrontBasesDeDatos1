@@ -85,6 +85,7 @@ export class ClienteDialogo {
       numeroDocumento: cliente.numeroDocumento,
       direccion: cliente.direccion,
     });
+    this.form.controls.tipo.disable();
     this.campoInicial.set(cliente.tipo === 'NATURAL' ? 'nombre' : 'razonSocial');
   }
 

@@ -1,3 +1,5 @@
+import { diasEntre } from './fechas';
+
 export type Rol = 'ADMINISTRADOR' | 'VENDEDOR';
 
 export interface Sucursal {
@@ -130,6 +132,10 @@ export const UMBRAL_STOCK_BAJO = 5;
 export const DOCUMENTO_CONSUMIDOR_FINAL = '222222222222';
 
 export const DIAS_REEVALUACION = 30;
+
+export function pendienteDeEvaluar(ultima: string | null, hoy: string): boolean {
+  return !ultima || diasEntre(ultima, hoy) > DIAS_REEVALUACION;
+}
 
 export const DIAS_RITMO_VENTAS = 30;
 

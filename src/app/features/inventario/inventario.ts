@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, linkedSignal, resource, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
@@ -72,6 +73,7 @@ const CLAVE_VISTA = 'ferreteria.inventario.vista';
 @Component({
   selector: 'app-inventario',
   imports: [
+    NgTemplateOutlet,
     RouterLink,
     FaIconComponent,
     NgbTooltip,

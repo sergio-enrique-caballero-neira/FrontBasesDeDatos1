@@ -129,6 +129,11 @@ $dropdown-link-hover-bg: var(--canvas);
 $dropdown-link-active-bg: var(--canvas);
 $dropdown-link-active-color: var(--ink);
 $dropdown-header-color: var(--muted);
+$popover-bg: var(--paper);
+$popover-border-color: var(--hairline);
+$popover-header-bg: var(--paper);
+$popover-header-color: var(--ink);
+$popover-body-color: var(--ink);
 $toast-border-radius: $border-radius-lg;
 $toast-background-color: var(--paper);
 $toast-border-color: var(--hairline);
@@ -200,6 +205,7 @@ $theme-colors: map-merge($theme-colors, $custom-colors);
 @import 'bootstrap/scss/toasts';
 @import 'bootstrap/scss/modal';
 @import 'bootstrap/scss/tooltip';
+@import 'bootstrap/scss/popover';
 @import 'bootstrap/scss/offcanvas';
 @import 'bootstrap/scss/spinners';
 @import 'bootstrap/scss/helpers';
@@ -605,6 +611,29 @@ app-pie-tabla .pagination {
     min-height: 2.75rem;
   }
 
+  .btn {
+    min-width: 2.75rem;
+  }
+
+  .segmento button,
+  .chips button {
+    min-height: 2.75rem;
+  }
+
+  .form-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+  }
+
+  .form-check-input {
+    margin-top: 0;
+  }
+
+  .form-check-label {
+    padding-block: 0.75rem;
+  }
+
   .btn-icon,
   .btn-icon.btn-sm {
     width: 2.75rem;
@@ -660,13 +689,24 @@ app-pie-tabla .pagination {
 
     > .btn {
       display: flex;
-      width: max-content;
+      align-items: center;
+      justify-content: center;
       margin: 0 0 0.25rem auto !important;
+    }
+
+    > .btn:not(.btn-icon) {
+      width: max-content;
     }
 
     > .btn:last-child {
       margin-bottom: 0 !important;
     }
+  }
+
+  // Lo mismo en los catálogos, donde los botones van dentro de .acciones-fila.
+  .table > tbody > tr > td:last-child > .acciones-fila {
+    flex-direction: column;
+    align-items: flex-end;
   }
 
   // Si aun así la tabla es más ancha que la pantalla, la columna de acciones queda fija

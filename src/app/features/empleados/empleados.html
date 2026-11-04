@@ -95,7 +95,7 @@
                 <th scope="col" class="text-end col-sec" [attr.aria-sort]="orden.ariaSort('cantidad')">
                   <app-encabezado-orden [orden]="orden" columna="cantidad" texto="Ventas" />
                 </th>
-                <th scope="col" class="text-end" [attr.aria-sort]="orden.ariaSort('total')">
+                <th scope="col" class="text-end col-sec" [attr.aria-sort]="orden.ariaSort('total')">
                   <app-encabezado-orden [orden]="orden" columna="total" texto="Total vendido" />
                 </th>
                 <th scope="col" class="text-end col-sec" [attr.aria-sort]="orden.ariaSort('ticket')">
@@ -120,7 +120,7 @@
                     }
                     <span class="solo-movil small text-body-secondary">
                       @if (fila.cantidad) {
-                        {{ fila.cantidad }} {{ fila.cantidad === 1 ? 'venta' : 'ventas' }} · tasa {{ porcentaje(fila.tasa) }} ·
+                        <span class="num">{{ fila.total | pesos }}</span> en {{ fila.cantidad }} {{ fila.cantidad === 1 ? 'venta' : 'ventas' }} · tasa {{ porcentaje(fila.tasa) }} ·
                         {{ fila.sucursales.join(', ') }}
                       } @else {
                         Sin ventas en el periodo
@@ -135,7 +135,7 @@
                     }
                   </td>
                   <td class="text-end num col-sec">{{ fila.cantidad }}</td>
-                  <td class="text-end">
+                  <td class="text-end col-sec">
                     <app-barra-celda [texto]="pesos(fila.total)" [proporcion]="proporcion(fila.total)" />
                   </td>
                   <td class="text-end num col-sec">
@@ -170,12 +170,12 @@
                 <th scope="row">
                   Totales
                   <span class="solo-movil small fw-normal text-body-secondary">
-                    {{ totales().cantidad }} {{ totales().cantidad === 1 ? 'venta' : 'ventas' }}
+                    <span class="num">{{ totales().total | pesos }}</span> en {{ totales().cantidad }} {{ totales().cantidad === 1 ? 'venta' : 'ventas' }}
                   </span>
                 </th>
                 <td class="col-sec"></td>
                 <td class="text-end num fw-semibold col-sec">{{ totales().cantidad }}</td>
-                <td class="text-end num fw-semibold">{{ totales().total | pesos }}</td>
+                <td class="text-end num fw-semibold col-sec">{{ totales().total | pesos }}</td>
                 <td class="text-end num fw-semibold col-sec">{{ totales().ticket | pesos }}</td>
                 <td class="col-sec"></td>
                 <td class="text-end num fw-semibold">

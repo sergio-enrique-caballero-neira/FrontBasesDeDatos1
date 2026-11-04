@@ -114,7 +114,7 @@
                   <th scope="col" class="text-end col-sec" [attr.aria-sort]="orden.ariaSort('stock')">
                     <app-encabezado-orden [orden]="orden" columna="stock" texto="Stock" />
                   </th>
-                  <th scope="col" class="text-end" [attr.aria-sort]="orden.ariaSort('vendidas')">
+                  <th scope="col" class="text-end col-sec" [attr.aria-sort]="orden.ariaSort('vendidas')">
                     <app-encabezado-orden [orden]="orden" columna="vendidas" texto="Vendidas (30 días)" />
                   </th>
                   <th scope="col" class="text-end" [attr.aria-sort]="orden.ariaSort('utilidad')">
@@ -133,7 +133,12 @@
                       </a>
                       <span class="code-tag mt-1">{{ fila.producto.codigo }}</span>
                       <span class="d-block solo-movil small text-body-secondary mt-1">
-                        {{ fila.marca }} · {{ fila.categoria }} · stock <span class="num">{{ fila.producto.stock }}</span>
+                        {{ fila.marca }} · {{ fila.categoria }} · stock <span class="num">{{ fila.producto.stock }}</span> ·
+                        @if (fila.unidades > 0) {
+                          <span class="num">{{ unidades(fila.unidades) }}</span> {{ fila.unidades === 1 ? 'vendida' : 'vendidas' }} en 30 días
+                        } @else {
+                          sin ventas en 30 días
+                        }
                       </span>
                     </td>
                     <td class="col-sec">{{ fila.marca }}</td>
@@ -149,7 +154,7 @@
                     </td>
                     <td class="text-end num col-sec">{{ porcentaje(fila.margen) }}</td>
                     <td class="text-end num col-sec">{{ fila.producto.stock }}</td>
-                    <td class="text-end">
+                    <td class="text-end col-sec">
                       @if (fila.unidades > 0) {
                         <app-barra-celda [texto]="unidades(fila.unidades)" [proporcion]="proporcion(fila.unidades, maxUnidades())" />
                       } @else {

@@ -18,7 +18,8 @@ import { NgbModal, NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
 import { NOMBRE_APP } from '../../core/app-info';
 import { Avisos } from '../../core/avisos';
 import { NoEncontrado } from '../../core/domain-error';
-import { nombreEmpleado, Suministro } from '../../core/models';
+import { hoyISO } from '../../core/fechas';
+import { nombreEmpleado, pendienteDeEvaluar, Suministro } from '../../core/models';
 import { Session } from '../../core/session';
 import { SucursalesRepository } from '../../data/catalogos.repository';
 import { EmpleadosRepository } from '../../data/empleados.repository';
@@ -208,17 +209,17 @@ export class ProveedorFicha {
     },
   ]);
 
-  protected readonly soloSinEvaluar = linkedSignal({ source: this.nit, computation: () => false });
+  protected readonly soloPendientes = linkedSignal({ source: this.nit, computation: () => false });
   protected readonly orden = new Orden<'producto' | 'sucursal' | 'precio' | 'entrega' | 'calidad' | 'ultima'>();
 
-  protected readonly sinEvaluar = computed(() =>
-    this.datos.hasValue() ? this.datos.value().filas.filter((f) => f.evaluaciones === 0).length : 0,
+  protected readonly pendientes = computed(() =>
+    this.datos.hasValue() ? this.datos.value().filas.filter((f) => pendienteDeEvaluar(f.ultima, hoyISO())).length : 0,
   );
 
   protected readonly suministrosVisibles = computed(() => {
     if (!this.datos.hasValue()) return [];
     const filas = this.datos.value().filas;
-    return this.orden.aplicar(this.soloSinEvaluar() ? filas.filter((f) => f.evaluaciones === 0) : filas, {
+    return this.orden.aplicar(this.soloPendientes() ? filas.filter((f) => pendienteDeEvaluar(f.ultima, hoyISO())) : filas, {
       producto: (f) => f.producto,
       sucursal: (f) => f.sucursal,
       precio: (f) => f.suministro.precioSuministro,
@@ -229,7 +230,7 @@ export class ProveedorFicha {
   });
 
   protected readonly paginaSuministros = linkedSignal({
-    source: () => [this.nit(), this.soloSinEvaluar(), this.orden.estado()],
+    source: () => [this.nit(), this.soloPendientes(), this.orden.estado()],
     computation: () => 1,
   });
   protected readonly porPaginaSuministros = signal(15);

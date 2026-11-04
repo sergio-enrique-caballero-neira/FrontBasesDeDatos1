@@ -116,7 +116,7 @@
                           </div>
                         </td>
                         <td class="celda-medidor">
-                          <div class="d-flex align-items-center gap-2">
+                          <div class="d-flex flex-wrap align-items-center column-gap-2">
                             <app-medidor
                               class="flex-grow-1"
                               [valor]="r.aTiempo"
@@ -339,7 +339,7 @@
                       <app-encabezado-orden [orden]="orden" columna="proveedor" texto="Proveedor" />
                     </th>
                     <th scope="col" class="col-sec">Producto</th>
-                    <th scope="col" [attr.aria-sort]="orden.ariaSort('calificacion')">
+                    <th scope="col" class="col-sec" [attr.aria-sort]="orden.ariaSort('calificacion')">
                       <app-encabezado-orden [orden]="orden" columna="calificacion" texto="Calificación" />
                     </th>
                     <th scope="col" class="col-sec">A tiempo</th>
@@ -350,11 +350,14 @@
                 <tbody>
                   @for (fila of paginaActual(); track fila.evaluacion.idEvaluacion) {
                     <tr>
-                      <td class="text-nowrap">
-                        <span class="num">{{ fila.evaluacion.fechaEvaluacion | fecha }}</span>
+                      <td>
+                        <span class="num text-nowrap">{{ fila.evaluacion.fechaEvaluacion | fecha }}</span>
                         <div class="small text-body-secondary">{{ fila.evaluador }}</div>
                         <div class="solo-movil small text-body-secondary">
-                          {{ fila.evaluacion.cumplimientoTiempo ? 'Entregó a tiempo' : 'No entregó a tiempo' }}
+                          <span class="text-body text-nowrap">
+                            <fa-icon [icon]="iconos.faStar" class="me-1" /><span class="num">{{ fila.evaluacion.calificacion }}</span> de 5
+                          </span>
+                          · {{ fila.evaluacion.cumplimientoTiempo ? 'Entregó a tiempo' : 'No entregó a tiempo' }}
                         </div>
                       </td>
                       <td>
@@ -390,9 +393,9 @@
                           <div class="small text-body-secondary">{{ fila.sucursal }}</div>
                         }
                       </td>
-                      <td class="text-nowrap">
+                      <td class="text-nowrap col-sec">
                         <span class="visually-hidden">{{ fila.evaluacion.calificacion }} de 5</span>
-                        <span class="d-none d-md-inline" aria-hidden="true">
+                        <span aria-hidden="true">
                           @for (n of estrellas; track n) {
                             @if (n <= fila.evaluacion.calificacion) {
                               <fa-icon [icon]="iconos.faStar" />
@@ -400,9 +403,6 @@
                               <fa-icon [icon]="iconos.faEstrellaVacia" class="text-body-secondary" />
                             }
                           }
-                        </span>
-                        <span class="solo-movil" aria-hidden="true">
-                          <fa-icon [icon]="iconos.faStar" class="me-1" /><span class="num">{{ fila.evaluacion.calificacion }}</span> de 5
                         </span>
                       </td>
                       <td class="col-sec">{{ fila.evaluacion.cumplimientoTiempo ? 'Sí' : 'No' }}</td>
