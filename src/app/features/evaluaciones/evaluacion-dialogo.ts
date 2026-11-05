@@ -41,7 +41,7 @@ export function suministrosElegibles(
 }
 
 const TEXTO_CALIFICACION = ['', 'Muy mala', 'Mala', 'Aceptable', 'Buena', 'Excelente'];
-const MAXIMO_OBSERVACIONES = 400;
+const MAXIMO_OBSERVACIONES = 500;
 
 @Component({
   selector: 'app-evaluacion-dialogo',
@@ -157,7 +157,7 @@ const MAXIMO_OBSERVACIONES = 400;
         </div>
 
         <div>
-          <label for="eval-observaciones" class="form-label">Observaciones</label>
+          <label for="eval-observaciones" class="form-label">Observaciones <span class="text-body-secondary fw-normal">(opcional)</span></label>
           <textarea id="eval-observaciones" class="form-control" rows="3" formControlName="observaciones"
             [attr.maxlength]="maximoObservaciones"
             placeholder="Estado del empaque, faltantes, documentos, trato del transportador…"
@@ -207,7 +207,7 @@ export class EvaluacionDialogo {
     fechaEvaluacion: [this.hoy, Validators.required],
     calificacion: [0, Validators.min(1)],
     cumplimientoTiempo: [true],
-    observaciones: ['', [Validators.required, Validators.maxLength(MAXIMO_OBSERVACIONES)]],
+    observaciones: ['', Validators.maxLength(MAXIMO_OBSERVACIONES)],
   });
 
   protected readonly calificacion = signal(0);

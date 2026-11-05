@@ -34,7 +34,8 @@ import { ACCESIBILIDAD_FORMULARIOS } from '../../shared/accesibilidad-formulario
             @if (existente()) {
               <div class="form-text" id="prov-nit-ayuda">El NIT es la llave del proveedor y no se puede cambiar.</div>
             }
-            <app-campo-error [control]="form.controls.nit" [enviado]="enviado()" id="prov-nit-error" />
+            <app-campo-error [control]="form.controls.nit" [enviado]="enviado()" id="prov-nit-error"
+              [mensajes]="{ pattern: 'El NIT debe tener entre 6 y 12 dígitos y, opcionalmente, el dígito de verificación (900215334-1).' }" />
           </div>
           <div class="col-sm-7">
             <label for="prov-nombre" class="form-label">Nombre o razón social</label>
@@ -97,7 +98,7 @@ export class ProveedorDialogo {
   protected readonly error = signal<string | null>(null);
 
   protected readonly form = this.fb.group({
-    nit: ['', [Validators.required, Validators.pattern(/^[0-9]{6,12}-?[0-9]$/)]],
+    nit: ['', [Validators.required, Validators.pattern(/^[0-9]{6,12}(-[0-9])?$/)]],
     nombre: ['', Validators.required],
     direccion: ['', Validators.required],
     telefonos: controlesLista('tel', [], 1),
