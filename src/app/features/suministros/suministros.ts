@@ -74,7 +74,7 @@ export function abrirDialogoSuministro(
         opciones: catalogos.sucursales.map((s) => ({ valor: String(s.idSucursal), texto: `${s.nombre} · ${s.ciudad}` })),
       },
       { clave: 'precioSuministro', etiqueta: 'Precio de suministro por unidad (COP)', tipo: 'number', requerido: true, minimo: 1, mitad: true },
-      { clave: 'tiempoEntregaDias', etiqueta: 'Tiempo de entrega (días)', tipo: 'number', requerido: true, minimo: 0, maximo: 120, mitad: true },
+      { clave: 'tiempoEntregaDias', etiqueta: 'Tiempo de entrega (días)', tipo: 'number', requerido: true, minimo: 0, maximo: 365, mitad: true },
     ],
     valores: suministro
       ? {

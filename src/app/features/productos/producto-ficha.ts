@@ -346,7 +346,7 @@ export class ProductoFicha {
           mitad: true,
           ayuda: `El precio base de venta es ${pesos(producto.precioBaseVenta)}.`,
         },
-        { clave: 'tiempoEntregaDias', etiqueta: 'Tiempo de entrega (días)', tipo: 'number', requerido: true, minimo: 0, maximo: 120, mitad: true },
+        { clave: 'tiempoEntregaDias', etiqueta: 'Tiempo de entrega (días)', tipo: 'number', requerido: true, minimo: 0, maximo: 365, mitad: true },
       ],
       valores: { idProducto: String(producto.idProducto) },
       guardar: (v) =>

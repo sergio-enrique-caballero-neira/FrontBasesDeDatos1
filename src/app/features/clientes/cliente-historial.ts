@@ -79,7 +79,8 @@ import { abrirDialogoCliente } from './cliente-dialogo';
             <fa-icon [icon]="iconos.faCircleInfo" class="mt-1" />
             <p>
               Agrupa las ventas a personas que no dieron sus datos, con el documento
-              <span class="num">{{ documentoConsumidorFinal }}</span> que usa la DIAN. Es un registro del sistema:
+              <span class="num">{{ documentoConsumidorFinal }}</span>, el número que se usa en Colombia para las ventas
+              sin datos del cliente. Es un registro del sistema:
               no se edita ni se elimina, y sus compras son de muchas personas, no de una sola.
             </p>
           </div>
